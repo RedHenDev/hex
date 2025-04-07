@@ -8,83 +8,140 @@
     <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
     
     <!-- Define our custom shader -->
-    <script id="vertexShader" type="x-shader/x-vertex">
-        // Instance attributes
-        attribute vec3 instancePosition;
-        attribute float instanceHeight;
-        attribute vec3 instanceColor;
-        
-        // A-Frame specific uniforms
-        uniform vec3 ambientLightColor;
-        uniform vec3 directionalLightColor[5];
-        uniform vec3 directionalLightDirection[5];
-        
-        varying vec3 vColor;
-        varying float vHeight;
-        varying vec3 vNormal;
-        varying vec3 vViewPosition;
-        
-        void main() {
-            vColor = instanceColor;
-            vHeight = instanceHeight;
-            
-            // Apply instance position and scale height
-            vec3 transformed = position;
-            transformed.y *= instanceHeight;
-            
-            // Properly transform normals when scaling is applied
-            vec3 transformedNormal = normal;
-            // Adjust normal to account for y-scaling
-            if (abs(normal.y) > 0.0) {
-                transformedNormal = normalize(vec3(normal.x, normal.y / instanceHeight, normal.z));
-            }
-            vNormal = normalMatrix * transformedNormal;
-            
-            // Apply instance position
-            vec4 worldPosition = modelMatrix * vec4(transformed + instancePosition, 1.0);
-            
-            // Calculate view-space position for lighting
-            vec4 viewPosition = viewMatrix * worldPosition;
-            vViewPosition = viewPosition.xyz;
-            
-            // Standard vertex transformation
-            gl_Position = projectionMatrix * viewPosition;
-        }
-    </script>
-    
-    <script id="fragmentShader" type="x-shader/x-fragment">
-        // A-Frame specific uniforms
-        uniform vec3 ambientLightColor;
-        uniform vec3 directionalLightColor[5];
-        uniform vec3 directionalLightDirection[5];
-        
-        varying vec3 vColor;
-        varying float vHeight;
-        varying vec3 vNormal;
-        varying vec3 vViewPosition;
-        
-        void main() {
-            // Ensure normal is normalized
-            vec3 normal = normalize(vNormal);
-            
-            // Calculate lighting
-            vec3 lighting = ambientLightColor;
-            
-            // Add directional light contribution - use view space
-            for (int i = 0; i < 5; i++) {
-                if (length(directionalLightColor[i]) > 0.0) {
-                    vec3 directionalVector = normalize(directionalLightDirection[i]);
-                    float directional = max(dot(normal, directionalVector), 0.0);
-                    lighting += directionalLightColor[i] * directional;
-                }
-            }
-            
-            // Apply lighting to color with a minimum amount to prevent total darkness
-            vec3 finalColor = vColor * max(lighting, vec3(0.2));
-            
-            // Final color with alpha
-            gl_FragColor = vec4(finalColor, 1.0);
-        }
+    // VERTEX SHADER
+// ------------------------------------------------------------
+<script id="vertexShader" type="x-shader/x-vertex">
+  // Instance attributes
+  attribute vec3 instancePosition;
+  attribute float instanceHeight;
+  attribute vec3 instanceColor;
+  
+  // A-Frame specific uniforms
+  uniform vec3 ambientLightColor;
+  uniform vec3 directionalLightColor[5];
+  uniform vec3 directionalLightDirection[5];
+  
+  varying vec3 vColor;
+  varying float vHeight;
+  varying vec3 vNormal;
+  varying vec3 vViewPosition;
+  
+  // Add UV coordinates for border calculation
+  varying vec2 vUv;
+  
+  void main() {
+      vColor = instanceColor;
+      vHeight = instanceHeight;
+      vUv = uv;
+      
+      // Apply instance position and scale height
+      vec3 transformed = position;
+      transformed.y *= instanceHeight;
+      
+      // Properly transform normals when scaling is applied
+      vec3 transformedNormal = normal;
+      // Adjust normal to account for y-scaling
+      if (abs(normal.y) > 0.0) {
+          transformedNormal = normalize(vec3(normal.x, normal.y / instanceHeight, normal.z));
+      }
+      vNormal = normalMatrix * transformedNormal;
+      
+      // Apply instance position
+      vec4 worldPosition = modelMatrix * vec4(transformed + instancePosition, 1.0);
+      
+      // Calculate view-space position for lighting
+      vec4 viewPosition = viewMatrix * worldPosition;
+      vViewPosition = viewPosition.xyz;
+      
+      // Standard vertex transformation
+      gl_Position = projectionMatrix * viewPosition;
+  }
+</script>`
+
+// FRAGMENT SHADER
+// ------------------------------------------------------------
+`<script id="fragmentShader" type="x-shader/x-fragment">
+  // A-Frame specific uniforms
+  uniform vec3 ambientLightColor;
+  uniform vec3 directionalLightColor[5];
+  uniform vec3 directionalLightDirection[5];
+  
+  varying vec3 vColor;
+  varying float vHeight;
+  varying vec3 vNormal;
+  varying vec3 vViewPosition;
+  varying vec2 vUv;
+  
+  // Define border properties
+  const float borderWidth = 0.04; // Adjust to control border width
+  
+  void main() {
+      // Ensure normal is normalized
+      vec3 normal = normalize(vNormal);
+      
+      // Calculate lighting
+      vec3 lighting = ambientLightColor;
+      
+      // Add directional light contribution - use view space
+      for (int i = 0; i < 5; i++) {
+          if (length(directionalLightColor[i]) > 0.0) {
+              vec3 directionalVector = normalize(directionalLightDirection[i]);
+              float directional = max(dot(normal, directionalVector), 0.0);
+              lighting += directionalLightColor[i] * directional;
+          }
+      }
+      
+      // Apply lighting to color with a minimum amount to prevent total darkness
+      vec3 finalColor = vColor * max(lighting, vec3(0.2));
+      
+      // Border calculation for hexagon cylinder
+      // For top and bottom faces, use polar coordinates to create hexagon border
+      if (abs(normal.y) > 0.5) {
+          // We're on top or bottom face - create circular border
+          // Convert UV from [0,1] to [-1,1] range
+          vec2 centeredUv = 2.0 * vUv - 1.0;
+          
+          // Calculate distance from center
+          float distFromCenter = length(centeredUv);
+          
+          // Create border at the edge
+          if (distFromCenter > (1.0 - borderWidth * 2.0)) {
+              finalColor = vec3(0.0); // Black border
+          }
+      } else {
+          // We're on the side faces
+          // Create border at top and bottom edges
+          float verticalPos = vUv.y; // This will be 0 at bottom and 1 at top of cylinder
+          
+          if (verticalPos < borderWidth || verticalPos > (1.0 - borderWidth)) {
+              finalColor = vec3(0.0); // Black border
+          }
+          
+          // Also create border at the hexagon corners
+          // For cylindrical sides, use the U coordinate to determine horizontal position
+          float horizontalPos = vUv.x; // This is 0-1 around the cylinder
+          
+          // The cylinder has 6 sides, so we have 6 corners
+          float cornerWidth = borderWidth * 1.5; // Make corner border slightly wider
+          
+          // Check if we're near a corner (each corner is 1/6 = 0.166 apart)
+          for (int i = 0; i < 6; i++) {
+              float cornerPos = float(i) / 6.0;
+              float dist = abs(horizontalPos - cornerPos);
+              
+              // Wrap around for the last corner
+              dist = min(dist, 1.0 - dist);
+              
+              if (dist < cornerWidth) {
+                  finalColor = vec3(0.0); // Black border
+                  break;
+              }
+          }
+      }
+      
+      gl_FragColor = vec4(finalColor, 1.0);
+  }
+
     </script>
 </head>
 <body>
@@ -268,9 +325,8 @@
                         const targetHeight = terrainHeight + this.data.heightOffset;
                         
                         // Set the new height, but only if we're below the target height
-                        //this.subjectObj.position.y = targetHeight;
                         if (this.subjectObj.position.y != targetHeight) {
-                            this.subjectObj.position.y = targetHeight;
+                            this.subjectObj.position.y += (targetHeight-this.subjectObj.position.y)*0.42;
                         }
                     }
                 } catch (error) {

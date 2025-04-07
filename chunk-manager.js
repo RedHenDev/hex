@@ -172,57 +172,66 @@ class TerrainChunkManager {
     }
     
     // Create a mesh for a chunk using instancing
-    createChunkMesh(chunkData) {
-        const hexagons = chunkData.hexagons;
-        
-        if (hexagons.length === 0) {
-            // Return an empty group if there are no hexagons
-            return new THREE.Group();
-        }
-        
-        // Create a new instance of geometry for this chunk to avoid sharing attributes
-        const geometry = this.hexGeometry.clone();
-        
-        // Create the instanced mesh
-        const instancedMesh = new THREE.InstancedMesh(
-            geometry,
-            this.hexMaterial,
-            hexagons.length
-        );
-        
-        // Disable frustum culling to prevent chunks from disappearing
-        instancedMesh.frustumCulled = false;
-        
-        // Create buffer attributes for instance data
-        const instancePositions = new Float32Array(hexagons.length * 3);
-        const instanceHeights = new Float32Array(hexagons.length);
-        const instanceColors = new Float32Array(hexagons.length * 3);
-        
-        // Fill the instance buffers
-        for (let i = 0; i < hexagons.length; i++) {
-            const hexagon = hexagons[i];
-            
-            // Position (x, y, z)
-            instancePositions[i * 3] = hexagon.position[0];
-            instancePositions[i * 3 + 1] = hexagon.position[1];
-            instancePositions[i * 3 + 2] = hexagon.position[2];
-            
-            // Height
-            instanceHeights[i] = hexagon.height;
-            
-            // Color (r, g, b)
-            instanceColors[i * 3] = hexagon.color[0];
-            instanceColors[i * 3 + 1] = hexagon.color[1];
-            instanceColors[i * 3 + 2] = hexagon.color[2];
-        }
-        
-        // Add the attributes to the geometry
-        geometry.setAttribute('instancePosition', new THREE.InstancedBufferAttribute(instancePositions, 3));
-        geometry.setAttribute('instanceHeight', new THREE.InstancedBufferAttribute(instanceHeights, 1));
-        geometry.setAttribute('instanceColor', new THREE.InstancedBufferAttribute(instanceColors, 3));
-        
-        return instancedMesh;
+    
+        // Modify the createChunkMesh function in chunk-manager.js
+// This creates two overlapping meshes - one black (slightly larger), one colored (slightly smaller)
+
+    // Modify the createChunkMesh function in chunk-manager.js with improved z-fighting prevention
+
+// Revised dual mesh approach to fix the "all black hexagons" issue
+
+// Then in createChunkMesh, just use a single mesh with this shader:
+createChunkMesh(chunkData) {
+    const hexagons = chunkData.hexagons;
+    
+    if (hexagons.length === 0) {
+        // Return an empty group if there are no hexagons
+        return new THREE.Group();
     }
+    
+    // Create a new instance of geometry for this chunk to avoid sharing attributes
+    const geometry = this.hexGeometry.clone();
+    
+    // Create the instanced mesh with one mesh that uses the border shader
+    const instancedMesh = new THREE.InstancedMesh(
+        geometry,
+        this.hexMaterial, // This material should use the updated shader
+        hexagons.length
+    );
+    
+    // Disable frustum culling to prevent chunks from disappearing
+    instancedMesh.frustumCulled = false;
+    
+    // Create buffer attributes for instance data
+    const instancePositions = new Float32Array(hexagons.length * 3);
+    const instanceHeights = new Float32Array(hexagons.length);
+    const instanceColors = new Float32Array(hexagons.length * 3);
+    
+    // Fill the instance buffers
+    for (let i = 0; i < hexagons.length; i++) {
+        const hexagon = hexagons[i];
+        
+        // Position (x, y, z)
+        instancePositions[i * 3] = hexagon.position[0];
+        instancePositions[i * 3 + 1] = hexagon.position[1];
+        instancePositions[i * 3 + 2] = hexagon.position[2];
+        
+        // Height
+        instanceHeights[i] = hexagon.height;
+        
+        // Color (r, g, b)
+        instanceColors[i * 3] = hexagon.color[0];
+        instanceColors[i * 3 + 1] = hexagon.color[1];
+        instanceColors[i * 3 + 2] = hexagon.color[2];
+    }
+    
+    // Add the attributes to the geometry
+    geometry.setAttribute('instancePosition', new THREE.InstancedBufferAttribute(instancePositions, 3));
+    geometry.setAttribute('instanceHeight', new THREE.InstancedBufferAttribute(instanceHeights, 1));
+    geometry.setAttribute('instanceColor', new THREE.InstancedBufferAttribute(instanceColors, 3));
+    
+    return instancedMesh;
+}
     
     // Get chunk key from world coordinates
     getChunkKeyFromPosition(x, z) {

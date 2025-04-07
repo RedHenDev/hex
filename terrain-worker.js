@@ -10,9 +10,17 @@ let generator = null;
 
 // Initialize the generator with options
 function initGenerator(options) {
+    // Enable enhanced terrain
+    options.useEnhancedTerrain = true;
+    options.useBiomeColors = true;
+    
+    // Optional - fine tune terrain features
+    options.ridgeIntensity = 0.6;
+    options.erosionStrength = 0.4;
+    options.detailLevel = 0.9;
+    
     generator = new TerrainGenerator(options);
     
-    // Send confirmation back to main thread
     self.postMessage({
         type: 'initialized',
         seed: generator.seed

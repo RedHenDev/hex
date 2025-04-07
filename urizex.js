@@ -746,11 +746,8 @@ function createInstancedHexagonMesh(hexagons) {
         terrainEntity.setObject3D('mesh', instancedMesh);
     }
     
-    console.log(`Terrain generated with ${hexagons.length} hexagons`);
+    // console.log(`Terrain generated with ${hexagons.length} hexagons`);
 }
-
- // Add this to urizex.js - make sure it's at the GLOBAL SCOPE (outside of any functions)
-// This should be placed right before any export statements at the end of the file
 
 /**
  * Get terrain height at a specific world position
@@ -763,20 +760,54 @@ function generateTerrainHeight(x, z, options = {}) {
     // Create a terrain generator if not already created
     if (!window._terrainHeightGenerator) {
         console.log("Creating terrain height generator");
-        window._terrainHeightGenerator = new TerrainGenerator({
-            hexSize: options.hexSize || 1.0,
-            heightScale: options.heightScale || 8.0,
-            noiseScale: options.noiseScale || 0.1,
-            baseHeight: options.baseHeight || 0.2,
-            useEnhancedTerrain: options.useEnhancedTerrain !== undefined ? options.useEnhancedTerrain : true,
-            ridgeIntensity: options.ridgeIntensity || 0.6,
-            erosionStrength: options.erosionStrength || 0.4,
-            detailLevel: options.detailLevel || 0.9,
-            seed: options.seed || Math.floor(Math.random() * 65536)
-        });
+        
+        // Check if EnhancedTerrainGenerator is available
+        if (typeof EnhancedTerrainGenerator === 'function') {
+            window._terrainHeightGenerator = new EnhancedTerrainGenerator({
+                hexSize: options.hexSize || 1.0,
+                heightScale: options.heightScale || 8.0,
+                noiseScale: options.noiseScale || 0.1,
+                baseHeight: options.baseHeight || 0.2,
+                useEnhancedTerrain: true,
+                useBiomeColors: true,
+                ridgeIntensity: options.ridgeIntensity || 0.7,
+                erosionStrength: options.erosionStrength || 0.5,
+                detailLevel: options.detailLevel || 0.9,
+                warpStrength: options.warpStrength || 3.0,
+                useWarp: options.useWarp !== undefined ? options.useWarp : true,
+                useRidges: options.useRidges !== undefined ? options.useRidges : true,
+                directionalRidges: options.directionalRidges !== undefined ? options.directionalRidges : true,
+                octaves: options.octaves || 5,
+                ridgeOctaves: options.ridgeOctaves || 3,
+                seed: options.seed || Math.floor(Math.random() * 65536)
+            });
+            console.log("Using EnhancedTerrainGenerator for height calculations");
+        } else {
+            // Fallback to standard generator if enhanced is not available
+            window._terrainHeightGenerator = new TerrainGenerator({
+                hexSize: options.hexSize || 1.0,
+                heightScale: options.heightScale || 8.0,
+                noiseScale: options.noiseScale || 0.1,
+                baseHeight: options.baseHeight || 0.2,
+                useEnhancedTerrain: true,
+                ridgeIntensity: options.ridgeIntensity || 0.6,
+                erosionStrength: options.erosionStrength || 0.4,
+                detailLevel: options.detailLevel || 0.9,
+                seed: options.seed || Math.floor(Math.random() * 65536)
+            });
+            console.log("Falling back to TerrainGenerator for height calculations");
+        }
     }
     
     try {
+        // If we have the enhanced generator with its own height function, use that
+        if (window._terrainHeightGenerator instanceof EnhancedTerrainGenerator && 
+            typeof window._terrainHeightGenerator.generateTerrainHeight === 'function') {
+            
+            return window._terrainHeightGenerator.generateTerrainHeight(x, z);
+        }
+        
+        // Otherwise use the standard approach
         // Get perlin noise at this location
         const noiseValue = PerlinNoise.perlin2(
             x * window._terrainHeightGenerator.noiseScale, 
@@ -805,10 +836,4 @@ function generateTerrainHeight(x, z, options = {}) {
         // Return a default height if there's an error
         return 0;
     }
-}
-
-// Make it available globally
-if (typeof window !== 'undefined') {
-    window.generateTerrainHeight = generateTerrainHeight;
-    console.log("Terrain height function registered globally");
 }

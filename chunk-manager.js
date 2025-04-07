@@ -119,7 +119,7 @@ class TerrainChunkManager {
     handleWorkerMessage(message) {
         switch (message.type) {
             case 'initialized':
-                console.log('Worker initialized with seed:', message.seed);
+                // console.log('Worker initialized with seed:', message.seed);
                 break;
                 
             case 'chunkGenerated':
@@ -145,7 +145,7 @@ class TerrainChunkManager {
     onChunkGenerated(requestId, chunkData) {
         // Check if this chunk is still needed
         if (!this.pendingChunks.has(requestId)) {
-            console.log('Discarding unneeded chunk:', requestId);
+            // console.log('Discarding unneeded chunk:', requestId);
             return;
         }
         
@@ -165,7 +165,7 @@ class TerrainChunkManager {
         // Add to scene using A-Frame's entity system
         pendingInfo.entity.setObject3D('mesh', chunk);
         
-        console.log(`Chunk loaded at (${chunkData.chunkX}, ${chunkData.chunkZ}) with ${chunkData.hexagons.length} hexagons`);
+        // console.log(`Chunk loaded at (${chunkData.chunkX}, ${chunkData.chunkZ}) with ${chunkData.hexagons.length} hexagons`);
         
         // Check if we can load more chunks
         this.checkPendingLoads();
@@ -392,7 +392,7 @@ class TerrainChunkManager {
             chunkInfo.entity.parentNode.removeChild(chunkInfo.entity);
         }
         
-        console.log('Unloaded chunk:', key);
+        // console.log('Unloaded chunk:', key);
     }
     
     // Cancel a pending chunk
@@ -415,7 +415,7 @@ class TerrainChunkManager {
                     info.entity.parentNode.removeChild(info.entity);
                 }
                 
-                console.log('Cancelled pending chunk:', key);
+                // console.log('Cancelled pending chunk:', key);
                 return;
             }
         }

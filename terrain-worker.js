@@ -11,29 +11,30 @@ let generator = null;
 
 // Initialize the generator with options
 function initGenerator(options) {
-    // Enable enhanced terrain with improved noise
+    console.log("[Worker] Initializing terrain generator with options:", options);
+    
+    // Always enable enhanced terrain with improved noise
     options.useEnhancedTerrain = true;
     options.useBiomeColors = true;
     
-    // Set additional fractal noise parameters
-    options.octaves = 5;           // Number of octaves for base terrain
-    options.ridgeOctaves = 3;      // Number of octaves for ridges
-    options.warpStrength = 3.0;    // Strength of domain warping
-    options.useWarp = true;        // Use domain warping for more natural landforms
-    options.useRidges = true;      // Use ridge features
-    options.directionalRidges = true; // Use directional ridges for more realism
+    // Set enhanced terrain parameters
+    options.ridgeIntensity = options.ridgeIntensity || 0.7;
+    options.erosionStrength = options.erosionStrength || 0.5;
+    options.detailLevel = options.detailLevel || 0.9;
+    options.warpStrength = options.warpStrength || 3.0;
+    options.useWarp = options.useWarp !== undefined ? options.useWarp : true;
+    options.useRidges = options.useRidges !== undefined ? options.useRidges : true;
+    options.directionalRidges = options.directionalRidges !== undefined ? options.directionalRidges : true;
+    options.octaves = options.octaves || 5;
+    options.ridgeOctaves = options.ridgeOctaves || 3;
     
-    // Fine-tune terrain features
-    options.ridgeIntensity = 0.7;
-    options.erosionStrength = 0.5;
-    options.detailLevel = 0.9;
-    
-    // Create the enhanced generator
+    // Always create the EnhancedTerrainGenerator (no fallback to regular TerrainGenerator)
+    console.log("[Worker] Using EnhancedTerrainGenerator");
     generator = new EnhancedTerrainGenerator(options);
     
     self.postMessage({
         type: 'initialized',
-        seed: generator.seed
+        seed: options.seed || generator.seed
     });
 }
 
@@ -49,7 +50,7 @@ function processNextChunk() {
     const task = chunkQueue.shift();
     
     try {
-        // Generate the chunk with our enhanced generator
+        // Generate the chunk with our generator
         const chunkData = generator.generateChunk(task.x, task.z, task.size);
         
         // Send the result back to the main thread
@@ -61,6 +62,7 @@ function processNextChunk() {
         });
     } catch (error) {
         // Send error back to main thread
+        console.error("[Worker] Error generating chunk:", error);
         self.postMessage({
             type: 'error',
             requestId: task.requestId,

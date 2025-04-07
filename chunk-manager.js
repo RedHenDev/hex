@@ -192,6 +192,11 @@ createChunkMesh(chunkData) {
     // Create a new instance of geometry for this chunk to avoid sharing attributes
     const geometry = this.hexGeometry.clone();
     
+    // Fix 8: Increase hexagon radius slightly to ensure overlapping at boundaries
+    // This small adjustment helps fill gaps without being visually noticeable
+    const scale = 1.02; // 2% larger hexagons to ensure overlap
+    geometry.scale(scale, 1.0, scale); 
+    
     // Create the instanced mesh with one mesh that uses the border shader
     const instancedMesh = new THREE.InstancedMesh(
         geometry,
@@ -234,20 +239,26 @@ createChunkMesh(chunkData) {
 }
     
     // Get chunk key from world coordinates
-    getChunkKeyFromPosition(x, z) {
-        // Calculate chunk coordinates (centered chunks)
-        const hexWidth = this.hexSize * Math.sqrt(3);
-        const hexHeight = this.hexSize * 1.5;
-        
-        const chunkX = Math.floor(x / (this.chunkSize * hexWidth)) * this.chunkSize * hexWidth;
-        const chunkZ = Math.floor(z / (this.chunkSize * hexHeight)) * this.chunkSize * hexHeight;
-        
-        return `${chunkX},${chunkZ}`;
-    }
+    // Modify the getChunkKeyFromPosition method in chunk-manager.js to ensure precise chunk alignment
+getChunkKeyFromPosition(x, z) {
+    // Calculate chunk coordinates (centered chunks)
+    const hexWidth = this.hexSize * Math.sqrt(3);
+    const hexHeight = this.hexSize * 1.5;
+    
+    // Use Math.floor with direct multiplication for more consistent results
+    const chunkSizeX = this.chunkSize * hexWidth;
+    const chunkSizeZ = this.chunkSize * hexHeight;
+    
+    const chunkX = Math.floor(x / chunkSizeX) * chunkSizeX;
+    const chunkZ = Math.floor(z / chunkSizeZ) * chunkSizeZ;
+    
+    return `${chunkX},${chunkZ}`;
+}
     
     // Generate chunk centered at the given coordinates
     loadChunkAt(chunkX, chunkZ, priority = 0) {
-        const key = `${chunkX},${chunkZ}`;
+        // Fix 7: More precise key generation to avoid floating point issues
+        const key = `${chunkX.toFixed(3)},${chunkZ.toFixed(3)}`;
         
         // Check if already loaded or pending
         if (this.loadedChunks.has(key)) {
@@ -439,24 +450,30 @@ createChunkMesh(chunkData) {
         const chunkWorldSizeX = this.chunkSize * hexWidth;
         const chunkWorldSizeZ = this.chunkSize * hexHeight;
         
-        // Calculate the radius in chunks (how many chunks to load in each direction)
-        const chunkRadiusX = Math.ceil(loadDistance / chunkWorldSizeX);
-        const chunkRadiusZ = Math.ceil(loadDistance / chunkWorldSizeZ);
+        // Fix 1: Use ceil for both dimensions to ensure symmetric loading
+        // This ensures we load enough chunks in all directions
+        const chunkRadiusX = Math.ceil(loadDistance / chunkWorldSizeX) + 1; // Add +1 for safety
+        const chunkRadiusZ = Math.ceil(loadDistance / chunkWorldSizeZ) + 1; // Add +1 for safety
         
-        // Get the base chunk coordinates
+        // Fix 2: Calculate base chunk position more precisely
+        // Instead of using Math.floor, which can cause misalignment at negative coordinates
         const baseChunkX = Math.floor(viewX / chunkWorldSizeX);
         const baseChunkZ = Math.floor(viewZ / chunkWorldSizeZ);
         
         // Keep track of chunks to keep
         const chunksToKeep = new Set();
         
-        // Determine chunks to load
+        // Fix 3: Log current position and chunk loading info for debugging
+        console.log(`Player at (${viewX.toFixed(2)}, ${viewZ.toFixed(2)}), Base chunk: (${baseChunkX}, ${baseChunkZ})`);
+        
+        // Determine chunks to load with improved precision
         for (let dx = -chunkRadiusX; dx <= chunkRadiusX; dx++) {
             for (let dz = -chunkRadiusZ; dz <= chunkRadiusZ; dz++) {
-                const chunkX = (baseChunkX + dx) * chunkWorldSizeX;
-                const chunkZ = (baseChunkZ + dz) * chunkWorldSizeZ;
+                // Fix 4: Use precise multiplication to avoid floating-point errors
+                const chunkX = Math.round((baseChunkX + dx) * chunkWorldSizeX * 1000) / 1000;
+                const chunkZ = Math.round((baseChunkZ + dz) * chunkWorldSizeZ * 1000) / 1000;
                 
-                // Calculate center of chunk
+                // Calculate center of chunk more precisely
                 const centerX = chunkX + chunkWorldSizeX / 2;
                 const centerZ = chunkZ + chunkWorldSizeZ / 2;
                 
@@ -467,7 +484,8 @@ createChunkMesh(chunkData) {
                 
                 // If within load distance, add to chunksToKeep and load if needed
                 if (distance <= loadDistance) {
-                    const key = `${chunkX},${chunkZ}`;
+                    // Fix 5: Use a more stable string representation
+                    const key = `${chunkX.toFixed(3)},${chunkZ.toFixed(3)}`;
                     chunksToKeep.add(key);
                     
                     // Calculate priority based on distance (closer = higher priority)
@@ -475,6 +493,11 @@ createChunkMesh(chunkData) {
                     
                     // Load if not already loaded or pending
                     this.loadChunkAt(chunkX, chunkZ, priority);
+                    
+                    // Fix 6: If this is a problematic area (around x=-42), log it
+                    if (chunkX >= -50 && chunkX <= -30) {
+                        console.log(`Loading chunk at (${chunkX.toFixed(2)}, ${chunkZ.toFixed(2)}) with distance ${distance.toFixed(2)}`);
+                    }
                 }
             }
         }

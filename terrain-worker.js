@@ -1,7 +1,8 @@
-// Terrain Worker - Handles terrain generation in a background thread
+// Enhanced Terrain Worker - Handles terrain generation with improved noise functions
 
-// Import the terrain generator - this will make TerrainGenerator available
+// Import the terrain generator and improved noise functions
 importScripts('urizex.js');
+importScripts('improved-noise.js');
 
 // Queue of pending chunk generation tasks
 let chunkQueue = [];
@@ -10,16 +11,25 @@ let generator = null;
 
 // Initialize the generator with options
 function initGenerator(options) {
-    // Enable enhanced terrain
+    // Enable enhanced terrain with improved noise
     options.useEnhancedTerrain = true;
     options.useBiomeColors = true;
     
-    // Optional - fine tune terrain features
-    options.ridgeIntensity = 0.6;
-    options.erosionStrength = 0.4;
+    // Set additional fractal noise parameters
+    options.octaves = 5;           // Number of octaves for base terrain
+    options.ridgeOctaves = 3;      // Number of octaves for ridges
+    options.warpStrength = 3.0;    // Strength of domain warping
+    options.useWarp = true;        // Use domain warping for more natural landforms
+    options.useRidges = true;      // Use ridge features
+    options.directionalRidges = true; // Use directional ridges for more realism
+    
+    // Fine-tune terrain features
+    options.ridgeIntensity = 0.7;
+    options.erosionStrength = 0.5;
     options.detailLevel = 0.9;
     
-    generator = new TerrainGenerator(options);
+    // Create the enhanced generator
+    generator = new EnhancedTerrainGenerator(options);
     
     self.postMessage({
         type: 'initialized',
@@ -39,7 +49,7 @@ function processNextChunk() {
     const task = chunkQueue.shift();
     
     try {
-        // Generate the chunk
+        // Generate the chunk with our enhanced generator
         const chunkData = generator.generateChunk(task.x, task.z, task.size);
         
         // Send the result back to the main thread

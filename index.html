@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Hex v0.3 - Infinite Terrain</title>
+    <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+    
+    <!-- Define our custom shader -->
+    <script id="vertexShader" type="x-shader/x-vertex">
+        // Instance attributes
+        attribute vec3 instancePosition;
+        attribute float instanceHeight;
+        attribute vec3 instanceColor;
+        
+        // A-Frame specific uniforms
+        uniform vec3 ambientLightColor;
+        uniform vec3 directionalLightColor[5];
+        uniform vec3 directionalLightDirection[5];
+        
+        varying vec3 vColor;
+        varying float vHeight;
+        varying vec3 vNormal;
+        varying vec3 vViewPosition;
+        
+        void main() {
+            vColor = instanceColor;
+            vHeight = instanceHeight;
+            
+            // Apply instance position and scale height
+            vec3 transformed = position;
+            transformed.y *= instanceHeight;
+            
+            // Properly transform normals when scaling is applied
+            vec3 transformedNormal = normal;
+            // Adjust normal to account for y-scaling
+            if (abs(normal.y) > 0.0) {
+                transformedNormal = normalize(vec3(normal.x, normal.y / instanceHeight, normal.z));
+            }
+            vNormal = normalMatrix * transformedNormal;
+            
+            // Apply instance position
+            vec4 worldPosition = modelMatrix * vec4(transformed + instancePosition, 1.0);
+            
+            // Calculate view-space position for lighting
+            vec4 viewPosition = viewMatrix * worldPosition;
+            vViewPosition = viewPosition.xyz;
+            
+            // Standard vertex transformation
+            gl_Position = projectionMatrix * viewPosition;
+        }
+    </script>
+    
+    <script id="fragmentShader" type="x-shader/x-fragment">
+        // A-Frame specific uniforms
+        uniform vec3 ambientLightColor;
+        uniform vec3 directionalLightColor[5];
+        uniform vec3 directionalLightDirection[5];
+        
+        varying vec3 vColor;
+        varying float vHeight;
+        varying vec3 vNormal;
+        varying vec3 vViewPosition;
+        
+        void main() {
+            // Ensure normal is normalized
+            vec3 normal = normalize(vNormal);
+            
+            // Calculate lighting
+            vec3 lighting = ambientLightColor;
+            
+            // Add directional light contribution - use view space
+            for (int i = 0; i < 5; i++) {
+                if (length(directionalLightColor[i]) > 0.0) {
+                    vec3 directionalVector = normalize(directionalLightDirection[i]);
+                    float directional = max(dot(normal, directionalVector), 0.0);
+                    lighting += directionalLightColor[i] * directional;
+                }
+            }
+            
+            // Apply lighting to color with a minimum amount to prevent total darkness
+            vec3 finalColor = vColor * max(lighting, vec3(0.2));
+            
+            // Final color with alpha
+            gl_FragColor = vec4(finalColor, 1.0);
+        }
+    </script>
+    
+    <!-- Load terrain system scripts -->
+    <script src="urizex.js"></script>
+    <!-- Terrain worker will be loaded by chunk-manager -->
+    <script src="chunk-manager.js"></script>
+</head>
+<body>
+    
+    <a-scene>
+        <!-- Camera positioned to view the terrain from above, with faster movement -->
+        <a-entity position="0 15 25" rotation="-20 0 0" 
+                  camera look-controls wasd-controls="acceleration: 50"></a-entity>
+        
+        <!-- Lighting to make the terrain visible -->
+        <a-entity light="type: ambient; color: #BBB"></a-entity>
+        <a-entity light="type: directional; color: #FFF; intensity: 0.6" 
+                  position="-0.5 1 1"></a-entity>
+        
+        <!-- Sky background -->
+        <a-sky color="#87CEEB"></a-sky>
+        
+        <!-- Container for terrain chunks -->
+        <a-entity id="terrain-container"></a-entity>
+        
+        <!-- Position tracking for chunk loading -->
+        <script>
+            // Create a component to track camera position and update chunks
+            AFRAME.registerComponent('terrain-loader', {
+                schema: {
+                    loadDistance: {type: 'number', default: 150},
+                    unloadDistance: {type: 'number', default: 200}
+                },
+                
+                init: function() {
+                    // Wait for the scene to fully load
+                    this.el.sceneEl.addEventListener('loaded', this.onSceneLoaded.bind(this));
+                },
+                
+                onSceneLoaded: function() {
+                    // Initialize terrain manager
+                    this.terrainManager = new TerrainChunkManager({
+                        chunkSize: 16,
+                        hexSize: 1.0,
+                        workerCount: 4,
+                        maxConcurrentLoads: 8
+                    });
+                    
+                    // Start update loop - throttle to run only every 500ms
+                    this.tick = AFRAME.utils.throttleTick(this.tick, 500, this);
+                },
+                
+                tick: function() {
+                    if (!this.terrainManager) return;
+                    
+                    // Get camera position
+                    const cameraEl = this.el.sceneEl.camera.el;
+                    const position = new THREE.Vector3();
+                    cameraEl.object3D.getWorldPosition(position);
+                    
+                    // Update chunks based on camera position
+                    this.terrainManager.updateChunksFromPosition(
+                        position.x, position.z, 
+                        this.data.loadDistance, 
+                        this.data.unloadDistance
+                    );
+                }
+            });
+            
+            // Add the component to the scene
+            document.addEventListener('DOMContentLoaded', function() {
+                const scene = document.querySelector('a-scene');
+                scene.setAttribute('terrain-loader', '');
+            });
+        </script>
+    </a-scene>
+</body>
+</html>

@@ -1,8 +1,9 @@
-// Enhanced Terrain Worker - Handles terrain generation with improved noise functions
+// Enhanced Terrain Worker - Handles terrain generation in a separate thread
 
-// Import the terrain generator and improved noise functions
-importScripts('urizex.js');
+// Import the required scripts
 importScripts('improved-noise.js');
+importScripts('hexagon-geometry.js');
+importScripts('enhanced-terrain.js');
 
 // Queue of pending chunk generation tasks
 let chunkQueue = [];
@@ -11,25 +12,30 @@ let generator = null;
 
 // Initialize the generator with options
 function initGenerator(options) {
-    console.log("[Worker] Initializing terrain generator with options:", options);
+    console.log("[Worker] Initializing enhanced terrain generator with seed:", options.seed);
     
     // Always enable enhanced terrain with improved noise
     options.useEnhancedTerrain = true;
     options.useBiomeColors = true;
     
-    // Set enhanced terrain parameters
-    options.ridgeIntensity = options.ridgeIntensity || 0.7;
+    // Set enhanced terrain parameters for more dramatic terrain
+    options.heightScale = options.heightScale || 12.0; // Increased for more dramatic terrain
+    options.ridgeIntensity = options.ridgeIntensity || 0.8;
     options.erosionStrength = options.erosionStrength || 0.5;
     options.detailLevel = options.detailLevel || 0.9;
-    options.warpStrength = options.warpStrength || 3.0;
+    options.warpStrength = options.warpStrength || 4.0;
     options.useWarp = options.useWarp !== undefined ? options.useWarp : true;
     options.useRidges = options.useRidges !== undefined ? options.useRidges : true;
     options.directionalRidges = options.directionalRidges !== undefined ? options.directionalRidges : true;
-    options.octaves = options.octaves || 5;
-    options.ridgeOctaves = options.ridgeOctaves || 3;
+    options.octaves = options.octaves || 6;
+    options.ridgeOctaves = options.ridgeOctaves || 4;
     
-    // Always create the EnhancedTerrainGenerator (no fallback to regular TerrainGenerator)
-    console.log("[Worker] Using EnhancedTerrainGenerator");
+    // Enable more terrain features
+    options.useMountains = options.useMountains !== undefined ? options.useMountains : true;
+    options.usePlateaus = options.usePlateaus !== undefined ? options.usePlateaus : true;
+    options.useValleys = options.useValleys !== undefined ? options.useValleys : true;
+    
+    // Create the enhanced terrain generator
     generator = new EnhancedTerrainGenerator(options);
     
     self.postMessage({
@@ -50,7 +56,7 @@ function processNextChunk() {
     const task = chunkQueue.shift();
     
     try {
-        // Generate the chunk with our generator
+        // Generate the chunk with our enhanced generator
         const chunkData = generator.generateChunk(task.x, task.z, task.size);
         
         // Send the result back to the main thread

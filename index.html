@@ -2,488 +2,229 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Hex v0.5 - Dynamic Terrain</title>
+    <title>Enhanced Hexagon Terrain v1.0</title>
     
     <!-- Load A-Frame first -->
     <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
     
-    <!-- Define our custom shader -->
-    // VERTEX SHADER
-// ------------------------------------------------------------
-<script id="vertexShader" type="x-shader/x-vertex">
-  // Instance attributes
-  attribute vec3 instancePosition;
-  attribute float instanceHeight;
-  attribute vec3 instanceColor;
-  
-  // A-Frame specific uniforms
-  uniform vec3 ambientLightColor;
-  uniform vec3 directionalLightColor[5];
-  uniform vec3 directionalLightDirection[5];
-  
-  varying vec3 vColor;
-  varying float vHeight;
-  varying vec3 vNormal;
-  varying vec3 vViewPosition;
-  
-  // Add UV coordinates for border calculation
-  varying vec2 vUv;
-  
-  void main() {
-      vColor = instanceColor;
-      vHeight = instanceHeight;
-      vUv = uv;
-      
-      // Apply instance position and scale height
-      vec3 transformed = position;
-      transformed.y *= instanceHeight;
-      
-      // Properly transform normals when scaling is applied
-      vec3 transformedNormal = normal;
-      // Adjust normal to account for y-scaling
-      if (abs(normal.y) > 0.0) {
-          transformedNormal = normalize(vec3(normal.x, normal.y / instanceHeight, normal.z));
-      }
-      vNormal = normalMatrix * transformedNormal;
-      
-      // Apply instance position
-      vec4 worldPosition = modelMatrix * vec4(transformed + instancePosition, 1.0);
-      
-      // Calculate view-space position for lighting
-      vec4 viewPosition = viewMatrix * worldPosition;
-      vViewPosition = viewPosition.xyz;
-      
-      // Standard vertex transformation
-      gl_Position = projectionMatrix * viewPosition;
-  }
-</script>`
-
-// FRAGMENT SHADER
-// ------------------------------------------------------------
-`<script id="fragmentShader" type="x-shader/x-fragment">
-  // A-Frame specific uniforms
-  uniform vec3 ambientLightColor;
-  uniform vec3 directionalLightColor[5];
-  uniform vec3 directionalLightDirection[5];
-  
-  varying vec3 vColor;
-  varying float vHeight;
-  varying vec3 vNormal;
-  varying vec3 vViewPosition;
-  varying vec2 vUv;
-  
-  // Define border properties
-  const float borderWidth = 0.04; // Adjust to control border width
-  
-  void main() {
-      // Ensure normal is normalized
-      vec3 normal = normalize(vNormal);
-      
-      // Calculate lighting
-      vec3 lighting = ambientLightColor;
-      
-      // Add directional light contribution - use view space
-      for (int i = 0; i < 5; i++) {
-          if (length(directionalLightColor[i]) > 0.0) {
-              vec3 directionalVector = normalize(directionalLightDirection[i]);
-              float directional = max(dot(normal, directionalVector), 0.0);
-              lighting += directionalLightColor[i] * directional;
-          }
-      }
-      
-      // Apply lighting to color with a minimum amount to prevent total darkness
-      vec3 finalColor = vColor * max(lighting, vec3(0.2));
-      
-      // Border calculation for hexagon cylinder
-      // For top and bottom faces, use polar coordinates to create hexagon border
-      if (abs(normal.y) > 0.5) {
-          // We're on top or bottom face - create circular border
-          // Convert UV from [0,1] to [-1,1] range
-          vec2 centeredUv = 2.0 * vUv - 1.0;
-          
-          // Calculate distance from center
-          float distFromCenter = length(centeredUv);
-          
-          // Create border at the edge
-          if (distFromCenter > (1.0 - borderWidth * 2.0)) {
-              finalColor = vec3(0.0); // Black border
-          }
-      } else {
-          // We're on the side faces
-          // Create border at top and bottom edges
-          float verticalPos = vUv.y; // This will be 0 at bottom and 1 at top of cylinder
-          
-          if (verticalPos < borderWidth || verticalPos > (1.0 - borderWidth)) {
-              finalColor = vec3(0.0); // Black border
-          }
-          
-          // Also create border at the hexagon corners
-          // For cylindrical sides, use the U coordinate to determine horizontal position
-          float horizontalPos = vUv.x; // This is 0-1 around the cylinder
-          
-          // The cylinder has 6 sides, so we have 6 corners
-          float cornerWidth = borderWidth * 1.5; // Make corner border slightly wider
-          
-          // Check if we're near a corner (each corner is 1/6 = 0.166 apart)
-          for (int i = 0; i < 6; i++) {
-              float cornerPos = float(i) / 6.0;
-              float dist = abs(horizontalPos - cornerPos);
-              
-              // Wrap around for the last corner
-              dist = min(dist, 1.0 - dist);
-              
-              if (dist < cornerWidth) {
-                  finalColor = vec3(0.0); // Black border
-                  break;
-              }
-          }
-      }
-      
-      gl_FragColor = vec4(finalColor, 1.0);
-  }
-
-    </script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        #loading-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-family: Arial, sans-serif;
+            z-index: 1000;
+            transition: opacity 0.5s;
+        }
+        .spinner {
+            border: 5px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 5px solid #fff;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        #debug-panel {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            width: 300px;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            font-family: monospace;
+            z-index: 1000;
+            border-radius: 5px;
+        }
+    </style>
 </head>
 <body>
+    <!-- Loading screen -->
+    <div id="loading-screen">
+        <div class="spinner"></div>
+        <h2>Loading Enhanced Hexagon Terrain...</h2>
+        <p>Please wait while we generate the terrain.</p>
+    </div>
     
     <a-scene>
-        <!-- Camera positioned to view the terrain from above, with faster movement -->
-        <a-entity id="subject" position="0 15 25" rotation="-20 0 0" 
-                  camera look-controls wasd-controls="acceleration: 50"></a-entity>
+        <!-- Camera positioned to view the terrain from above, with better starting position -->
+        <a-entity id="subject" position="0 15 0" rotation="-45 0 0" 
+                  camera look-controls wasd-controls="acceleration: 100"></a-entity>
         
         <!-- Lighting to make the terrain visible -->
-        <a-entity light="type: ambient; color: #BBB"></a-entity>
-        <a-entity light="type: directional; color: #FFF; intensity: 0.6" 
-                  position="-0.5 1 1"></a-entity>
+        <a-entity light="type: ambient; color: #BBB; intensity: 0.8"></a-entity>
+        <a-entity light="type: directional; color: #FFF; intensity: 1.0" 
+                  position="-1 2 1"></a-entity>
         
-        <!-- Sky background -->
-        <a-sky color="#87CEEB"></a-sky>
+        <!-- Sky background - darker for better contrast -->
+        <a-sky color="#1a2b42"></a-sky>
         
         <!-- Container for terrain chunks -->
         <a-entity id="terrain-container"></a-entity>
     </a-scene>
     
-    <!-- Load scripts in the right order AFTER the scene definition -->
-    <!-- 1. First load core terrain modules -->
-    <script src="urizex.js"></script>
-    <script src="improved-noise.js"></script>
-    <script src="terrain-enhancer.js"></script>
-    <script src="chunk-manager.js"></script>
-    
-    <!-- 2. Register the terrain-manager component -->
+    <!-- Explicit THREE extensions initialization script -->
     <script>
-        // Register the terrain-manager component that will handle dynamic chunks
-        AFRAME.registerComponent('terrain-manager', {
-            schema: {
-                loadDistance: {type: 'number', default: 150},
-                unloadDistance: {type: 'number', default: 200},
-                heightOffset: {type: 'number', default: 2.0},
-                followTerrain: {type: 'boolean', default: true},
-                chunkSize: {type: 'number', default: 16}, // Size of each chunk in hex units
-                hexSize: {type: 'number', default: 1.0}   // Size of each hexagon
-            },
-            
-            init: function() {
-                console.log("Terrain manager component initializing...");
-                
-                // Get subject entity and ensure it exists
-                this.subject = document.querySelector('#subject');
-                if (!this.subject) {
-                    console.error('Element with id "subject" not found!');
-                    return;
-                }
-                
-                // Get subject's Three.js object
-                this.subjectObj = this.subject.object3D;
-                
-                // Last known position for chunk update check
-                this.lastX = 0;
-                this.lastZ = 0;
-                this.chunkManager = null;
-                this.lastChunkX = null;
-                this.lastChunkZ = null;
-                
-                // Wait for the scene to fully load
-                this.el.sceneEl.addEventListener('loaded', this.onSceneLoaded.bind(this));
-                
-                console.log('Terrain manager initialized, waiting for scene to load...');
-            },
-            
-            onSceneLoaded: function() {
-                try {
-                    console.log("Scene loaded, initializing terrain chunk manager...");
-                    
-                    // Use enhanced terrain with chunk manager (no legacy mode)
-                    this.chunkManager = new TerrainChunkManager({
-                        chunkSize: this.data.chunkSize,
-                        hexSize: this.data.hexSize,
-                        workerCount: 4,
-                        maxConcurrentLoads: 8
-                    });
-                    
-                    // Initialize terrain around starting position
-                    const initialX = this.subjectObj.position.x;
-                    const initialZ = this.subjectObj.position.z;
-                    this.lastX = initialX;
-                    this.lastZ = initialZ;
-                    
-                    // Calculate chunk position
-                    const hexWidth = this.data.hexSize * Math.sqrt(3);
-                    const hexHeight = this.data.hexSize * 1.5;
-                    const chunkWorldSizeX = this.data.chunkSize * hexWidth;
-                    const chunkWorldSizeZ = this.data.chunkSize * hexHeight;
-                    
-                    // Store initial chunk coordinates
-                    this.lastChunkX = Math.floor(initialX / chunkWorldSizeX);
-                    this.lastChunkZ = Math.floor(initialZ / chunkWorldSizeZ);
-                    
-                    // Initial terrain update
-                    this.updateTerrain(initialX, initialZ);
-                    
-                    // Start update loop with throttling
-                    this.tick = AFRAME.utils.throttleTick(this.tick, 100, this);
-                    
-                    // Create debug markers
-                    this.createDebugMarkers();
-                } catch (error) {
-                    console.error("Failed to initialize terrain:", error);
-                }
-            },
-            
-            updateTerrain: function(x, z) {
-                if (this.chunkManager) {
-                    // Update chunks based on current position
-                    this.chunkManager.updateChunksFromPosition(
-                        x, z, 
-                        this.data.loadDistance, 
-                        this.data.unloadDistance
-                    );
-                }
-            },
-            
-            tick: function() {
-                try {
-                    const x = this.subjectObj.position.x;
-                    const z = this.subjectObj.position.z;
-                    
-                    // Calculate distance moved
-                    const distX = x - this.lastX;
-                    const distZ = z - this.lastZ;
-                    const distance = Math.sqrt(distX * distX + distZ * distZ);
-                    
-                    // Calculate current chunk position
-                    const hexWidth = this.data.hexSize * Math.sqrt(3);
-                    const hexHeight = this.data.hexSize * 1.5;
-                    const chunkWorldSizeX = this.data.chunkSize * hexWidth;
-                    const chunkWorldSizeZ = this.data.chunkSize * hexHeight;
-                    
-                    const currentChunkX = Math.floor(x / chunkWorldSizeX);
-                    const currentChunkZ = Math.floor(z / chunkWorldSizeZ);
-                    
-                    // Calculate position within current chunk
-                    const posWithinChunkX = (x / chunkWorldSizeX) - currentChunkX;
-                    const posWithinChunkZ = (z / chunkWorldSizeZ) - currentChunkZ;
-                    
-                    // Check if the player has moved to a new chunk or halfway across the current chunk
-                    const chunkChanged = currentChunkX !== this.lastChunkX || currentChunkZ !== this.lastChunkZ;
-                    const halfwayAcrossChunk = 
-                        (posWithinChunkX > 0.5 && this.lastHalfX !== 1) || 
-                        (posWithinChunkX <= 0.5 && this.lastHalfX !== 0) ||
-                        (posWithinChunkZ > 0.5 && this.lastHalfZ !== 1) || 
-                        (posWithinChunkZ <= 0.5 && this.lastHalfZ !== 0);
-                    
-                    // Remember which half of the chunk we're in
-                    this.lastHalfX = posWithinChunkX > 0.5 ? 1 : 0;
-                    this.lastHalfZ = posWithinChunkZ > 0.5 ? 1 : 0;
-                    
-                    // Update terrain if we've moved to a new chunk or halfway across
-                    if (chunkChanged || halfwayAcrossChunk) {
-                        // Log position change
-                        if (Math.random() < 0.1) { // Limit logging to prevent spam
-                            console.log(`Position: (${x.toFixed(1)}, ${this.subjectObj.position.y.toFixed(1)}, ${z.toFixed(1)})`);
-                            console.log(`Chunk: (${currentChunkX}, ${currentChunkZ}), Within: (${posWithinChunkX.toFixed(2)}, ${posWithinChunkZ.toFixed(2)})`);
-                        }
-                        
-                        // Update terrain
-                        this.updateTerrain(x, z);
-                        
-                        // Update last chunk position
-                        this.lastChunkX = currentChunkX;
-                        this.lastChunkZ = currentChunkZ;
-                    }
-                    
-                    // Update last known position
-                    this.lastX = x;
-                    this.lastZ = z;
-                    
-                    // Handle terrain following
-                    if (this.data.followTerrain && typeof generateTerrainHeight === 'function') {
-                        // Calculate terrain height at current position
-                        const terrainHeight = generateTerrainHeight(x, z);
-                        
-                        // Add offset to keep above terrain
-                        const targetHeight = terrainHeight + this.data.heightOffset;
-                        
-                        // Set the new height, but only if we're below the target height
-                        if (this.subjectObj.position.y != targetHeight) {
-                            this.subjectObj.position.y += (targetHeight-this.subjectObj.position.y)*0.42;
-                        }
-                    }
-                } catch (error) {
-                    console.error('Error in terrain-manager tick:', error);
-                }
-            },
-            
-            // Create debug markers for visualization
-            createDebugMarkers: function() {
-                try {
-                    // Create a debug function for markers
-                    const createMarker = function(id, color, size, x, z) {
-                        // Check if marker already exists
-                        const existing = document.getElementById(id);
-                        if (existing && existing.parentNode) {
-                            existing.parentNode.removeChild(existing);
-                        }
-                        
-                        // Create marker entity
-                        const marker = document.createElement('a-entity');
-                        marker.id = id;
-                        
-                        // Add sphere
-                        const sphere = document.createElement('a-sphere');
-                        sphere.setAttribute('radius', size);
-                        sphere.setAttribute('color', color);
-                        sphere.setAttribute('material', 'emissive: ' + color + '; emissiveIntensity: 0.5');
-                        marker.appendChild(sphere);
-                        
-                        // Add pole
-                        const pole = document.createElement('a-cylinder');
-                        pole.setAttribute('radius', size/5);
-                        pole.setAttribute('height', '10');
-                        pole.setAttribute('color', color);
-                        pole.setAttribute('position', '0 -5 0');
-                        marker.appendChild(pole);
-                        
-                        // Position at correct terrain height
-                        const height = typeof generateTerrainHeight === 'function' ? 
-                            generateTerrainHeight(x, z) + 1 : 5;
-                        marker.setAttribute('position', `${x} ${height} ${z}`);
-                        
-                        // Add to scene
-                        document.querySelector('a-scene').appendChild(marker);
-                        return marker;
-                    };
-                    
-                    // Create reference markers
-                    createMarker('origin-marker', 'red', 0.7, 0, 0);
-                    createMarker('x-marker', 'green', 0.7, 10, 0);
-                    createMarker('z-marker', 'blue', 0.7, 0, 10);
-                    createMarker('diag-marker', 'yellow', 0.7, 10, 10);
-                    
-                    // Create moving marker
-                    const movingMarker = createMarker('moving-marker', 'magenta', 0.5, 5, 5);
-                    
-                    // Animate
-                    let angle = 0;
-                    function updateMovingMarker() {
-                        if (typeof generateTerrainHeight === 'function') {
-                            angle += 0.01;
-                            const radius = 20;
-                            const x = Math.sin(angle) * radius;
-                            const z = Math.cos(angle) * radius;
-                            const height = generateTerrainHeight(x, z);
-                            movingMarker.setAttribute('position', `${x} ${height + 1} ${z}`);
-                        }
-                        requestAnimationFrame(updateMovingMarker);
-                    }
-                    updateMovingMarker();
-                    
-                    console.log("Added debug markers");
-                } catch (error) {
-                    console.error("Error creating debug markers:", error);
-                }
-            }
-        });
+        // Make sure THREE is available from A-Frame (it should be)
+        if (typeof THREE === 'undefined' && typeof AFRAME !== 'undefined') {
+            console.log("Getting THREE from AFRAME");
+            THREE = AFRAME.THREE;
+        }
+        
+        if (typeof THREE === 'undefined') {
+            console.error("THREE is not defined! Cannot proceed with terrain initialization.");
+        } else {
+            console.log("THREE is available, version:", THREE.REVISION);
+        }
     </script>
     
-    <!-- 3. After registration, add the component to the scene -->
+    <!-- Load scripts in the correct order -->
+    <!-- 1. Hexagon Geometry (must be first since other scripts depend on it) -->
+    <script src="hexagon-geometry.js"></script>
+    
+    <!-- 2. Terrain System (defines all terrain generation logic) -->
+    <script src="terrain-system.js"></script>
+    
+    <!-- 3. Terrain Manager (includes component and chunk manager) -->
+    <script src="terrain-manager.js"></script>
+    
+    <!-- 4. Initialize component and print global variables to console -->
     <script>
-        // Check dependencies and add the component to the scene
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log("DOM content loaded, checking for required classes...");
+        // Check if scripts are loaded correctly
+        function checkDependencies() {
+            console.log("============== GLOBAL VARIABLE CHECK ==============");
+            console.log("THREE:", typeof THREE !== 'undefined');
+            console.log("THREE.HexagonGeometry:", typeof THREE.HexagonGeometry !== 'undefined');
+            console.log("THREE.HexagonBufferGeometry:", typeof THREE.HexagonBufferGeometry !== 'undefined');
+            console.log("hexVertexShader:", typeof hexVertexShader !== 'undefined');
+            console.log("hexFragmentShader:", typeof hexFragmentShader !== 'undefined');
+            console.log("ImprovedNoise:", typeof ImprovedNoise !== 'undefined');
+            console.log("TerrainGenerator:", typeof TerrainGenerator !== 'undefined');
+            console.log("EnhancedTerrainGenerator:", typeof EnhancedTerrainGenerator !== 'undefined');
+            console.log("TerrainChunkManager:", typeof TerrainChunkManager !== 'undefined');
+            console.log("TerrainUtils:", typeof TerrainUtils !== 'undefined');
+            console.log("window.generateTerrainHeight:", typeof window.generateTerrainHeight !== 'undefined');
+            console.log("====================================================");
             
-            // Check for required classes
-            if (typeof TerrainGenerator === 'undefined') {
-                console.error("ERROR: TerrainGenerator class is not defined. Check if urizex.js loaded correctly.");
-            } else {
-                console.log("TerrainGenerator class found ✓");
+            // We'll proceed even if some dependencies are missing, since we've added fallbacks
+            let canProceed = typeof THREE !== 'undefined' && 
+                            (typeof TerrainGenerator !== 'undefined');
+            
+            if (!canProceed) {
+                console.error("Critical dependencies are missing! Cannot initialize terrain.");
+                return false;
             }
             
-            if (typeof EnhancedTerrainGenerator === 'undefined') {
-                console.error("WARNING: EnhancedTerrainGenerator class is not defined. Check if improved-noise.js loaded correctly.");
-            } else {
-                console.log("EnhancedTerrainGenerator class found ✓");
+            // If HexagonBufferGeometry is missing, try to define it now as a last resort
+            if (typeof THREE.HexagonBufferGeometry === 'undefined') {
+                console.warn("THREE.HexagonBufferGeometry still not defined. Trying one more time to register it...");
+                
+                // Try to register our hexagon geometry again
+                if (typeof HexagonBufferGeometry !== 'undefined') {
+                    THREE.HexagonBufferGeometry = HexagonBufferGeometry;
+                    THREE.HexagonGeometry = HexagonGeometry;
+                    console.log("Re-registered HexagonGeometry classes with THREE");
+                } else {
+                    console.warn("Cannot find HexagonBufferGeometry class. Terrain will use fallback geometry.");
+                }
             }
             
-            if (typeof TerrainChunkManager === 'undefined') {
-                console.error("ERROR: TerrainChunkManager class is not defined. Check if chunk-manager.js loaded correctly.");
-            } else {
-                console.log("TerrainChunkManager class found ✓");
-            }
+            return true;
+        }
+        
+        // Initialize the terrain manager
+        function initializeTerrain() {
+            // Create a consistent seed
+            const seed = Math.floor(Math.random() * 1000000);
+            console.log(`Using seed: ${seed}`);
             
-            // Add the component to the scene
+            // Get the scene element
             const scene = document.querySelector('a-scene');
-            if (scene) {
-                console.log("Adding terrain-manager component to scene...");
-                scene.setAttribute('terrain-manager', '');
-            } else {
-                console.error("Scene element not found!");
+            if (!scene) {
+                console.error("Could not find a-scene element");
+                return;
             }
-        });
-    </script>
-    
-    <!-- 4. Debug info display -->
-    <div id="debug-overlay" style="position: fixed; top: 10px; left: 10px; background: rgba(0,0,0,0.5); color: white; padding: 10px; font-family: monospace; z-index: 100; pointer-events: none;">
-        <div>Terrain v0.5 - Enhanced Dynamic Chunks</div>
-        <div id="position-info">Position: (0, 0, 0)</div>
-        <div id="chunk-info">Chunk: (0, 0)</div>
-        <div id="height-info">Height: 0.0</div>
-    </div>
-    
-    <!-- 5. Debug panel updater -->
-    <script>
-        // Update debug panel
-        document.addEventListener('DOMContentLoaded', function() {
-            const positionInfo = document.getElementById('position-info');
-            const chunkInfo = document.getElementById('chunk-info');
-            const heightInfo = document.getElementById('height-info');
             
-            // Update every 200ms
-            setInterval(function() {
-                const subject = document.querySelector('#subject');
-                if (subject) {
-                    const pos = subject.object3D.position;
-                    positionInfo.textContent = `Position: (${pos.x.toFixed(1)}, ${pos.y.toFixed(1)}, ${pos.z.toFixed(1)})`;
-                    
-                    // Calculate chunk position
-                    const hexSize = 1.0;
-                    const chunkSize = 16;
-                    const hexWidth = hexSize * Math.sqrt(3);
-                    const hexHeight = hexSize * 1.5;
-                    const chunkWorldSizeX = chunkSize * hexWidth;
-                    const chunkWorldSizeZ = chunkSize * hexHeight;
-                    const chunkX = Math.floor(pos.x / chunkWorldSizeX);
-                    const chunkZ = Math.floor(pos.z / chunkWorldSizeZ);
-                    
-                    chunkInfo.textContent = `Chunk: (${chunkX}, ${chunkZ})`;
-                    
-                    // Get terrain height at current position
-                    if (typeof generateTerrainHeight === 'function') {
-                        const height = generateTerrainHeight(pos.x, pos.z);
-                        heightInfo.textContent = `Height: ${height.toFixed(1)}`;
+            // Set terrain manager component with better parameters
+            scene.setAttribute('terrain-manager', {
+                seed: seed,
+                loadDistance: 50,     // Smaller load distance to focus around camera
+                unloadDistance: 100,   // Reasonable unload distance
+                heightOffset: 5.0,    // Good height above terrain
+                followTerrain: false  // Start with follow terrain disabled
+            });
+            
+            console.log("Terrain manager component added to scene");
+            
+            // Add key controls for debug
+            document.addEventListener('keydown', function(event) {
+                // Press F key to toggle followTerrain
+                if (event.key === 'f' || event.key === 'F') {
+                    const terrainManager = scene.components['terrain-manager'];
+                    if (terrainManager) {
+                        terrainManager.data.followTerrain = !terrainManager.data.followTerrain;
+                        console.log("Follow terrain:", terrainManager.data.followTerrain);
                     }
                 }
-            }, 200);
+                
+                // Press R key to reset position to origin
+                if (event.key === 'r' || event.key === 'R') {
+                    const subject = document.querySelector('#subject');
+                    if (subject) {
+                        subject.setAttribute('position', '0 15 0');
+                        console.log("Reset position to origin");
+                    }
+                }
+            });
+        }
+        
+        // Wait for A-Frame to be ready, then initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log("DOM content loaded, waiting for A-Frame to be ready");
+            
+            // Make sure A-Frame is ready first
+            const checkAFrame = function() {
+                if (typeof AFRAME !== 'undefined' && AFRAME.scenes.length > 0 && AFRAME.scenes[0].hasLoaded) {
+                    console.log("A-Frame is ready, checking dependencies");
+                    
+                    // Ensure THREE is available
+                    if (typeof THREE === 'undefined' && typeof AFRAME !== 'undefined') {
+                        console.log("Getting THREE from AFRAME");
+                        THREE = AFRAME.THREE;
+                    }
+                    
+                    // Check dependencies after a short delay to ensure all scripts are processed
+                    setTimeout(function() {
+                        if (checkDependencies()) {
+                            initializeTerrain();
+                        } else {
+                            console.error("Cannot initialize terrain due to missing critical dependencies");
+                        }
+                    }, 1000);
+                } else {
+                    setTimeout(checkAFrame, 100);
+                }
+            };
+            
+            checkAFrame();
         });
     </script>
 </body>

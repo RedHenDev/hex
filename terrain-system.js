@@ -1,15 +1,13 @@
-// terrain-system.js - Consolidated terrain generation system
-// This file replaces improved-noise.js, urizex.js, enhanced-terrain.js, and terrain-enhancer.js
+// terrain-system.js - Handles terrain generation and management
 
 // ========== IMPROVED NOISE FUNCTIONS ==========
 const ImprovedNoise = {
-    // Permutation table - will be expanded to 1024 elements (4x256)
+    // Permutation table
     p: new Array(1024),
     
     // Initialize with a random seed
     seed: function(seed) {
         if(seed > 0 && seed < 1) {
-            // Scale the seed out
             seed *= 65536;
         }
         
@@ -25,9 +23,8 @@ const ImprovedNoise = {
             perm[i] = i;
         }
         
-        // Fisher-Yates shuffle with seed influence for better randomization
+        // Fisher-Yates shuffle with seed influence
         for(let i = 255; i > 0; i--) {
-            // Use a better mixing function for the seed
             const seedMix = (seed ^ (seed >> 5) ^ (seed << 7) ^ (i * 13)) & 0xFFFFFFFF;
             const j = seedMix % (i + 1);
             
@@ -35,7 +32,7 @@ const ImprovedNoise = {
             [perm[i], perm[j]] = [perm[j], perm[i]];
         }
         
-        // Extend the permutation table to 1024 elements for less repetition
+        // Extend the permutation table
         for(let i = 0; i < 256; i++) {
             this.p[i] = this.p[i + 256] = this.p[i + 512] = this.p[i + 768] = perm[i];
         }
@@ -51,21 +48,15 @@ const ImprovedNoise = {
         return a + t * (b - a);
     },
     
-    // Improved gradient function with more directions
+    // Improved gradient function
     grad: function(hash, x, y, z) {
-        // Use lower 4 bits of hash
         const h = hash & 15;
-        
-        // Convert lower 3 bits to gradient directions
-        // This creates 12 gradient directions instead of 8
         const u = h < 8 ? x : y;
         const v = h < 4 ? y : (h === 12 || h === 14 ? x : z);
-        
-        // Add sign based on bit patterns
         return ((h & 1) === 0 ? u : -u) + ((h & 2) === 0 ? v : -v);
     },
     
-    // 2D Perlin noise - improved sampling
+    // 2D Perlin noise
     perlin2: function(x, y) {
         // Find unit grid cell containing point
         const X = Math.floor(x) & 255;
@@ -101,11 +92,11 @@ const ImprovedNoise = {
     },
     
     // Fractal Brownian Motion for multi-octave noise
-    fbm: function(x, y, octaves = 4, lacunarity = 2.0, gain = 0.5) {
+    fbm: function(x, y, octaves = 8, lacunarity = 2.0, gain = 0.5) {
         let total = 0;
         let frequency = 1.0;
         let amplitude = 1.0;
-        let maxValue = 0;  // Used for normalizing
+        let maxValue = 0;
         
         // Sum multiple noise functions with different frequencies
         for(let i = 0; i < octaves; i++) {
@@ -119,18 +110,8 @@ const ImprovedNoise = {
         return total / maxValue;
     },
     
-    // Domain warping for more organic, less grid-like patterns
-    warpedNoise: function(x, y, warpStrength = 1.0) {
-        // Sample twice with offset to create warp vectors
-        const warpX = this.perlin2(x * 0.5, y * 0.5) * warpStrength;
-        const warpY = this.perlin2(x * 0.5 + 100, y * 0.5 + 100) * warpStrength;
-        
-        // Apply the warp to the coordinates before final noise sampling
-        return this.perlin2(x + warpX, y + warpY);
-    },
-    
     // Ridged multi-fractal noise - creates more realistic ridges
-    ridgedMulti: function(x, y, octaves = 4, lacunarity = 2.0, gain = 0.5, offset = 1.0) {
+    ridgedMulti: function(x, y, octaves = 8, lacunarity = 2.0, gain = 0.5, offset = 1.0) {
         let total = 0;
         let frequency = 1.0;
         let amplitude = 1.0;
@@ -150,37 +131,26 @@ const ImprovedNoise = {
         }
         
         return total / maxValue;
-    },
-    
-    // 2D directional noise for creating ridges/features with directionality
-    directionalNoise: function(x, y, angle = 0, scale = 1.0) {
-        // Rotate coordinates to achieve directional effect
-        const cos = Math.cos(angle);
-        const sin = Math.sin(angle);
-        
-        const nx = x * cos - y * sin;
-        const ny = x * sin + y * cos;
-        
-        // Sample using rotated coordinates at the given scale
-        return this.perlin2(nx * scale, ny * scale);
     }
 };
 
-// ========== BASE TERRAIN GENERATOR ==========
+// Terrain Generator
 class TerrainGenerator {
     constructor(options = {}) {
         // Parameters for the terrain
-        this.hexSize = options.hexSize || 1.0; // Size of each hexagon
-        this.heightScale = options.heightScale || 12.0; // Maximum height
-        this.noiseScale = options.noiseScale || 0.1; // Scale factor for noise
-        this.baseHeight = options.baseHeight || 0.2; // Minimum height
+        this.hex = options.hex || false;
+
+        this.cubeSize = options.cubeSize || 1.0;
+        this.heightScale = options.heightScale || 20.0;
+        this.noiseScale = options.noiseScale || 0.03;
+        this.baseHeight = options.baseHeight || 0.1;
         this.seed = options.seed || Math.floor(Math.random() * 65536);
         
-        // Enhanced terrain options
-        this.useEnhancedTerrain = options.useEnhancedTerrain !== undefined ? 
-            options.useEnhancedTerrain : true;
-        this.useBiomeColors = options.useBiomeColors !== undefined ? 
-            options.useBiomeColors : true;
+        // Additional parameters
+        this.octaves = options.octaves || 8;
+        this.ridgeOctaves = options.ridgeOctaves || 4;
+        this.useRidges = options.useRidges !== undefined ? options.useRidges : true;
+        this.ridgeFactor = options.ridgeFactor || 0.3;
         
         // Initialize noise with the seed
         ImprovedNoise.seed(this.seed);
@@ -188,680 +158,626 @@ class TerrainGenerator {
         console.log(`TerrainGenerator initialized with seed: ${this.seed}`);
     }
     
-    // Helper function to convert axial coordinates (q,r) to pixel (x,z)
-    // Using "pointy-top" hex orientation
-    // Helper function to convert axial coordinates (q,r) to pixel (x,z)
-// Using "pointy-top" hex orientation
-axialToPixel(q, r) {
-    const x = this.hexSize * Math.sqrt(3) * (q + r/2);
-    const z = this.hexSize * 3/2 * r;
-    return {x, z};
-}
-    
-    // Helper function to get a unique key for coordinates
-    coordKey(q, r) {
-        return `${q},${r}`;
-    }
-    
-    // Generate a chunk of terrain
-    // Override the generateChunk method
-    generateChunk(chunkX, chunkZ, chunkSize) {
-        // Convert chunk world coordinates to axial coordinates
-        const hexWidth = this.hexSize * Math.sqrt(3);
-        const hexHeight = this.hexSize * 1.5;
-        
-        // Calculate the base axial coordinates for this chunk
-        const baseQ = Math.floor(chunkX / hexWidth);
-        const baseR = Math.floor(chunkZ / hexHeight);
-        
-        // Collection to track valid hexagons
-        const validHexagons = [];
-        
-        // First pass: Calculate heights
-        for (let q = 0; q < chunkSize; q++) {
-            for (let r = 0; r < chunkSize; r++) {
-                // Convert axial coordinates to local Cartesian coordinates
-                const localPos = this.axialToPixel(q, r);
-                
-                // These are positions relative to the chunk's origin, not world coordinates
-                const worldX = localPos.x;
-                const worldZ = localPos.z;
-                
-                // Generate terrain height using world coordinates for consistent noise sampling
-                const absoluteX = chunkX + worldX;
-                const absoluteZ = chunkZ + worldZ;
-                const height = this.generateTerrainHeight(absoluteX, absoluteZ);
-                
-                // Determine biome type based on absolute world position
-                let biomeType, colorInfo;
-                if (this.useBiomeColors) {
-                    biomeType = this.getBiomeType(absoluteX, absoluteZ, height);
-                    colorInfo = this.getColor(absoluteX, absoluteZ, height, biomeType);
-                } else {
-                    const normalizedHeight = (height - this.baseHeight) / this.heightScale;
-                    colorInfo = {
-                        h: Math.max(30, Math.min(120, 120 - 90 * normalizedHeight)),
-                        s: 60 + 20 * normalizedHeight,
-                        l: 60 - 30 * normalizedHeight
-                    };
-                }
-                
-                // Convert HSL to RGB
-                const h = colorInfo.h / 360;
-                const s = colorInfo.s / 100;
-                const l = colorInfo.l / 100;
-                
-                let r1, g1, b1;
-                
-                if (s === 0) {
-                    r1 = g1 = b1 = l; // achromatic
-                } else {
-                    const hue2rgb = (p, q, t) => {
-                        if (t < 0) t += 1;
-                        if (t > 1) t -= 1;
-                        if (t < 1/6) return p + (q - p) * 6 * t;
-                        if (t < 1/2) return q;
-                        if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
-                        return p;
-                    };
-                    
-                    const q1 = l < 0.5 ? l * (1 + s) : l + s - l * s;
-                    const p1 = 2 * l - q1;
-                    
-                    r1 = hue2rgb(p1, q1, h + 1/3);
-                    g1 = hue2rgb(p1, q1, h);
-                    b1 = hue2rgb(p1, q1, h - 1/3);
-                }
-                
-                // Add this hexagon to our collection with LOCAL positions
-                // This is the key change - positions are relative to chunk origin (0,0,0)
-                validHexagons.push({
-                    position: [worldX, 0, worldZ],
-                    height: height,
-                    color: [r1, g1, b1]
-                });
-            }
-        }
-        
-        // Return chunk data
-        return {
-            chunkX: chunkX,
-            chunkZ: chunkZ,
-            size: chunkSize,
-            hexagons: validHexagons
-        };
-    }
-}
-
-// ========== ENHANCED TERRAIN GENERATOR ==========
-class EnhancedTerrainGenerator extends TerrainGenerator {
-    constructor(options = {}) {
-        super(options);
-        
-        // Additional parameters for terrain variety
-        this.octaves = options.octaves || 6; // More octaves for finer detail
-        this.ridgeOctaves = options.ridgeOctaves || 4;
-        this.warpStrength = options.warpStrength || 4.0; // Stronger warping for more varied terrain
-        this.useWarp = options.useWarp !== undefined ? options.useWarp : true;
-        this.useRidges = options.useRidges !== undefined ? options.useRidges : true;
-        this.ridgeIntensity = options.ridgeIntensity || 0.8; // Stronger ridges
-        this.directionalRidges = options.directionalRidges !== undefined ? options.directionalRidges : true;
-        
-        // Terrain features
-        this.useMountains = options.useMountains !== undefined ? options.useMountains : true;
-        this.usePlateaus = options.usePlateaus !== undefined ? options.usePlateaus : true;
-        this.useValleys = options.useValleys !== undefined ? options.useValleys : true;
-        this.mountainScale = options.mountainScale || 0.03; // Scale for mountain features
-        this.plateauThreshold = options.plateauThreshold || 0.65; // Height threshold for plateaus
-        this.valleyDepth = options.valleyDepth || 0.3; // Depth of valleys
-        
-        // Biome parameters
-        this.biomeScale = options.biomeScale || 0.005; // Scale of biome transitions
-        this.moistureScale = options.moistureScale || 0.008; // Scale of moisture variation
-        
-        // Define biome types
-        this.BIOME = {
-            DARK_LOWLANDS: 0,
-            ASHEN_FLATS: 1,
-            EMERALD_PLAINS: 2,
-            DEEP_FOREST: 3,
-            DESERT: 4,
-            RED_ROCK: 5,
-            MOUNTAINS: 6,
-            SNOW: 7,
-            TEAL_MOSS: 8,
-            VOID_STONE: 9,
-            NEON_VEGETATION: 10
-        };
-        
-        // Define regions with different terrain features
-        this.setupTerrainRegions();
-        
-        console.log(`EnhancedTerrainGenerator initialized with seed: ${this.seed}`);
-    }
-    
-    // Set up different terrain regions for variety
-    setupTerrainRegions() {
-        this.regions = [];
-        
-        // Create several mountain ranges with different orientations
-        const mountainRangeCount = 4;
-        for (let i = 0; i < mountainRangeCount; i++) {
-            this.regions.push({
-                type: 'mountains',
-                centerX: (Math.random() * 2 - 1) * 1000,
-                centerZ: (Math.random() * 2 - 1) * 1000,
-                radius: 300 + Math.random() * 500,
-                angle: Math.random() * Math.PI, // Direction of the mountain range
-                intensity: 0.6 + Math.random() * 0.4
-            });
-        }
-        
-        // Create plateau regions
-        const plateauCount = 3;
-        for (let i = 0; i < plateauCount; i++) {
-            this.regions.push({
-                type: 'plateau',
-                centerX: (Math.random() * 2 - 1) * 1000,
-                centerZ: (Math.random() * 2 - 1) * 1000,
-                radius: 200 + Math.random() * 400,
-                height: 0.5 + Math.random() * 0.5, // Height of the plateau (normalized)
-                sharpness: 0.7 + Math.random() * 0.3 // How sharp the plateau edges are
-            });
-        }
-        
-        // Create valley regions
-        const valleyCount = 3;
-        for (let i = 0; i < valleyCount; i++) {
-            this.regions.push({
-                type: 'valley',
-                centerX: (Math.random() * 2 - 1) * 1000,
-                centerZ: (Math.random() * 2 - 1) * 1000,
-                radius: 250 + Math.random() * 350,
-                depth: 0.3 + Math.random() * 0.4, // Depth of the valley (normalized)
-                angle: Math.random() * Math.PI, // Direction of the valley
-                width: 100 + Math.random() * 200 // Width of the valley
-            });
-        }
-    }
-    
-    // Override the generateChunk method
-    // Override the generateChunk method in EnhancedTerrainGenerator class
-    generateChunk(chunkX, chunkZ, chunkSize) {
-        // Collection to track valid hexagons
-        const validHexagons = [];
-        
-        // Important: We need to determine the q,r coordinates of the first hexagon in this chunk
-        // based on the chunk's world position
-        const hexWidth = this.hexSize * Math.sqrt(3);
-        const hexHeight = this.hexSize * 1.5;
-        
-        // Calculate q,r for the first hexagon in this chunk
-        // This is a reverse transform from world coordinates to axial coordinates
-        // For pointy-top hexagons, the formula is:
-        // q = (x * sqrt(3)/3 - z/3) / hexSize
-        // r = z * 2/3 / hexSize
-        
-        // But we need integer coordinates, so we use Math.floor to get the closest grid position
-        const firstQ = Math.floor(chunkX * Math.sqrt(3)/3 / this.hexSize);
-        const firstR = Math.floor(chunkZ * 2/3 / this.hexSize);
-        
-        // Now generate hexagons from this starting point
-        for (let dq = 0; dq < chunkSize; dq++) {
-            for (let dr = 0; dr < chunkSize; dr++) {
-                // Calculate actual q,r coordinates
-                const q = firstQ + dq;
-                const r = firstR + dr;
-                
-                // Convert axial coordinates to world coordinates
-                const position = this.axialToPixel(q, r);
-                
-                // Generate terrain height using absolute world coordinates
-                const absoluteX = position.x;
-                const absoluteZ = position.z;
-                const height = this.generateTerrainHeight(absoluteX, absoluteZ);
-                
-                // Calculate position relative to chunk origin
-                const localX = position.x - chunkX;
-                const localZ = position.z - chunkZ;
-                
-                // Determine biome and color
-                let biomeType, colorInfo;
-                if (this.useBiomeColors) {
-                    biomeType = this.getBiomeType(absoluteX, absoluteZ, height);
-                    colorInfo = this.getColor(absoluteX, absoluteZ, height, biomeType);
-                } else {
-                    const normalizedHeight = (height - this.baseHeight) / this.heightScale;
-                    colorInfo = {
-                        h: Math.max(30, Math.min(120, 120 - 90 * normalizedHeight)),
-                        s: 60 + 20 * normalizedHeight,
-                        l: 60 - 30 * normalizedHeight
-                    };
-                }
-                
-                // Convert HSL to RGB (using existing code)
-                const h = colorInfo.h / 360;
-                const s = colorInfo.s / 100;
-                const l = colorInfo.l / 100;
-                
-                let r1, g1, b1;
-                
-                if (s === 0) {
-                    r1 = g1 = b1 = l; // achromatic
-                } else {
-                    const hue2rgb = (p, q, t) => {
-                        if (t < 0) t += 1;
-                        if (t > 1) t -= 1;
-                        if (t < 1/6) return p + (q - p) * 6 * t;
-                        if (t < 1/2) return q;
-                        if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
-                        return p;
-                    };
-                    
-                    const q1 = l < 0.5 ? l * (1 + s) : l + s - l * s;
-                    const p1 = 2 * l - q1;
-                    
-                    r1 = hue2rgb(p1, q1, h + 1/3);
-                    g1 = hue2rgb(p1, q1, h);
-                    b1 = hue2rgb(p1, q1, h - 1/3);
-                }
-                
-                // Add this hexagon with LOCAL positions relative to chunk
-                validHexagons.push({
-                    position: [localX, 0, localZ],
-                    height: height,
-                    color: [r1, g1, b1]
-                });
-            }
-        }
-        
-        // Return chunk data
-        return {
-            chunkX: chunkX,
-            chunkZ: chunkZ,
-            size: chunkSize,
-            hexagons: validHexagons
-        };
-    }
-    
-    // Enhanced terrain height generation
+    // Generate terrain height at a given position
     generateTerrainHeight(x, z) {
-        // Base continents using FBM noise (large scale)
-        const continentScale = this.noiseScale * 0.3;
-        let baseHeight;
+        // Base continents using FBM noise
+        const continentScale = this.noiseScale;
+        let baseHeight = ImprovedNoise.fbm(
+            x * continentScale, 
+            z * continentScale, 
+            this.octaves
+        );
         
-        if (this.useWarp) {
-            // Apply domain warping for more natural, flowing landforms
-            const warpX = ImprovedNoise.perlin2(x * continentScale * 0.5, z * continentScale * 0.5) * this.warpStrength;
-            const warpZ = ImprovedNoise.perlin2(x * continentScale * 0.5 + 100, z * continentScale * 0.5 + 100) * this.warpStrength;
-            
-            baseHeight = ImprovedNoise.fbm(
-                (x + warpX) * continentScale, 
-                (z + warpZ) * continentScale, 
-                this.octaves
+        // Add ridged noise for mountain ranges if enabled
+        if (this.useRidges) {
+            const ridgeNoise = ImprovedNoise.ridgedMulti(
+                x * continentScale * 2, 
+                z * continentScale * 2, 
+                this.ridgeOctaves
             );
-        } else {
-            // Standard FBM without warping
-            baseHeight = ImprovedNoise.fbm(x * continentScale, z * continentScale, this.octaves);
+            baseHeight = baseHeight * (1 - this.ridgeFactor) + ridgeNoise * this.ridgeFactor;
         }
+        
+        // Add small-scale detail noise
+        const detailScale = this.noiseScale * 6;
+        const detail = ImprovedNoise.perlin2(x * detailScale, z * detailScale) * 0.1;
+        baseHeight += detail;
         
         // Scale to our height range
         baseHeight = this.baseHeight + ((baseHeight + 1) / 2) * this.heightScale;
         
-        // Apply mountain ranges
-        if (this.useMountains) {
-            baseHeight = this.applyMountainRanges(x, z, baseHeight);
-        }
-        
-        // Apply plateaus
-        if (this.usePlateaus) {
-            baseHeight = this.applyPlateaus(x, z, baseHeight);
-        }
-        
-        // Apply valleys
-        if (this.useValleys) {
-            baseHeight = this.applyValleys(x, z, baseHeight);
-        }
-        
-        // Add small-scale detail noise
-        const detailScale = this.noiseScale * 5;
-        const detail = ImprovedNoise.perlin2(x * detailScale, z * detailScale) * this.heightScale * 0.1;
-        baseHeight += detail;
-        
         return baseHeight;
     }
     
-    // Apply mountain ranges based on regions
-    applyMountainRanges(x, z, currentHeight) {
-        let height = currentHeight;
+    // Generate a color based on height
+    getColor(x, z, height) {
+        // Normalize height for color calculation
+        const normalizedHeight = (height - this.baseHeight) / this.heightScale;
         
-        // Find mountain range regions
-        for (const region of this.regions) {
-            if (region.type !== 'mountains') continue;
-            
-            // Calculate distance from point to region center
-            const dx = x - region.centerX;
-            const dz = z - region.centerZ;
-            
-            // For mountain ranges, we want to consider distance along the perpendicular axis
-            // to create elongated ranges
-            const angle = region.angle;
-            const cosAngle = Math.cos(angle);
-            const sinAngle = Math.sin(angle);
-            
-            // Rotate coordinates to align with mountain range direction
-            const rotatedX = dx * cosAngle - dz * sinAngle;
-            const rotatedZ = dx * sinAngle + dz * cosAngle;
-            
-            // Use elliptical distance for elongated mountain ranges
-            const distanceAlongRange = Math.abs(rotatedX / (region.radius * 2)); // Along the range
-            const distanceAcrossRange = Math.abs(rotatedZ / (region.radius * 0.5)); // Across the range
-            const ellipticalDistance = Math.sqrt(distanceAlongRange * distanceAlongRange + 
-                                               distanceAcrossRange * distanceAcrossRange);
-            
-            // Calculate influence weight - stronger near the center of the range
-            const weight = Math.max(0, 1 - ellipticalDistance);
-            
-            if (weight > 0) {
-                // Generate ridge-like noise for mountains
-                const mountainNoise = ImprovedNoise.ridgedMulti(
-                    x * this.mountainScale, 
-                    z * this.mountainScale, 
-                    this.ridgeOctaves
-                );
+        // Add some local variation for texture
+        const variationScale = this.noiseScale * 10;
+        const variation = ImprovedNoise.perlin2(x * variationScale, z * variationScale) * 0.1;
+        
+        let r, g, b;
+        
+        // Deep water
+        if (normalizedHeight < 0.2) {
+            r = 0.0;
+            g = 0.1 + normalizedHeight * 0.5;
+            b = 0.4 + normalizedHeight * 0.5;
+        }
+        // Shallow water / sand
+        else if (normalizedHeight < 0.3) {
+            const t = (normalizedHeight - 0.2) * 10; // 0 to 1
+            r = 0.7 * t + 0.0 * (1 - t);
+            g = 0.7 * t + 0.2 * (1 - t);
+            b = 0.5 * t + 0.5 * (1 - t);
+        }
+        // Grass / low terrain
+        else if (normalizedHeight < 0.5) {
+            r = 0.1 + variation * 0.05;
+            g = 0.4 + normalizedHeight * 0.4 + variation * 0.05;
+            b = 0.1 + variation * 0.05;
+        }
+        // Forest / hills
+        else if (normalizedHeight < 0.7) {
+            r = 0.2 + variation * 0.05;
+            g = 0.3 + normalizedHeight * 0.2 + variation * 0.05;
+            b = 0.1 + variation * 0.05;
+        }
+        // Mountain rock
+        else if (normalizedHeight < 0.85) {
+            r = 0.5 + normalizedHeight * 0.2 + variation * 0.1;
+            g = 0.5 + normalizedHeight * 0.1 + variation * 0.1;
+            b = 0.5 + variation * 0.1;
+        }
+        // Snow caps
+        else {
+            const t = (normalizedHeight - 0.85) * 6.67; // 0 to 1
+            r = 0.9 * t + 0.6 * (1 - t);
+            g = 0.9 * t + 0.6 * (1 - t);
+            b = 0.9 * t + 0.6 * (1 - t);
+        }
+        
+        // Ensure colors are in valid range
+        return [
+            Math.min(1.0, Math.max(0.0, r)),
+            Math.min(1.0, Math.max(0.0, g)),
+            Math.min(1.0, Math.max(0.0, b))
+        ];
+    }
+    
+    // Generate a chunk of terrain
+    generateChunk(chunkX, chunkZ, chunkSize) {
+        // Collection for cube data
+        const cubes = [];
+        
+        // Generate the terrain
+        for (let x = 0; x < chunkSize; x++) {
+            for (let z = 0; z < chunkSize; z++) {
+                // Calculate world position
+                const worldX = chunkX + x * this.cubeSize;
+                const worldZ = chunkZ + z * this.cubeSize;
                 
-                // Apply mountain elevation
-                const mountainHeight = mountainNoise * this.heightScale * region.intensity;
-                height += mountainHeight * weight;
+                // Generate height
+                const height = this.generateTerrainHeight(worldX, worldZ);
+                
+                // Generate color
+                const color = this.getColor(worldX, worldZ, height);
+                
+                // Add cube to collection with LOCAL position relative to chunk
+                cubes.push({
+                    position: [x * this.cubeSize, 0, z * this.cubeSize],
+                    height: height,
+                    color: color
+                });
             }
         }
         
-        return height;
+        // Return chunk data
+        return {
+            chunkX: chunkX,
+            chunkZ: chunkZ,
+            size: chunkSize,
+            cubes: cubes
+        };
+    }
+}
+
+// Register the terrain-manager component
+AFRAME.registerComponent('terrain-manager', {
+    schema: {
+        loadDistance: {type: 'number', default: 100},
+        unloadDistance: {type: 'number', default: 150},
+        heightOffset: {type: 'number', default: 5.0},
+        followTerrain: {type: 'boolean', default: false},
+        chunkSize: {type: 'number', default: 16},
+        cubeSize: {type: 'number', default: 1.0},
+        seed: {type: 'number', default: 0}
+    },
+    
+    init: function() {
+        console.log("Terrain manager component initializing...");
+        
+        // Get subject entity
+        this.subject = document.querySelector('#subject');
+        if (!this.subject) {
+            console.error('Element with id "subject" not found!');
+            return;
+        }
+        
+        // Get subject's Three.js object
+        this.subjectObj = this.subject.object3D;
+        
+        // Last known position for chunk update check
+        this.lastX = 0;
+        this.lastZ = 0;
+        
+        // Initialize tracking variables
+        this.chunkManager = null;
+        this.lastChunkX = null;
+        this.lastChunkZ = null;
+        
+        // Ensure we have a seed (either from schema or generate one)
+        if (this.data.seed === 0) {
+            this.data.seed = Math.floor(Math.random() * 1000000);
+        }
+        
+        // Set up when scene is loaded
+        const scene = this.el.sceneEl;
+        
+        if (scene.hasLoaded) {
+            setTimeout(() => this.onSceneLoaded(), 100);
+        } else {
+            scene.addEventListener('loaded', () => {
+                this.onSceneLoaded();
+            });
+        }
+        
+        console.log('Terrain manager initialized, waiting for scene to load...');
+    },
+    
+    onSceneLoaded: function() {
+        try {
+            console.log("Scene loaded, initializing terrain...");
+            
+            // Create the chunk manager
+            this.chunkManager = new TerrainChunkManager({
+                chunkSize: this.data.chunkSize,
+                cubeSize: this.data.cubeSize,
+                seed: this.data.seed
+            });
+            
+            // Get initial position
+            const initialX = this.subjectObj.position.x;
+            const initialZ = this.subjectObj.position.z;
+            this.lastX = initialX;
+            this.lastZ = initialZ;
+            
+            // Calculate chunk position
+            const chunkWorldSize = this.data.chunkSize * this.data.cubeSize;
+            
+            // Store initial chunk coordinates
+            this.lastChunkX = Math.floor(initialX / chunkWorldSize);
+            this.lastChunkZ = Math.floor(initialZ / chunkWorldSize);
+            
+            // Initial terrain update
+            this.updateTerrain(initialX, initialZ);
+            
+            // Create debug panel
+            this.setupDebugPanel();
+            
+            // Set up tick function
+            this.tick = AFRAME.utils.throttleTick(this.tick, 100, this);
+            
+            // Ensure full terrain coverage
+            setTimeout(() => {
+                this.updateTerrain(this.subjectObj.position.x, this.subjectObj.position.z);
+                
+                // Dispatch event when terrain is ready
+                const event = new CustomEvent('terrainReady');
+                document.dispatchEvent(event);
+            }, 500);
+            
+            console.log("Terrain manager initialization complete");
+        } catch (error) {
+            console.error("Failed to initialize terrain:", error);
+        }
+    },
+    
+    updateTerrain: function(x, z) {
+        if (this.chunkManager) {
+            // Update chunks based on current position
+            this.chunkManager.updateChunksFromPosition(
+                x, z, 
+                this.data.loadDistance, 
+                this.data.unloadDistance
+            );
+        }
+    },
+    
+    tick: function() {
+        try {
+            const x = this.subjectObj.position.x;
+            const z = this.subjectObj.position.z;
+            
+            // Calculate distance moved
+            const distX = x - this.lastX;
+            const distZ = z - this.lastZ;
+            const distance = Math.sqrt(distX * distX + distZ * distZ);
+            
+            // Calculate current chunk position
+            const chunkWorldSize = this.data.chunkSize * this.data.cubeSize;
+            const currentChunkX = Math.floor(x / chunkWorldSize);
+            const currentChunkZ = Math.floor(z / chunkWorldSize);
+            
+            // Check if the player has moved to a new chunk
+            const chunkChanged = currentChunkX !== this.lastChunkX || currentChunkZ !== this.lastChunkZ;
+            
+            // Update terrain if we've moved significantly
+            if (chunkChanged || distance > 10) {
+                this.updateTerrain(x, z);
+                
+                // Update last chunk position
+                this.lastChunkX = currentChunkX;
+                this.lastChunkZ = currentChunkZ;
+                this.lastX = x;
+                this.lastZ = z;
+            }
+            
+            // Handle terrain following
+            if (this.data.followTerrain && this.chunkManager && this.chunkManager.terrainGenerator) {
+                try {
+                    // Calculate terrain height at current position
+                    const terrainHeight = this.chunkManager.terrainGenerator.generateTerrainHeight(x, z);
+                    
+                    // Add offset to keep above terrain
+                    const targetHeight = terrainHeight + this.data.heightOffset;
+                    
+                    // Set the new height with smooth transition
+                    if (this.subjectObj.position.y !== targetHeight) {
+                        this.subjectObj.position.y += (targetHeight - this.subjectObj.position.y) * 0.1;
+                    }
+                } catch (error) {
+                    console.warn("Error in terrain following:", error);
+                }
+            }
+            
+            // Update debug panel
+            this.updateDebugPanel();
+        } catch (error) {
+            console.error('Error in terrain-manager tick:', error);
+        }
+    },
+    
+    // Setup debug panel
+    setupDebugPanel: function() {
+        try {
+            // Create debug panel if it doesn't exist
+            let panel = document.getElementById('debug-panel');
+            if (!panel) {
+                panel = document.createElement('div');
+                panel.id = 'debug-panel';
+                document.body.appendChild(panel);
+            }
+            
+            // Clear any existing content
+            panel.innerHTML = '';
+            
+            // Add title
+            const title = document.createElement('h3');
+            title.textContent = `Cube Terrain (Seed: ${this.data.seed})`;
+            title.style.margin = '0 0 10px 0';
+            panel.appendChild(title);
+            
+            // Add info elements
+            const positionDisplay = document.createElement('div');
+            positionDisplay.id = 'position-display';
+            positionDisplay.textContent = 'Position: (0, 0, 0)';
+            panel.appendChild(positionDisplay);
+            
+            const chunkDisplay = document.createElement('div');
+            chunkDisplay.id = 'chunk-display';
+            chunkDisplay.textContent = 'Current Chunk: (0, 0)';
+            panel.appendChild(chunkDisplay);
+            
+            const heightDisplay = document.createElement('div');
+            heightDisplay.id = 'height-display';
+            heightDisplay.textContent = 'Terrain Height: 0.0';
+            panel.appendChild(heightDisplay);
+            
+            const chunksDisplay = document.createElement('div');
+            chunksDisplay.id = 'chunks-display';
+            chunksDisplay.textContent = 'Loaded Chunks: 0';
+            panel.appendChild(chunksDisplay);
+            
+            // Add teleport buttons
+            const teleportHeading = document.createElement('h4');
+            teleportHeading.textContent = 'Teleport To:';
+            teleportHeading.style.margin = '10px 0 5px 0';
+            panel.appendChild(teleportHeading);
+            
+            const buttonContainer = document.createElement('div');
+            buttonContainer.style.display = 'flex';
+            buttonContainer.style.flexWrap = 'wrap';
+            buttonContainer.style.gap = '5px';
+            
+            // Create teleport buttons
+            const locations = [
+                { name: 'Origin', x: 0, z: 0 },
+                { name: 'Mountains', x: 100, z: 100 },
+                { name: 'Valley', x: -100, z: 50 },
+                { name: 'Far Out', x: 300, z: 300 }
+            ];
+            
+            locations.forEach(loc => {
+                const button = document.createElement('button');
+                button.textContent = loc.name;
+                button.style.cssText = `
+                    background: #333;
+                    color: white;
+                    border: 1px solid #555;
+                    padding: 5px 10px;
+                    cursor: pointer;
+                    border-radius: 3px;
+                `;
+                button.addEventListener('click', () => {
+                    const currentY = this.subjectObj.position.y;
+                    this.subjectObj.position.set(loc.x, currentY, loc.z);
+                });
+                buttonContainer.appendChild(button);
+            });
+            
+            panel.appendChild(buttonContainer);
+            
+            // Add follow terrain checkbox
+            const followContainer = document.createElement('div');
+            followContainer.style.margin = '10px 0';
+            
+            const followCheck = document.createElement('input');
+            followCheck.type = 'checkbox';
+            followCheck.id = 'follow-terrain';
+            followCheck.checked = this.data.followTerrain;
+            
+            const followLabel = document.createElement('label');
+            followLabel.htmlFor = 'follow-terrain';
+            followLabel.textContent = 'Follow Terrain';
+            followLabel.style.marginLeft = '5px';
+            
+            followContainer.appendChild(followCheck);
+            followContainer.appendChild(followLabel);
+            panel.appendChild(followContainer);
+            
+            followCheck.addEventListener('change', () => {
+                this.data.followTerrain = followCheck.checked;
+            });
+            
+            // Add reset button
+            const resetButton = document.createElement('button');
+            resetButton.textContent = 'Reset Terrain (New Seed)';
+            resetButton.style.cssText = `
+                background: #553333;
+                color: white;
+                border: 1px solid #555;
+                padding: 5px 10px;
+                cursor: pointer;
+                border-radius: 3px;
+                margin-top: 10px;
+                width: 100%;
+            `;
+            resetButton.addEventListener('click', () => {
+                window.location.reload();
+            });
+            panel.appendChild(resetButton);
+        } catch (error) {
+            console.error('Error setting up debug panel:', error);
+        }
+    },
+    
+    // Update debug panel
+    updateDebugPanel: function() {
+        try {
+            const pos = this.subjectObj.position;
+            
+            // Update position display
+            const positionDisplay = document.getElementById('position-display');
+            if (positionDisplay) {
+                positionDisplay.textContent = `Position: (${pos.x.toFixed(1)}, ${pos.y.toFixed(1)}, ${pos.z.toFixed(1)})`;
+            }
+            
+            // Update chunk display
+            const chunkDisplay = document.getElementById('chunk-display');
+            if (chunkDisplay) {
+                const chunkWorldSize = this.data.chunkSize * this.data.cubeSize;
+                const chunkX = Math.floor(pos.x / chunkWorldSize);
+                const chunkZ = Math.floor(pos.z / chunkWorldSize);
+                
+                chunkDisplay.textContent = `Current Chunk: (${chunkX}, ${chunkZ})`;
+            }
+            
+            // Update height display
+            const heightDisplay = document.getElementById('height-display');
+            if (heightDisplay && this.chunkManager && this.chunkManager.terrainGenerator) {
+                try {
+                    const height = this.chunkManager.terrainGenerator.generateTerrainHeight(pos.x, pos.z);
+                    heightDisplay.textContent = `Terrain Height: ${height.toFixed(1)}`;
+                } catch (error) {
+                    heightDisplay.textContent = `Terrain Height: Error`;
+                }
+            }
+            
+            // Update chunks display
+            const chunksDisplay = document.getElementById('chunks-display');
+            if (chunksDisplay && this.chunkManager) {
+                const loadedChunks = this.chunkManager.loadedChunks.size;
+                chunksDisplay.textContent = `Loaded Chunks: ${loadedChunks}`;
+            }
+        } catch (error) {
+            console.error('Error updating debug panel:', error);
+        }
+    }
+});
+
+// Terrain Chunk Manager class
+class TerrainChunkManager {
+    constructor(options = {}) {
+        try {
+            // Configuration
+            this.chunkSize = options.chunkSize || 16;
+            this.cubeSize = options.cubeSize || 1.0;
+            this.seed = options.seed || Math.floor(Math.random() * 65536);
+            
+            console.log("TerrainChunkManager options:", {
+                chunkSize: this.chunkSize,
+                cubeSize: this.cubeSize,
+                seed: this.seed
+            });
+            
+            // Maps to track chunks
+            this.loadedChunks = new Map();
+            
+            // Container for all terrain chunks
+            this.terrainContainer = document.getElementById('terrain-container');
+            if (!this.terrainContainer) {
+                this.terrainContainer = document.createElement('a-entity');
+                this.terrainContainer.id = 'terrain-container';
+                document.querySelector('a-scene').appendChild(this.terrainContainer);
+            }
+            
+            // Create cube material
+            // if (this.hex){
+            // this.cubeMaterial = window.HexTerrainBuilder.createHexMaterial();
+            // }
+            // else {
+                this.cubeMaterial = window.CubeTerrainBuilder.createCubeMaterial();
+            // }
+            // Create the terrain generator
+            this.terrainGenerator = new TerrainGenerator({
+                cubeSize: this.cubeSize,
+                heightScale: 20.0,
+                noiseScale: 0.03,
+                baseHeight: 0.2,
+                seed: this.seed,
+                octaves: 8
+            });
+            
+            console.log('Terrain Chunk Manager initialized with seed:', this.seed);
+        } catch (error) {
+            console.error("Error in TerrainChunkManager constructor:", error);
+            throw error;
+        }
     }
     
-    // Apply plateaus based on regions
-    applyPlateaus(x, z, currentHeight) {
-        let height = currentHeight;
+    // Update chunks based on player position
+    updateChunksFromPosition(viewX, viewZ, loadDistance, unloadDistance) {
+        // Calculate the size of a chunk in world units
+        const chunkWorldSize = this.chunkSize * this.cubeSize;
         
-        // Find plateau regions
-        for (const region of this.regions) {
-            if (region.type !== 'plateau') continue;
-            
-            // Calculate distance from point to region center
-            const dx = x - region.centerX;
-            const dz = z - region.centerZ;
-            const distance = Math.sqrt(dx * dx + dz * dz);
-            
-            // Calculate falloff from plateau edge
-            const distanceFromEdge = region.radius - distance;
-            const edgeFalloff = Math.min(1, Math.max(0, distanceFromEdge / (region.radius * 0.2)));
-            
-            // Make transitions sharper with power function
-            const plateauFactor = Math.pow(edgeFalloff, region.sharpness * 3);
-            
-            if (plateauFactor > 0) {
-                // Set plateau height
-                const plateauHeight = this.baseHeight + this.heightScale * region.height;
+        // Calculate the center chunk coordinates
+        const centerChunkX = Math.floor(viewX / chunkWorldSize);
+        const centerChunkZ = Math.floor(viewZ / chunkWorldSize);
+        
+        // Calculate how many chunks to load in each direction
+        const chunkRadius = Math.ceil(loadDistance / chunkWorldSize) + 1;
+        
+        // Keep track of chunks to keep
+        const chunksToKeep = new Set();
+        
+        // Load chunks in a circular pattern around the viewer
+        for (let dx = -chunkRadius; dx <= chunkRadius; dx++) {
+            for (let dz = -chunkRadius; dz <= chunkRadius; dz++) {
+                // Calculate this chunk's grid position
+                const chunkX = (centerChunkX + dx) * chunkWorldSize;
+                const chunkZ = (centerChunkZ + dz) * chunkWorldSize;
                 
-                // Blend between current height and plateau height
-                // Only raise terrain, don't lower it for plateaus
-                if (plateauHeight > height) {
-                    height = height * (1 - plateauFactor) + plateauHeight * plateauFactor;
+                // Calculate center of chunk for distance check
+                const centerX = chunkX + chunkWorldSize / 2;
+                const centerZ = chunkZ + chunkWorldSize / 2;
+                
+                // Calculate distance from viewer to chunk center
+                const distX = centerX - viewX;
+                const distZ = centerZ - viewZ;
+                const distance = Math.sqrt(distX * distX + distZ * distZ);
+                
+                // If within load distance, add to chunksToKeep and load if needed
+                if (distance <= loadDistance) {
+                    const key = `${chunkX},${chunkZ}`;
+                    chunksToKeep.add(key);
+                    
+                    // Load if not already loaded
+                    if (!this.loadedChunks.has(key)) {
+                        this.loadChunkAt(chunkX, chunkZ);
+                    }
                 }
             }
         }
         
-        return height;
-    }
-    
-    // Apply valleys based on regions
-    applyValleys(x, z, currentHeight) {
-        let height = currentHeight;
-        
-        // Find valley regions
-        for (const region of this.regions) {
-            if (region.type !== 'valley') continue;
-            
-            // Calculate distance from point to region center
-            const dx = x - region.centerX;
-            const dz = z - region.centerZ;
-            
-            // For valleys, we want to consider distance along the perpendicular axis
-            // to create elongated valleys
-            const angle = region.angle;
-            const cosAngle = Math.cos(angle);
-            const sinAngle = Math.sin(angle);
-            
-            // Rotate coordinates to align with valley direction
-            const rotatedX = dx * cosAngle - dz * sinAngle;
-            const rotatedZ = dx * sinAngle + dz * cosAngle;
-            
-            // Distance across the valley (perpendicular to valley direction)
-            const distanceAcross = Math.abs(rotatedZ);
-            
-            // Check if we're within the valley width and length
-            if (distanceAcross < region.width && Math.abs(rotatedX) < region.radius) {
-                // Calculate how deep the valley is at this point
-                const valleyDepth = this.heightScale * region.depth;
+        // Unload chunks that are too far away
+        for (const [key, chunkInfo] of this.loadedChunks.entries()) {
+            if (!chunksToKeep.has(key)) {
+                // Extract coordinates from key
+                const [chunkX, chunkZ] = key.split(',').map(Number);
                 
-                // Valley profile - deeper in center, gradual slopes on sides
-                const valleyFactor = Math.pow(1 - (distanceAcross / region.width), 2);
+                // Calculate center of chunk for distance check
+                const centerX = chunkX + chunkWorldSize / 2;
+                const centerZ = chunkZ + chunkWorldSize / 2;
                 
-                // Apply valley depth
-                height -= valleyDepth * valleyFactor;
+                // Calculate distance from viewer to chunk center
+                const distX = centerX - viewX;
+                const distZ = centerZ - viewZ;
+                const distance = Math.sqrt(distX * distX + distZ * distZ);
+                
+                // If beyond unload distance, unload it
+                if (distance > unloadDistance) {
+                    this.unloadChunk(key);
+                }
             }
         }
-        
-        return height;
     }
     
-    // Determine biome type based on location and height
-    getBiomeType(x, z, height) {
-        // Normalized height for easier comparison
-        const normalizedHeight = (height - this.baseHeight) / this.heightScale;
+    // Load a chunk at the given coordinates
+    loadChunkAt(chunkX, chunkZ) {
+        const key = `${chunkX},${chunkZ}`;
         
-        // Get biome value from first noise layer (scale reduced for larger biomes)
-        const biomeScale = 0.003; // Smaller scale for more gradual biome transitions
-        const biomeValue = ImprovedNoise.perlin2(x * biomeScale, z * biomeScale);
-        
-        // Get moisture from second noise layer (independent of biome value)
-        const moistureScale = 0.005;
-        const moisture = (ImprovedNoise.perlin2(x * moistureScale + 500, z * moistureScale + 500) + 1) / 2;
-        
-        // Calculate temperature (decreases with height)
-        const baseTemp = (biomeValue + 1) / 2; // 0 to 1
-        const tempHeight = normalizedHeight > 0.7 ? 0.7 : normalizedHeight;
-        const temperature = baseTemp * (1 - tempHeight * 0.5); // Temperature decreases with height
-        
-        // Very high areas are snow
-        if (normalizedHeight > 0.85) {
-            return this.BIOME.SNOW;
+        // Check if already loaded
+        if (this.loadedChunks.has(key)) {
+            return;
         }
         
-        // High areas are mountains
-        if (normalizedHeight > 0.7) {
-            return this.BIOME.MOUNTAINS;
-        }
+        // Create entity for this chunk
+        const entity = document.createElement('a-entity');
+        entity.setAttribute('position', `${chunkX} 0 ${chunkZ}`);
+        this.terrainContainer.appendChild(entity);
         
-        // Very low areas are dark lowlands
-        if (normalizedHeight < 0.15) {
-            return this.BIOME.DARK_LOWLANDS;
-        }
+        // Generate the chunk data
+        const chunkData = this.terrainGenerator.generateChunk(chunkX, chunkZ, this.chunkSize);
         
-        // Low-medium areas with low moisture are ashen flats
-        if (normalizedHeight < 0.3 && moisture < 0.4) {
-            return this.BIOME.ASHEN_FLATS;
-        }
+        // Create the chunk mesh
+        const chunk = window.CubeTerrainBuilder.createChunkMesh(chunkData, this.cubeMaterial);
         
-        // Hot and dry areas are desert
-        if (temperature > 0.65 && moisture < 0.3) {
-            return this.BIOME.DESERT;
-        }
+        // Add to loaded chunks map
+        this.loadedChunks.set(key, {
+            entity: entity,
+            mesh: chunk
+        });
         
-        // Hot areas with medium moisture are red rock
-        if (temperature > 0.6 && moisture >= 0.3 && moisture < 0.5) {
-            return this.BIOME.RED_ROCK;
-        }
-        
-        // Add some alien vegetation in medium moisture areas
-        if (moisture >= 0.4 && moisture < 0.6 && biomeValue > 0.3) {
-            return this.BIOME.TEAL_MOSS;
-        }
-        
-        // Add some void stone in specific areas
-        if (moisture < 0.4 && biomeValue < -0.4 && normalizedHeight > 0.5) {
-            return this.BIOME.VOID_STONE;
-        }
-        
-        // Add neon vegetation in high moisture areas
-        if (moisture > 0.7 && temperature > 0.5) {
-            return this.BIOME.NEON_VEGETATION;
-        }
-        
-        // High moisture areas are deep forest
-        if (moisture > 0.6) {
-            return this.BIOME.DEEP_FOREST;
-        }
-        
-        // Default to emerald plains
-        return this.BIOME.EMERALD_PLAINS;
+        // Add to scene
+        entity.setObject3D('mesh', chunk);
     }
     
-    // Get color based on biome type with variations
-    getColor(x, z, height, biomeType) {
-        // Add some local variation for texture
-        const variation = ImprovedNoise.perlin2(x * this.noiseScale * 5, z * this.noiseScale * 5) * 0.1;
+    // Unload a chunk
+    unloadChunk(key) {
+        if (!this.loadedChunks.has(key)) return;
         
-        // Base colors for each biome (in HSL format)
-        let h, s, l;
+        const chunkInfo = this.loadedChunks.get(key);
+        this.loadedChunks.delete(key);
         
-        switch (biomeType) {
-            case this.BIOME.DARK_LOWLANDS:
-                // Dark purple-black lowlands
-                h = 270 + variation * 20;
-                s = 50 + variation * 20;
-                l = 15 + variation * 10;
-                break;
-                
-            case this.BIOME.ASHEN_FLATS:
-                // Grey ashen areas
-                h = 0 + variation * 30;
-                s = 5 + variation * 10;
-                l = 40 + variation * 15;
-                break;
-                
-            case this.BIOME.EMERALD_PLAINS:
-                // Green plains
-                h = 120 + variation * 20;
-                s = 60 + variation * 20;
-                l = 40 + variation * 15;
-                break;
-                
-            case this.BIOME.DEEP_FOREST:
-                // Dark green forest
-                h = 140 + variation * 20;
-                s = 70 + variation * 20;
-                l = 25 + variation * 10;
-                break;
-                
-            case this.BIOME.DESERT:
-                // Sandy desert
-                h = 40 + variation * 15;
-                s = 80 + variation * 15;
-                l = 70 + variation * 10;
-                break;
-                
-            case this.BIOME.RED_ROCK:
-                // Red rock formations
-                h = 10 + variation * 15;
-                s = 70 + variation * 20;
-                l = 35 + variation * 15;
-                break;
-                
-            case this.BIOME.MOUNTAINS:
-                // Mountain rock
-                h = 30 + variation * 20;
-                s = 30 + variation * 20;
-                l = 40 + variation * 15;
-                break;
-                
-            case this.BIOME.SNOW:
-                // Snow caps
-                h = 210 + variation * 20;
-                s = 10 + variation * 10;
-                l = 90 - variation * 10;
-                break;
-                
-            case this.BIOME.TEAL_MOSS:
-                // Teal/blue-green moss
-                h = 180 + variation * 20;
-                s = 70 + variation * 20;
-                l = 40 + variation * 15;
-                break;
-                
-            case this.BIOME.VOID_STONE:
-                // Dark stone
-                h = 270 + variation * 20;
-                s = 40 + variation * 20;
-                l = 20 + variation * 10;
-                break;
-                
-            case this.BIOME.NEON_VEGETATION:
-                // Bright neon green
-                h = 120 + variation * 20;
-                s = 90 + variation * 10;
-                l = 50 + variation * 20;
-                break;
-                
-            default:
-                // Fallback to height-based coloring
-                const normalizedHeight = (height - this.baseHeight) / this.heightScale;
-                h = Math.max(30, Math.min(120, 120 - 90 * normalizedHeight));
-                s = 60 + 20 * normalizedHeight;
-                l = 60 - 30 * normalizedHeight;
+        // Remove from scene
+        chunkInfo.entity.removeObject3D('mesh');
+        
+        // Remove entity from DOM
+        if (chunkInfo.entity.parentNode) {
+            chunkInfo.entity.parentNode.removeChild(chunkInfo.entity);
         }
-        
-        return { h, s, l };
     }
 }
-
-// ========== TERRAIN UTILITIES ==========
-// Namespace for terrain utilities
-window.TerrainUtils = {
-    // Height generator instance
-    _generator: null,
-    
-    // Function to get terrain height at any world position
-    getTerrainHeight: function(x, z) {
-        // If we don't have a terrain generator, create one
-        if (!this._generator) {
-            console.log("Creating terrain height generator");
-            
-            // Create a temporary generator with the same seed as the main terrain system
-            const scene = document.querySelector('a-scene');
-            let seed = 0;
-            
-            if (scene && scene.components['terrain-manager']) {
-                seed = scene.components['terrain-manager'].data.seed;
-            } else {
-                seed = Math.floor(Math.random() * 1000000);
-            }
-            
-            // Create a simplified terrain generator for height sampling
-            this._generator = new EnhancedTerrainGenerator({
-                seed: seed,
-                heightScale: 12.0,
-                noiseScale: 0.1,
-                baseHeight: 0.2
-            });
-        }
-        
-        // Use the generator to get height at this position
-        return this._generator.generateTerrainHeight(x, z);
-    }
-};
-
-// Create a global function that's used in the terrain-manager component
-window.generateTerrainHeight = function(x, z) {
-    return window.TerrainUtils.getTerrainHeight(x, z);
-};

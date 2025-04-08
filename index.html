@@ -2,9 +2,9 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Enhanced Hexagon Terrain v1.0</title>
+    <title>Cube Terrain Generator</title>
     
-    <!-- Load A-Frame first -->
+    <!-- Load A-Frame -->
     <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
     
     <style>
@@ -60,171 +60,44 @@
     <!-- Loading screen -->
     <div id="loading-screen">
         <div class="spinner"></div>
-        <h2>Loading Enhanced Hexagon Terrain...</h2>
+        <h2>Loading Cube Terrain...</h2>
         <p>Please wait while we generate the terrain.</p>
     </div>
     
-    <a-scene>
-        <!-- Camera positioned to view the terrain from above, with better starting position -->
-        <a-entity id="subject" position="0 15 0" rotation="-45 0 0" 
-                  camera look-controls wasd-controls="acceleration: 100"></a-entity>
+    <a-scene terrain-manager>
+        <!-- Camera positioned to view the terrain from above -->
+        <a-entity id="subject" position="0 50 0" rotation="-45 0 0" 
+                  camera look-controls wasd-controls="acceleration: 150"></a-entity>
         
         <!-- Lighting to make the terrain visible -->
-        <a-entity light="type: ambient; color: #BBB; intensity: 0.8"></a-entity>
-        <a-entity light="type: directional; color: #FFF; intensity: 1.0" 
+        <a-entity light="type: ambient; color: #BBB; intensity: 0.5"></a-entity>
+        <a-entity light="type: directional; color: #FFF; intensity: 0.8" 
                   position="-1 2 1"></a-entity>
         
-        <!-- Sky background - darker for better contrast -->
+        <!-- Sky background -->
         <a-sky color="#1a2b42"></a-sky>
         
         <!-- Container for terrain chunks -->
         <a-entity id="terrain-container"></a-entity>
     </a-scene>
     
-    <!-- Explicit THREE extensions initialization script -->
-    <script>
-        // Make sure THREE is available from A-Frame (it should be)
-        if (typeof THREE === 'undefined' && typeof AFRAME !== 'undefined') {
-            console.log("Getting THREE from AFRAME");
-            THREE = AFRAME.THREE;
-        }
-        
-        if (typeof THREE === 'undefined') {
-            console.error("THREE is not defined! Cannot proceed with terrain initialization.");
-        } else {
-            console.log("THREE is available, version:", THREE.REVISION);
-        }
-    </script>
-    
     <!-- Load scripts in the correct order -->
-    <!-- 1. Hexagon Geometry (must be first since other scripts depend on it) -->
-    <script src="hexagon-geometry.js"></script>
-    
-    <!-- 2. Terrain System (defines all terrain generation logic) -->
+    <!-- <script src="geometry.js"></script> -->
+    <script src="hex-geometry.js"></script>
     <script src="terrain-system.js"></script>
     
-    <!-- 3. Terrain Manager (includes component and chunk manager) -->
-    <script src="terrain-manager.js"></script>
-    
-    <!-- 4. Initialize component and print global variables to console -->
     <script>
-        // Check if scripts are loaded correctly
-        function checkDependencies() {
-            console.log("============== GLOBAL VARIABLE CHECK ==============");
-            console.log("THREE:", typeof THREE !== 'undefined');
-            console.log("THREE.HexagonGeometry:", typeof THREE.HexagonGeometry !== 'undefined');
-            console.log("THREE.HexagonBufferGeometry:", typeof THREE.HexagonBufferGeometry !== 'undefined');
-            console.log("hexVertexShader:", typeof hexVertexShader !== 'undefined');
-            console.log("hexFragmentShader:", typeof hexFragmentShader !== 'undefined');
-            console.log("ImprovedNoise:", typeof ImprovedNoise !== 'undefined');
-            console.log("TerrainGenerator:", typeof TerrainGenerator !== 'undefined');
-            console.log("EnhancedTerrainGenerator:", typeof EnhancedTerrainGenerator !== 'undefined');
-            console.log("TerrainChunkManager:", typeof TerrainChunkManager !== 'undefined');
-            console.log("TerrainUtils:", typeof TerrainUtils !== 'undefined');
-            console.log("window.generateTerrainHeight:", typeof window.generateTerrainHeight !== 'undefined');
-            console.log("====================================================");
-            
-            // We'll proceed even if some dependencies are missing, since we've added fallbacks
-            let canProceed = typeof THREE !== 'undefined' && 
-                            (typeof TerrainGenerator !== 'undefined');
-            
-            if (!canProceed) {
-                console.error("Critical dependencies are missing! Cannot initialize terrain.");
-                return false;
-            }
-            
-            // If HexagonBufferGeometry is missing, try to define it now as a last resort
-            if (typeof THREE.HexagonBufferGeometry === 'undefined') {
-                console.warn("THREE.HexagonBufferGeometry still not defined. Trying one more time to register it...");
-                
-                // Try to register our hexagon geometry again
-                if (typeof HexagonBufferGeometry !== 'undefined') {
-                    THREE.HexagonBufferGeometry = HexagonBufferGeometry;
-                    THREE.HexagonGeometry = HexagonGeometry;
-                    console.log("Re-registered HexagonGeometry classes with THREE");
-                } else {
-                    console.warn("Cannot find HexagonBufferGeometry class. Terrain will use fallback geometry.");
+        // Hide loading screen when terrain is ready
+        document.addEventListener('terrainReady', function() {
+            setTimeout(() => {
+                const loadingScreen = document.getElementById('loading-screen');
+                if (loadingScreen) {
+                    loadingScreen.style.opacity = '0';
+                    setTimeout(() => {
+                        loadingScreen.style.display = 'none';
+                    }, 500);
                 }
-            }
-            
-            return true;
-        }
-        
-        // Initialize the terrain manager
-        function initializeTerrain() {
-            // Create a consistent seed
-            const seed = Math.floor(Math.random() * 1000000);
-            console.log(`Using seed: ${seed}`);
-            
-            // Get the scene element
-            const scene = document.querySelector('a-scene');
-            if (!scene) {
-                console.error("Could not find a-scene element");
-                return;
-            }
-            
-            // Set terrain manager component with better parameters
-            scene.setAttribute('terrain-manager', {
-                seed: seed,
-                loadDistance: 50,     // Smaller load distance to focus around camera
-                unloadDistance: 100,   // Reasonable unload distance
-                heightOffset: 5.0,    // Good height above terrain
-                followTerrain: false  // Start with follow terrain disabled
-            });
-            
-            console.log("Terrain manager component added to scene");
-            
-            // Add key controls for debug
-            document.addEventListener('keydown', function(event) {
-                // Press F key to toggle followTerrain
-                if (event.key === 'f' || event.key === 'F') {
-                    const terrainManager = scene.components['terrain-manager'];
-                    if (terrainManager) {
-                        terrainManager.data.followTerrain = !terrainManager.data.followTerrain;
-                        console.log("Follow terrain:", terrainManager.data.followTerrain);
-                    }
-                }
-                
-                // Press R key to reset position to origin
-                if (event.key === 'r' || event.key === 'R') {
-                    const subject = document.querySelector('#subject');
-                    if (subject) {
-                        subject.setAttribute('position', '0 15 0');
-                        console.log("Reset position to origin");
-                    }
-                }
-            });
-        }
-        
-        // Wait for A-Frame to be ready, then initialize
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log("DOM content loaded, waiting for A-Frame to be ready");
-            
-            // Make sure A-Frame is ready first
-            const checkAFrame = function() {
-                if (typeof AFRAME !== 'undefined' && AFRAME.scenes.length > 0 && AFRAME.scenes[0].hasLoaded) {
-                    console.log("A-Frame is ready, checking dependencies");
-                    
-                    // Ensure THREE is available
-                    if (typeof THREE === 'undefined' && typeof AFRAME !== 'undefined') {
-                        console.log("Getting THREE from AFRAME");
-                        THREE = AFRAME.THREE;
-                    }
-                    
-                    // Check dependencies after a short delay to ensure all scripts are processed
-                    setTimeout(function() {
-                        if (checkDependencies()) {
-                            initializeTerrain();
-                        } else {
-                            console.error("Cannot initialize terrain due to missing critical dependencies");
-                        }
-                    }, 1000);
-                } else {
-                    setTimeout(checkAFrame, 100);
-                }
-            };
-            
-            checkAFrame();
+            }, 1000);
         });
     </script>
 </body>

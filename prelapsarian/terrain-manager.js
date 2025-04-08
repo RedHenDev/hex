@@ -662,6 +662,7 @@ updateChunksFromPosition(viewX, viewZ, loadDistance, unloadDistance) {
     }
 }
 
+
 // 4. Fix the getChunkKeyFromPosition method in TerrainChunkManager
 getChunkKeyFromPosition(x, z) {
     // This method should return the chunk key for a given world position

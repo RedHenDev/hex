@@ -436,7 +436,7 @@ AFRAME.registerComponent('terrain-manager', {
                     
                     // Set the new height with smooth transition
                     if (this.subjectObj.position.y !== targetHeight) {
-                        this.subjectObj.position.y += (targetHeight - this.subjectObj.position.y) * 0.1;
+                        this.subjectObj.position.y += (targetHeight - this.subjectObj.position.y) * 0.8;
                     }
                 } catch (error) {
                     console.warn("Error in terrain following:", error);

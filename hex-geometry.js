@@ -1,7 +1,16 @@
-// geometry.js - Defines custom geometry and shaders for instanced rendering
-// This is the hexagon version but designed as a drop-in replacement for cube geometry
+// Modified hex-geometry.js with fixes for the hollow/inside-out appearance
 
-console.log("Initializing hexagon geometry as cube replacement...");
+// Global configuration
+window.HexConfig = {
+    // Set to true to enable texture mapping, false to use only color
+    useTextures: false,
+    // Path to the texture file
+    texturePath: 'assets/moon_tex.png',
+    // Default texture scale factor
+    textureScale: 1.0
+};
+
+console.log("Initializing fixed hexagon geometry as cube replacement...");
 
 // Make sure THREE is available from A-Frame
 if (typeof THREE === 'undefined' && typeof AFRAME !== 'undefined') {
@@ -75,22 +84,12 @@ THREE.HexagonGeometry = class HexagonGeometry extends THREE.BufferGeometry {
             indices.push(1, nextI + 8, i + 8); // Reversed winding order for bottom face
         }
         
-        // Create side faces (2 triangles per side)
+        // Create side faces (2 triangles per side) - FIXED WINDING ORDER
         for (let i = 0; i < 6; i++) {
             const nextI = (i + 1) % 6;
-            indices.push(i + 2, i + 8, nextI + 8); // First triangle
-            indices.push(i + 2, nextI + 8, nextI + 2); // Second triangle
-        }
-        
-        // Generate normals
-        // Top face normal
-        for (let i = 0; i < 7; i++) {
-            normals.push(0, 1, 0);
-        }
-        
-        // Bottom face normal
-        for (let i = 0; i < 7; i++) {
-            normals.push(0, -1, 0);
+            // Fix the winding order of the side faces
+            indices.push(i + 2, nextI + 8, i + 8); // First triangle
+            indices.push(i + 2, nextI + 2, nextI + 8); // Second triangle - FIXED ORDER
         }
         
         // Generate UV coordinates
@@ -119,7 +118,6 @@ THREE.HexagonGeometry = class HexagonGeometry extends THREE.BufferGeometry {
         // Set attributes
         this.setIndex(indices);
         this.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
-        this.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
         this.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
         
         // Compute correct normals for all faces
@@ -130,8 +128,7 @@ THREE.HexagonGeometry = class HexagonGeometry extends THREE.BufferGeometry {
 // Also define a buffer geometry version for compatibility
 THREE.HexagonBufferGeometry = THREE.HexagonGeometry;
 
-// Define the shader for our instanced hexagons, but keep the same variable names
-// as the cube shader for compatibility
+// Define the shader for our instanced hexagons
 window.cubeVertexShader = `
     // Instance attributes
     attribute vec3 instancePosition;
@@ -184,15 +181,19 @@ window.cubeFragmentShader = `
     uniform vec3 directionalLightColor[5];
     uniform vec3 directionalLightDirection[5];
     
+    // Texture map
+    uniform sampler2D diffuseMap;
+    uniform float useTexture;
+    
     varying vec3 vColor;
     varying float vHeight;
     varying vec3 vNormal;
     varying vec3 vViewPosition;
     varying vec2 vUv;
     
-    // Define border properties
-    const float borderWidth = 0.05;
-    const float edgeThreshold = 0.92;
+    // Define border properties - REDUCED border width and adjusted threshold
+    const float borderWidth = 0.02;
+    const float edgeThreshold = 0.95;
     
     void main() {
         // Ensure normal is normalized
@@ -213,7 +214,13 @@ window.cubeFragmentShader = `
         // Start with the base color * lighting (with minimum brightness)
         vec3 finalColor = vColor * max(lighting, vec3(0.4));
         
-        // Hexagon border detection for top/bottom faces
+        // Sample texture if enabled
+        if (useTexture > 0.5) {
+            vec4 texColor = texture2D(diffuseMap, vUv);
+            finalColor *= texColor.rgb;
+        }
+        
+        // Hexagon border detection for top/bottom faces - MODIFIED to be less aggressive
         bool isBorder = false;
         
         // For top and bottom faces (horizontal surfaces)
@@ -222,22 +229,22 @@ window.cubeFragmentShader = `
             vec2 centeredUv = 2.0 * vUv - vec2(1.0, 1.0);
             float distFromCenter = length(centeredUv);
             
-            // Border at the edge of the hexagon
+            // Border at the edge of the hexagon - using higher threshold
             if (distFromCenter > edgeThreshold) {
                 isBorder = true;
             }
         }
         // For side faces (vertical surfaces)
         else {
-            // Check UV coordinates for vertical borders
-            if (vUv.y < 0.05 || vUv.y > 0.95) {
+            // Check UV coordinates for vertical borders - thinner borders
+            if (vUv.y < borderWidth || vUv.y > (1.0 - borderWidth)) {
                 isBorder = true;
             }
         }
         
-        // Apply border effects
+        // Apply border effects - only darken, don't make completely black
         if (isBorder) {
-            finalColor = vec3(0.0);
+            finalColor *= 0.6; // Darken borders instead of making them black
         }
         
         // Apply height-based effects
@@ -322,6 +329,27 @@ window.CubeTerrainBuilder = {
     
     // Keep the original function name for compatibility
     createCubeMaterial: function() {
+        // Create a default empty texture first
+        const emptyTexture = new THREE.Texture();
+        
+        // Check if textures are enabled in config
+        const useTextures = window.HexConfig && window.HexConfig.useTextures !== undefined 
+            ? window.HexConfig.useTextures 
+            : true;
+            
+        // Get texture path from config or use default
+        const texturePath = window.HexConfig && window.HexConfig.texturePath 
+            ? window.HexConfig.texturePath 
+            : 'assets/moon_tex.png';
+            
+        // Get texture scale from config or use default
+        const textureScale = window.HexConfig && window.HexConfig.textureScale !== undefined 
+            ? window.HexConfig.textureScale 
+            : 1.0;
+        
+        console.log(`Texturing: ${useTextures ? 'Enabled' : 'Disabled'}`);
+        
+        // Create the material with the empty texture
         const material = new THREE.ShaderMaterial({
             vertexShader: window.cubeVertexShader,
             fragmentShader: window.cubeFragmentShader,
@@ -329,25 +357,109 @@ window.CubeTerrainBuilder = {
             lights: true,
             uniforms: THREE.UniformsUtils.merge([
                 THREE.UniformsLib.lights,
-                THREE.UniformsLib.common
+                THREE.UniformsLib.common,
+                {
+                    diffuseMap: { value: emptyTexture },
+                    useTexture: { value: 0.0 } // Start with texture disabled until it's loaded
+                }
             ])
         });
         
         // Explicitly enable lights
         material.lights = true;
         
+        // Only load texture if enabled in config
+        if (useTextures) {
+            // Load the texture asynchronously
+            const textureLoader = new THREE.TextureLoader();
+            
+            console.log(`Loading texture from ${texturePath}...`);
+            
+            textureLoader.load(
+                texturePath, 
+                // Success callback
+                function(loadedTexture) {
+                    console.log("Texture loaded successfully");
+                    
+                    // Set texture properties
+                    loadedTexture.wrapS = THREE.RepeatWrapping;
+                    loadedTexture.wrapT = THREE.RepeatWrapping;
+                    
+                    // Apply texture scale from config
+                    loadedTexture.repeat.set(textureScale, textureScale);
+                    
+                    // Update the material's texture
+                    material.uniforms.diffuseMap.value = loadedTexture;
+                    material.uniforms.useTexture.value = 1.0;
+                    
+                    // Make sure Three.js knows the texture has been updated
+                    loadedTexture.needsUpdate = true;
+                    
+                    // Dispatch an event that the texture is loaded
+                    const event = new CustomEvent('textureLoaded', { 
+                        detail: { 
+                            texture: loadedTexture,
+                            scale: textureScale 
+                        }
+                    });
+                    document.dispatchEvent(event);
+                },
+                // Progress callback
+                function(xhr) {
+                    console.log(`Texture loading: ${(xhr.loaded / xhr.total * 100).toFixed(0)}%`);
+                },
+                // Error callback
+                function(error) {
+                    console.error(`Error loading texture from ${texturePath}:`, error);
+                    // Try alternative path as fallback
+                    const altPath = texturePath.startsWith('./') ? texturePath.substring(2) : './' + texturePath;
+                    textureLoader.load(
+                        altPath,
+                        function(loadedTexture) {
+                            console.log("Texture loaded successfully from alternative path");
+                            loadedTexture.wrapS = THREE.RepeatWrapping;
+                            loadedTexture.wrapT = THREE.RepeatWrapping;
+                            loadedTexture.repeat.set(textureScale, textureScale);
+                            material.uniforms.diffuseMap.value = loadedTexture;
+                            material.uniforms.useTexture.value = 1.0;
+                            loadedTexture.needsUpdate = true;
+                            
+                            // Dispatch event
+                            const event = new CustomEvent('textureLoaded', { 
+                                detail: { 
+                                    texture: loadedTexture,
+                                    scale: textureScale 
+                                }
+                            });
+                            document.dispatchEvent(event);
+                        },
+                        undefined,
+                        function(secondError) {
+                            console.error("Failed to load texture from both paths:", secondError);
+                            // Dispatch texture failure event
+                            const event = new CustomEvent('textureLoadFailed');
+                            document.dispatchEvent(event);
+                        }
+                    );
+                }
+            );
+        } else {
+            console.log("Texturing disabled in configuration");
+            // Dispatch event for UI to update accordingly
+            const event = new CustomEvent('textureDisabled');
+            document.dispatchEvent(event);
+        }
+        
         return material;
     },
     
-    // Keep these hex utility functions for reference, but they're not required for the drop-in replacement
-    // Helper function: convert axial coordinates (q,r) to pixel (x,z)
+    // Helper utility functions for hexagon coordinates
     _axialToPixel: function(q, r, hexSize) {
         const x = hexSize * Math.sqrt(3) * (q + r/2);
         const z = hexSize * 3/2 * r;
         return {x, z};
     },
     
-    // Helper function: convert pixel coordinates (x,z) to axial (q,r)
     _pixelToAxial: function(x, z, hexSize) {
         const q = (x * Math.sqrt(3)/3 - z/3) / hexSize;
         const r = z * 2/3 / hexSize;
@@ -386,4 +498,4 @@ window.CubeTerrainBuilder = {
 // Make BoxGeometry actually create a hexagon
 THREE.BoxGeometry = THREE.HexagonGeometry;
 
-console.log("Hexagon geometry initialized as a drop-in replacement for cube geometry");
+console.log("Fixed hexagon geometry initialized as a drop-in replacement for cube geometry");

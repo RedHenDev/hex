@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Cube Terrain Generator</title>
+    <title>Hexagon Terrain Generator</title>
     
     <!-- Load A-Frame -->
     <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
@@ -60,14 +60,14 @@
     <!-- Loading screen -->
     <div id="loading-screen">
         <div class="spinner"></div>
-        <h2>Loading Cube Terrain...</h2>
-        <p>Please wait while we generate the terrain.</p>
+        <h2>Loading Hexagon Terrain...</h2>
+        <p>Please wait while we generate the textured terrain.</p>
     </div>
     
     <a-scene terrain-manager>
         <!-- Camera positioned to view the terrain from above -->
         <a-entity id="subject" position="0 50 0" rotation="-45 0 0" 
-                  camera look-controls wasd-controls="acceleration: 150"></a-entity>
+                  camera look-controls wasd-controls="acceleration: 50"></a-entity>
         
         <!-- Lighting to make the terrain visible -->
         <a-entity light="type: ambient; color: #BBB; intensity: 0.5"></a-entity>
@@ -75,18 +75,365 @@
                   position="-1 2 1"></a-entity>
         
         <!-- Sky background -->
-        <a-sky color="#1a2b42"></a-sky>
+        <a-sky color="#00FFFF"></a-sky>
         
         <!-- Container for terrain chunks -->
         <a-entity id="terrain-container"></a-entity>
     </a-scene>
     
     <!-- Load scripts in the correct order -->
-    <!-- <script src="geometry.js"></script> -->
     <script src="hex-geometry.js"></script>
     <script src="terrain-system.js"></script>
-    
     <script>
+        // Enhanced texture controls with diagnostic information
+        function addTextureControls(panel, terrainManager) {
+            // Create a texture control section
+            const textureHeading = document.createElement('h4');
+            textureHeading.textContent = 'Texture Controls:';
+            textureHeading.style.margin = '10px 0 5px 0';
+            panel.appendChild(textureHeading);
+            
+            // Add texture status indicator
+            const textureStatus = document.createElement('div');
+            textureStatus.id = 'texture-status';
+            textureStatus.textContent = 'Texture Status: Loading...';
+            textureStatus.style.marginBottom = '8px';
+            textureStatus.style.color = '#ffcc00';
+            panel.appendChild(textureStatus);
+            
+            // Create texture controls container
+            const textureControls = document.createElement('div');
+            textureControls.style.marginBottom = '10px';
+            
+            // Toggle texture on/off
+            const textureToggleContainer = document.createElement('div');
+            textureToggleContainer.style.marginBottom = '8px';
+            
+            const textureToggle = document.createElement('input');
+            textureToggle.type = 'checkbox';
+            textureToggle.id = 'texture-toggle';
+            textureToggle.checked = true;
+            textureToggle.disabled = true; // Disabled until texture is loaded
+            
+            const textureToggleLabel = document.createElement('label');
+            textureToggleLabel.htmlFor = 'texture-toggle';
+            textureToggleLabel.textContent = 'Enable Texture';
+            textureToggleLabel.style.marginLeft = '5px';
+            
+            textureToggleContainer.appendChild(textureToggle);
+            textureToggleContainer.appendChild(textureToggleLabel);
+            textureControls.appendChild(textureToggleContainer);
+            
+            // Texture scale slider
+            const textureScaleContainer = document.createElement('div');
+            textureScaleContainer.style.marginBottom = '8px';
+            
+            const textureScaleLabel = document.createElement('label');
+            textureScaleLabel.htmlFor = 'texture-scale';
+            textureScaleLabel.textContent = 'Texture Scale: ';
+            
+            const textureScaleValue = document.createElement('span');
+            textureScaleValue.textContent = '1.0';
+            textureScaleValue.style.marginLeft = '5px';
+            
+            const textureScaleSlider = document.createElement('input');
+            textureScaleSlider.type = 'range';
+            textureScaleSlider.id = 'texture-scale';
+            textureScaleSlider.min = '0.1';
+            textureScaleSlider.max = '5.0';
+            textureScaleSlider.step = '0.1';
+            textureScaleSlider.value = '1.0';
+            textureScaleSlider.style.width = '100%';
+            textureScaleSlider.style.marginTop = '5px';
+            textureScaleSlider.disabled = true; // Disabled until texture is loaded
+            
+            textureScaleContainer.appendChild(textureScaleLabel);
+            textureScaleContainer.appendChild(textureScaleValue);
+            textureScaleContainer.appendChild(document.createElement('br'));
+            textureScaleContainer.appendChild(textureScaleSlider);
+            textureControls.appendChild(textureScaleContainer);
+            
+            // Reload texture button
+            const reloadTextureButton = document.createElement('button');
+            reloadTextureButton.textContent = 'Reload Texture';
+            reloadTextureButton.style.cssText = `
+                background: #335555;
+                color: white;
+                border: 1px solid #555;
+                padding: 5px 10px;
+                cursor: pointer;
+                border-radius: 3px;
+                width: 100%;
+                margin-top: 5px;
+            `;
+            reloadTextureButton.disabled = true; // Disabled until first texture load attempt completes
+            textureControls.appendChild(reloadTextureButton);
+            
+            // Function to update all texture instances
+            function updateTextureInAllMeshes(property, value) {
+                const terrainContainer = document.getElementById('terrain-container');
+                if (terrainContainer) {
+                    terrainContainer.object3D.traverse(function(child) {
+                        if (child.material && child.material.uniforms && child.material.uniforms.diffuseMap) {
+                            if (property === 'useTexture') {
+                                child.material.uniforms.useTexture.value = value ? 1.0 : 0.0;
+                            } else if (property === 'scale' && child.material.uniforms.diffuseMap.value) {
+                                const texture = child.material.uniforms.diffuseMap.value;
+                                texture.repeat.set(value, value);
+                                texture.needsUpdate = true;
+                            }
+                        }
+                    });
+                }
+            }
+            
+            // Add event listeners
+            textureToggle.addEventListener('change', function() {
+                updateTextureInAllMeshes('useTexture', textureToggle.checked);
+            });
+            
+            textureScaleSlider.addEventListener('input', function() {
+                const value = parseFloat(textureScaleSlider.value);
+                textureScaleValue.textContent = value.toFixed(1);
+                updateTextureInAllMeshes('scale', value);
+            });
+            
+            reloadTextureButton.addEventListener('click', function() {
+                // Attempt to reload the texture
+                textureStatus.textContent = 'Texture Status: Reloading...';
+                textureStatus.style.color = '#ffcc00';
+                
+                const textureLoader = new THREE.TextureLoader();
+                textureLoader.load(
+                    'assets/moon_tex.png?t=' + Date.now(), // Add timestamp to bust cache
+                    function(loadedTexture) {
+                        textureStatus.textContent = 'Texture Status: Loaded Successfully';
+                        textureStatus.style.color = '#00cc44';
+                        
+                        loadedTexture.wrapS = THREE.RepeatWrapping;
+                        loadedTexture.wrapT = THREE.RepeatWrapping;
+                        loadedTexture.repeat.set(parseFloat(textureScaleSlider.value), parseFloat(textureScaleSlider.value));
+                        
+                        // Update texture in all materials
+                        const terrainContainer = document.getElementById('terrain-container');
+                        if (terrainContainer) {
+                            terrainContainer.object3D.traverse(function(child) {
+                                if (child.material && child.material.uniforms && child.material.uniforms.diffuseMap) {
+                                    child.material.uniforms.diffuseMap.value = loadedTexture;
+                                    child.material.uniforms.useTexture.value = textureToggle.checked ? 1.0 : 0.0;
+                                }
+                            });
+                        }
+                        
+                        loadedTexture.needsUpdate = true;
+                    },
+                    undefined,
+                    function(error) {
+                        textureStatus.textContent = 'Texture Status: Failed to Load';
+                        textureStatus.style.color = '#ff4444';
+                        console.error("Error reloading texture:", error);
+                    }
+                );
+            });
+            
+            // Listen for texture loaded event
+            // Listen for texture loaded event
+            document.addEventListener('textureLoaded', function(event) {
+                textureStatus.textContent = 'Texture Status: Loaded Successfully';
+                textureStatus.style.color = '#00cc44';
+                
+                // Enable controls
+                textureToggle.checked = true;
+                textureToggle.disabled = false;
+                textureScaleSlider.disabled = false;
+                reloadTextureButton.disabled = false;
+                
+                // Set the scale on the loaded texture
+                const texture = event.detail.texture;
+                if (texture) {
+                    const scale = event.detail.scale || parseFloat(textureScaleSlider.value);
+                    textureScaleSlider.value = scale;
+                    textureScaleValue.textContent = scale.toFixed(1);
+                    texture.repeat.set(scale, scale);
+                    texture.needsUpdate = true;
+                }
+            });
+            
+            // Listen for texture disabled event
+            document.addEventListener('textureDisabled', function() {
+                textureStatus.textContent = 'Texture Status: Disabled in Config';
+                textureStatus.style.color = '#ffcc00';
+                
+                textureToggle.checked = false;
+                textureToggle.disabled = false;
+                textureScaleSlider.disabled = true;
+                reloadTextureButton.disabled = false;
+            });
+            
+            // Listen for texture load failure
+            document.addEventListener('textureLoadFailed', function() {
+                textureStatus.textContent = 'Texture Status: Failed to Load';
+                textureStatus.style.color = '#ff4444';
+                reloadTextureButton.disabled = false;
+            });
+            
+            panel.appendChild(textureControls);
+            
+            // If texture failed to load after 5 seconds, update the status
+            setTimeout(function() {
+                if (textureStatus.textContent.includes('Loading')) {
+                    textureStatus.textContent = 'Texture Status: Load Timed Out';
+                    textureStatus.style.color = '#ff4444';
+                    reloadTextureButton.disabled = false;
+                }
+            }, 5000);
+        }
+
+        // Wait for scene to be loaded and then modify the TerrainManager prototype
+        document.addEventListener('DOMContentLoaded', function() {
+            // Wait for A-Frame to load
+            if (AFRAME.components['terrain-manager']) {
+                // Store the original setupDebugPanel function
+                const originalSetupDebugPanel = AFRAME.components['terrain-manager'].prototype.setupDebugPanel;
+            
+                // Replace it with our enhanced version
+                AFRAME.components['terrain-manager'].prototype.setupDebugPanel = function() {
+                    try {
+                        // Create debug panel if it doesn't exist
+                        let panel = document.getElementById('debug-panel');
+                        if (!panel) {
+                            panel = document.createElement('div');
+                            panel.id = 'debug-panel';
+                            document.body.appendChild(panel);
+                        }
+                        
+                        // Clear any existing content
+                        panel.innerHTML = '';
+                        
+                        // Add title
+                        const title = document.createElement('h3');
+                        title.textContent = `Hexagon Terrain (Seed: ${this.data.seed})`;
+                        title.style.margin = '0 0 10px 0';
+                        panel.appendChild(title);
+                        
+                        // Add info elements
+                        const positionDisplay = document.createElement('div');
+                        positionDisplay.id = 'position-display';
+                        positionDisplay.textContent = 'Position: (0, 0, 0)';
+                        panel.appendChild(positionDisplay);
+                        
+                        const chunkDisplay = document.createElement('div');
+                        chunkDisplay.id = 'chunk-display';
+                        chunkDisplay.textContent = 'Current Chunk: (0, 0)';
+                        panel.appendChild(chunkDisplay);
+                        
+                        const heightDisplay = document.createElement('div');
+                        heightDisplay.id = 'height-display';
+                        heightDisplay.textContent = 'Terrain Height: 0.0';
+                        panel.appendChild(heightDisplay);
+                        
+                        const chunksDisplay = document.createElement('div');
+                        chunksDisplay.id = 'chunks-display';
+                        chunksDisplay.textContent = 'Loaded Chunks: 0';
+                        panel.appendChild(chunksDisplay);
+                        
+                        // Add our texture controls
+                        addTextureControls(panel, this);
+                        
+                        // Add teleport buttons
+                        const teleportHeading = document.createElement('h4');
+                        teleportHeading.textContent = 'Teleport To:';
+                        teleportHeading.style.margin = '10px 0 5px 0';
+                        panel.appendChild(teleportHeading);
+                        
+                        const buttonContainer = document.createElement('div');
+                        buttonContainer.style.display = 'flex';
+                        buttonContainer.style.flexWrap = 'wrap';
+                        buttonContainer.style.gap = '5px';
+                        
+                        // Create teleport buttons
+                        const locations = [
+                            { name: 'Origin', x: 0, z: 0 },
+                            { name: 'Mountains', x: 100, z: 100 },
+                            { name: 'Valley', x: -100, z: 50 },
+                            { name: 'Far Out', x: 300, z: 300 }
+                        ];
+                        
+                        locations.forEach(loc => {
+                            const button = document.createElement('button');
+                            button.textContent = loc.name;
+                            button.style.cssText = `
+                                background: #333;
+                                color: white;
+                                border: 1px solid #555;
+                                padding: 5px 10px;
+                                cursor: pointer;
+                                border-radius: 3px;
+                            `;
+                            button.addEventListener('click', () => {
+                                const currentY = this.subjectObj.position.y;
+                                this.subjectObj.position.set(loc.x, currentY, loc.z);
+                            });
+                            buttonContainer.appendChild(button);
+                        });
+                        
+                        panel.appendChild(buttonContainer);
+                        
+                        // Add follow terrain checkbox
+                        const followContainer = document.createElement('div');
+                        followContainer.style.margin = '10px 0';
+                        
+                        const followCheck = document.createElement('input');
+                        followCheck.type = 'checkbox';
+                        followCheck.id = 'follow-terrain';
+                        followCheck.checked = this.data.followTerrain;
+                        
+                        const followLabel = document.createElement('label');
+                        followLabel.htmlFor = 'follow-terrain';
+                        followLabel.textContent = 'Follow Terrain';
+                        followLabel.style.marginLeft = '5px';
+                        
+                        followContainer.appendChild(followCheck);
+                        followContainer.appendChild(followLabel);
+                        panel.appendChild(followContainer);
+                        
+                        followCheck.addEventListener('change', () => {
+                            this.data.followTerrain = followCheck.checked;
+                        });
+                        
+                        // Add reset button
+                        const resetButton = document.createElement('button');
+                        resetButton.textContent = 'Reset Terrain (New Seed)';
+                        resetButton.style.cssText = `
+                            background: #553333;
+                            color: white;
+                            border: 1px solid #555;
+                            padding: 5px 10px;
+                            cursor: pointer;
+                            border-radius: 3px;
+                            margin-top: 10px;
+                            width: 100%;
+                        `;
+                        resetButton.addEventListener('click', () => {
+                            window.location.reload();
+                        });
+                        panel.appendChild(resetButton);
+                    } catch (error) {
+                        console.error('Error setting up debug panel:', error);
+                    }
+                };
+            } else {
+                console.warn('terrain-manager component not found, waiting for it to be registered...');
+                // Try again after components are registered
+                document.addEventListener('loaded', function() {
+                    if (AFRAME.components['terrain-manager']) {
+                        const originalSetupDebugPanel = AFRAME.components['terrain-manager'].prototype.setupDebugPanel;
+                        // ... (same code as above)
+                    }
+                });
+            }
+        });
+
         // Hide loading screen when terrain is ready
         document.addEventListener('terrainReady', function() {
             setTimeout(() => {

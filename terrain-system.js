@@ -1,5 +1,53 @@
 // terrain-system.js - Handles terrain generation and management
 
+// ========== TERRAIN CONFIGURATION ==========
+window.TerrainConfig = {
+    // General terrain settings
+    //seed: Math.floor(Math.random() * 1000000), // Random seed for terrain generation
+    seed: 99,
+    heightScale: 64.0,        // Controls the maximum height of terrain
+    noiseScale: 0.03,         // Controls the horizontal scale of terrain features (lower = larger features)
+    baseHeight: 0.2,          // Minimum height for terrain (base level)
+    
+    // Terrain feature settings
+    useRidges: true,          // Enables ridge-based terrain features (mountains)
+    ridgeFactor: 0.3,         // How prominent ridges/mountains are (0-1)
+    
+    // Noise algorithm settings
+    octaves: 8,               // Number of noise octaves for base terrain (more = more detail)
+    ridgeOctaves: 4,          // Number of noise octaves for ridge features
+    lacunarity: 2.0,          // Controls frequency increase per octave
+    gain: 0.5,                // Controls amplitude decrease per octave
+    
+    // Geometry settings
+    useHexagons: true,       // Use hexagon geometry instead of cubes
+    geometrySize: 1.0,        // Size of terrain geometry units
+    
+    // Chunk system settings
+    chunkSize: 8,            // Size of each terrain chunk (in geometry units)
+    loadDistance: 100,        // Distance at which chunks are loaded
+    unloadDistance: 150,      // Distance at which chunks are unloaded
+    
+    // Color settings
+    colorVariation: 0.4,      // Amount of color variation (0-1)
+    
+    // Apply all settings to create consistent terrain
+    applyToGenerator: function(generator) {
+        if (generator) {
+            generator.heightScale = this.heightScale;
+            generator.noiseScale = this.noiseScale;
+            generator.baseHeight = this.baseHeight;
+            generator.octaves = this.octaves;
+            generator.ridgeOctaves = this.ridgeOctaves;
+            generator.useRidges = this.useRidges;
+            generator.ridgeFactor = this.ridgeFactor;
+            generator.seed = this.seed;
+            generator.hex = this.useHexagons;
+            generator.cubeSize = this.geometrySize;
+        }
+    }
+};
+
 // ========== IMPROVED NOISE FUNCTIONS ==========
 const ImprovedNoise = {
     // Permutation table
@@ -137,20 +185,24 @@ const ImprovedNoise = {
 // Terrain Generator
 class TerrainGenerator {
     constructor(options = {}) {
-        // Parameters for the terrain
-        this.hex = options.hex || false;
-
-        this.cubeSize = options.cubeSize || 1.0;
-        this.heightScale = options.heightScale || 20.0;
-        this.noiseScale = options.noiseScale || 0.03;
-        this.baseHeight = options.baseHeight || 0.1;
-        this.seed = options.seed || Math.floor(Math.random() * 65536);
+        // Parameters for the terrain - use TerrainConfig as default values if available
+        const config = window.TerrainConfig || {};
+        
+        this.hex = options.hex !== undefined ? options.hex : config.useHexagons || false;
+        this.cubeSize = options.cubeSize || config.geometrySize || 1.0;
+        this.heightScale = options.heightScale || config.heightScale || 20.0;
+        this.noiseScale = options.noiseScale || config.noiseScale || 0.03;
+        this.baseHeight = options.baseHeight || config.baseHeight || 0.1;
+        this.seed = options.seed || config.seed || Math.floor(Math.random() * 65536);
         
         // Additional parameters
-        this.octaves = options.octaves || 8;
-        this.ridgeOctaves = options.ridgeOctaves || 4;
-        this.useRidges = options.useRidges !== undefined ? options.useRidges : true;
-        this.ridgeFactor = options.ridgeFactor || 0.3;
+        this.octaves = options.octaves || config.octaves || 8;
+        this.ridgeOctaves = options.ridgeOctaves || config.ridgeOctaves || 4;
+        this.useRidges = options.useRidges !== undefined ? options.useRidges : (config.useRidges !== undefined ? config.useRidges : true);
+        this.ridgeFactor = options.ridgeFactor || config.ridgeFactor || 0.3;
+        this.lacunarity = options.lacunarity || config.lacunarity || 2.0;
+        this.gain = options.gain || config.gain || 0.5;
+        this.colorVariation = options.colorVariation || config.colorVariation || 0.1;
         
         // Initialize noise with the seed
         ImprovedNoise.seed(this.seed);
@@ -165,7 +217,9 @@ class TerrainGenerator {
         let baseHeight = ImprovedNoise.fbm(
             x * continentScale, 
             z * continentScale, 
-            this.octaves
+            this.octaves,
+            this.lacunarity,
+            this.gain
         );
         
         // Add ridged noise for mountain ranges if enabled
@@ -173,7 +227,9 @@ class TerrainGenerator {
             const ridgeNoise = ImprovedNoise.ridgedMulti(
                 x * continentScale * 2, 
                 z * continentScale * 2, 
-                this.ridgeOctaves
+                this.ridgeOctaves,
+                this.lacunarity,
+                this.gain
             );
             baseHeight = baseHeight * (1 - this.ridgeFactor) + ridgeNoise * this.ridgeFactor;
         }
@@ -196,7 +252,7 @@ class TerrainGenerator {
         
         // Add some local variation for texture
         const variationScale = this.noiseScale * 10;
-        const variation = ImprovedNoise.perlin2(x * variationScale, z * variationScale) * 0.1;
+        const variation = ImprovedNoise.perlin2(x * variationScale, z * variationScale) * this.colorVariation;
         
         let r, g, b;
         
@@ -299,6 +355,19 @@ AFRAME.registerComponent('terrain-manager', {
     init: function() {
         console.log("Terrain manager component initializing...");
         
+        // Apply TerrainConfig to the component data if available
+        if (window.TerrainConfig) {
+            this.data.loadDistance = window.TerrainConfig.loadDistance || this.data.loadDistance;
+            this.data.unloadDistance = window.TerrainConfig.unloadDistance || this.data.unloadDistance;
+            this.data.chunkSize = window.TerrainConfig.chunkSize || this.data.chunkSize;
+            this.data.cubeSize = window.TerrainConfig.geometrySize || this.data.cubeSize;
+            
+            // Only override seed if it's actually defined in config and component seed is 0
+            if (window.TerrainConfig.seed && this.data.seed === 0) {
+                this.data.seed = window.TerrainConfig.seed;
+            }
+        }
+        
         // Get subject entity
         this.subject = document.querySelector('#subject');
         if (!this.subject) {
@@ -345,7 +414,8 @@ AFRAME.registerComponent('terrain-manager', {
             this.chunkManager = new TerrainChunkManager({
                 chunkSize: this.data.chunkSize,
                 cubeSize: this.data.cubeSize,
-                seed: this.data.seed
+                seed: this.data.seed,
+                useHexagons: window.TerrainConfig ? window.TerrainConfig.useHexagons : false
             });
             
             // Get initial position
@@ -436,7 +506,7 @@ AFRAME.registerComponent('terrain-manager', {
                     
                     // Set the new height with smooth transition
                     if (this.subjectObj.position.y !== targetHeight) {
-                        this.subjectObj.position.y += (targetHeight - this.subjectObj.position.y) * 0.8;
+                        this.subjectObj.position.y += (targetHeight - this.subjectObj.position.y) * 0.1;
                     }
                 } catch (error) {
                     console.warn("Error in terrain following:", error);
@@ -622,15 +692,21 @@ AFRAME.registerComponent('terrain-manager', {
 class TerrainChunkManager {
     constructor(options = {}) {
         try {
+            // Use TerrainConfig values as defaults if available
+            const config = window.TerrainConfig || {};
+            
             // Configuration
-            this.chunkSize = options.chunkSize || 16;
-            this.cubeSize = options.cubeSize || 1.0;
-            this.seed = options.seed || Math.floor(Math.random() * 65536);
+            this.chunkSize = options.chunkSize || config.chunkSize || 16;
+            this.cubeSize = options.cubeSize || config.geometrySize || 1.0;
+            this.seed = options.seed || config.seed || Math.floor(Math.random() * 65536);
+            this.useHexagons = options.useHexagons !== undefined ? options.useHexagons : 
+                               (config.useHexagons !== undefined ? config.useHexagons : false);
             
             console.log("TerrainChunkManager options:", {
                 chunkSize: this.chunkSize,
                 cubeSize: this.cubeSize,
-                seed: this.seed
+                seed: this.seed,
+                useHexagons: this.useHexagons
             });
             
             // Maps to track chunks
@@ -645,21 +721,25 @@ class TerrainChunkManager {
             }
             
             // Create cube material
-            // if (this.hex){
-            // this.cubeMaterial = window.HexTerrainBuilder.createHexMaterial();
-            // }
-            // else {
+            if (this.useHexagons) {
+                this.cubeMaterial = window.HexTerrainBuilder ? 
+                    window.HexTerrainBuilder.createCubeMaterial() : 
+                    window.CubeTerrainBuilder.createCubeMaterial();
+            } else {
                 this.cubeMaterial = window.CubeTerrainBuilder.createCubeMaterial();
-            // }
+            }
+            
             // Create the terrain generator
             this.terrainGenerator = new TerrainGenerator({
                 cubeSize: this.cubeSize,
-                heightScale: 20.0,
-                noiseScale: 0.03,
-                baseHeight: 0.2,
                 seed: this.seed,
-                octaves: 8
+                hex: this.useHexagons
             });
+            
+            // Apply all configuration settings to the generator
+            if (window.TerrainConfig && window.TerrainConfig.applyToGenerator) {
+                window.TerrainConfig.applyToGenerator(this.terrainGenerator);
+            }
             
             console.log('Terrain Chunk Manager initialized with seed:', this.seed);
         } catch (error) {

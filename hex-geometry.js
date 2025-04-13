@@ -3,7 +3,7 @@
 
 // Global configuration
 window.HexConfig = {
-    useTextures: true,
+    useTextures: false,
     texturePath: 'assets/grass_12.png',
     textureScale: 1.0
 };

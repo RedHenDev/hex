@@ -4,10 +4,63 @@
     <meta charset="UTF-8">
     <title>Hexagon Terrain Generator</title>
     
+    <link rel="stylesheet" type="text/css" href="style.css">
+    
+    <!-- Initialize TerrainConfig before loading A-Frame -->
+    <script>
+        // Initialize the terrain configuration
+        window.TerrainConfig = {
+            // General terrain settings
+            //seed: Math.floor(Math.random() * 1000000), // Random seed for terrain generation
+            seed: 99,
+            heightScale: 200.0,        // Controls the maximum height of terrain
+            noiseScale: 0.03,         // Controls the horizontal scale of terrain features (lower = larger features)
+            baseHeight: 0.2,          // Minimum height for terrain (base level)
+            
+            // Terrain feature settings
+            useRidges: true,          // Enables ridge-based terrain features (mountains)
+            ridgeFactor: 0.3,         // How prominent ridges/mountains are (0-1)
+            
+            // Noise algorithm settings
+            octaves: 8,               // Number of noise octaves for base terrain (more = more detail)
+            ridgeOctaves: 4,          // Number of noise octaves for ridge features
+            lacunarity: 2.0,          // Controls frequency increase per octave
+            gain: 0.5,                // Controls amplitude decrease per octave
+            
+            // Geometry settings
+            useHexagons: false,       // Use hexagon geometry instead of cubes
+            geometrySize: 1.0,        // Size of terrain geometry units
+            
+            // Chunk system settings
+            chunkSize: 16,            // Size of each terrain chunk (in geometry units)
+            loadDistance: 100,        // Distance at which chunks are loaded
+            unloadDistance: 150,      // Distance at which chunks are unloaded
+            
+            // Color settings
+            colorVariation: 0.1,      // Amount of color variation (0-1)
+            
+            // Apply all settings to create consistent terrain
+            applyToGenerator: function(generator) {
+                if (generator) {
+                    generator.heightScale = this.heightScale;
+                    generator.noiseScale = this.noiseScale;
+                    generator.baseHeight = this.baseHeight;
+                    generator.octaves = this.octaves;
+                    generator.ridgeOctaves = this.ridgeOctaves;
+                    generator.useRidges = this.useRidges;
+                    generator.ridgeFactor = this.ridgeFactor;
+                    generator.seed = this.seed;
+                    generator.hex = this.useHexagons;
+                    generator.cubeSize = this.geometrySize;
+                }
+            }
+        };
+        
+        console.log("TerrainConfig initialized with seed:", window.TerrainConfig.seed);
+    </script>
+    
     <!-- Load A-Frame -->
     <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
-    
-    <link rel="stylesheet" type="text/css" href="style.css">
 </head>
 <body>
     <!-- Loading screen -->
@@ -37,9 +90,7 @@
     <!-- Load scripts in the correct order -->
     <script src="hex-geometry.js"></script>
     <script src="terrain-system.js"></script>
-
     <script src="texture-controls.js"></script>
-    
     <script src="start-terrain.js"></script>
 </body>
 </html>

@@ -11,10 +11,9 @@
         // Initialize the terrain configuration
         window.TerrainConfig = {
             // General terrain settings
-            //seed: Math.floor(Math.random() * 1000000), // Random seed for terrain generation
-            seed: 99,
-            heightScale: 200.0,        // Controls the maximum height of terrain
-            noiseScale: 0.03,         // Controls the horizontal scale of terrain features (lower = larger features)
+            seed: Math.floor(Math.random() * 1000000), // Random seed for terrain generation
+            heightScale: 128.0,        // Controls the maximum height of terrain
+            noiseScale: 0.008,         // Controls the horizontal scale of terrain features (lower = larger features)
             baseHeight: 0.2,          // Minimum height for terrain (base level)
             
             // Terrain feature settings
@@ -28,16 +27,16 @@
             gain: 0.5,                // Controls amplitude decrease per octave
             
             // Geometry settings
-            useHexagons: false,       // Use hexagon geometry instead of cubes
-            geometrySize: 1.0,        // Size of terrain geometry units
+            useHexagons: true,       // Use hexagon geometry instead of cubes
+            geometrySize: 0.975,        // Size of terrain geometry units
             
             // Chunk system settings
-            chunkSize: 16,            // Size of each terrain chunk (in geometry units)
+            chunkSize: 8,            // Size of each terrain chunk (in geometry units)
             loadDistance: 100,        // Distance at which chunks are loaded
             unloadDistance: 150,      // Distance at which chunks are unloaded
             
             // Color settings
-            colorVariation: 0.1,      // Amount of color variation (0-1)
+            colorVariation: 0.8,      // Amount of color variation (0-1)
             
             // Apply all settings to create consistent terrain
             applyToGenerator: function(generator) {
@@ -90,7 +89,8 @@
     <!-- Load scripts in the correct order -->
     <script src="hex-geometry.js"></script>
     <script src="terrain-system.js"></script>
-    <script src="texture-controls.js"></script>
+    <!-- <script src="texture-controls.js"></script> -->
     <script src="start-terrain.js"></script>
+    <script src="direct-terrain-controls.js"></script>
 </body>
 </html>

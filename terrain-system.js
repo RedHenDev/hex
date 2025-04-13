@@ -5,8 +5,8 @@ window.TerrainConfig = {
     // General terrain settings
     //seed: Math.floor(Math.random() * 1000000), // Random seed for terrain generation
     seed: 99,
-    heightScale: 64.0,        // Controls the maximum height of terrain
-    noiseScale: 0.03,         // Controls the horizontal scale of terrain features (lower = larger features)
+    heightScale: 128.0,        // Controls the maximum height of terrain
+    noiseScale: 0.008,         // Controls the horizontal scale of terrain features (lower = larger features)
     baseHeight: 0.2,          // Minimum height for terrain (base level)
     
     // Terrain feature settings
@@ -21,7 +21,7 @@ window.TerrainConfig = {
     
     // Geometry settings
     useHexagons: true,       // Use hexagon geometry instead of cubes
-    geometrySize: 1.0,        // Size of terrain geometry units
+    geometrySize: 0.975,        // Size of terrain geometry units
     
     // Chunk system settings
     chunkSize: 8,            // Size of each terrain chunk (in geometry units)
@@ -29,7 +29,7 @@ window.TerrainConfig = {
     unloadDistance: 150,      // Distance at which chunks are unloaded
     
     // Color settings
-    colorVariation: 0.4,      // Amount of color variation (0-1)
+    colorVariation: 0.8,      // Amount of color variation (0-1)
     
     // Apply all settings to create consistent terrain
     applyToGenerator: function(generator) {

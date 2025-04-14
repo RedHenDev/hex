@@ -4,7 +4,7 @@ console.log("Initializing cube geometry using extrusion approach...");
 
 // Global configuration
 window.HexConfig = {
-    useTextures: false,
+    useTextures: true,
     texturePath: 'assets/grass_12.png',
     textureScale: 1.0
 };
@@ -33,7 +33,7 @@ if (typeof THREE === 'undefined' && typeof AFRAME !== 'undefined') {
 
 // Define a custom CubeGeometry class for THREE.js that uses the same extrusion approach
 THREE.CubeGeometry = class CubeGeometry extends THREE.BufferGeometry {
-    constructor(size = 0.5, height = 1) {
+    constructor(size = 2.2, height = 1) {
         super();
         
         this.type = 'CubeGeometry';
@@ -187,7 +187,7 @@ window.CubeTerrainBuilder = {
         
         try {
             // Create a cube geometry using our extrusion-based approach
-            const geometry = new THREE.CubeGeometry(0.5, 1.0);
+            const geometry = new THREE.CubeGeometry(this.size, 1.0);
             
             // Create the instanced mesh
             const instancedMesh = new THREE.InstancedMesh(
@@ -255,7 +255,7 @@ window.CubeTerrainBuilder = {
         // Get texture path from config or use default
         const texturePath = window.HexConfig && window.HexConfig.texturePath 
             ? window.HexConfig.texturePath 
-            : 'assets/grass_12.png';
+            : './assets/grass_12.png';
             
         // Get texture scale from config or use default
         const textureScale = window.HexConfig && window.HexConfig.textureScale !== undefined 

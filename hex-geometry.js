@@ -3,8 +3,8 @@
 
 // Global configuration
 window.HexConfig = {
-    useTextures: false,
-    texturePath: 'assets/grass_12.png',
+    useTextures: true,
+    texturePath: './assets/grass_12.png',
     textureScale: 1.0
 };
 
@@ -273,7 +273,7 @@ window.CubeTerrainBuilder = {
         // Get texture path from config or use default
         const texturePath = window.HexConfig && window.HexConfig.texturePath 
             ? window.HexConfig.texturePath 
-            : 'assets/moon_tex.png';
+            : './assets/grass_12.png';
             
         // Get texture scale from config or use default
         const textureScale = window.HexConfig && window.HexConfig.textureScale !== undefined 

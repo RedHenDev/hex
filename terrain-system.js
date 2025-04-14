@@ -5,13 +5,13 @@ window.TerrainConfig = {
     // General terrain settings
     //seed: Math.floor(Math.random() * 1000000), // Random seed for terrain generation
     seed: 99,
-    heightScale: 256.0,        // Controls the maximum height of terrain
-    noiseScale: 0.004,         // Controls the horizontal scale of terrain features (lower = larger features)
+    heightScale: 1256.0,        // Controls the maximum height of terrain
+    noiseScale: 0.0008,         // Controls the horizontal scale of terrain features (lower = larger features)
     baseHeight: -22.0,          // Minimum height for terrain (base level)
     
     // Terrain feature settings.
     useRidges: true,          // Enables ridge-based terrain features (mountains)
-    ridgeFactor: 0.07,         // How prominent ridges/mountains are (0-1)
+    ridgeFactor: 0.14,         // How prominent ridges/mountains are (0-1)
     
     // Noise algorithm settings.
     octaves: 8,               // Number of noise octaves for base terrain (more = more detail)
@@ -24,9 +24,10 @@ window.TerrainConfig = {
     // Relates to hex-g size. If this 4, then hex-g 2.
     geometrySize: 4.4,      // Size of terrain geometry units 0.86
     geometryHeight: 12,
+    heightStep: 4,
     
     // Chunk system settings
-    chunkSize: 8,          // Size of each terrain chunk (in geometry units)
+    chunkSize: 12,          // Size of each terrain chunk (in geometry units)
     // LoadDist and unload dist defaults 100 and 150.
     loadDistance: 560,      // Distance at which chunks are loaded
     unloadDistance: 600,    // Distance at which chunks are unloaded
@@ -198,6 +199,7 @@ class TerrainGenerator {
         this.baseHeight = options.baseHeight || config.baseHeight || 0.1;
         this.seed = options.seed || config.seed || Math.floor(Math.random() * 65536);
         this.geometryHeight = options.geometryHeight || config.geometryHeight || 3;
+        this.heightStep = options.heightStep || config.heightStep || 1;
         // Additional parameters
         this.octaves = options.octaves || config.octaves || 8;
         this.ridgeOctaves = options.ridgeOctaves || config.ridgeOctaves || 4;
@@ -325,8 +327,14 @@ class TerrainGenerator {
                 const color = this.getColor(worldX, worldZ, height);
                 
                 // Add cube to collection with LOCAL position relative to chunk
+                // let frank = 0;
+                // let frankZ = 0.5;
+                // if (x % 2 === 0) frank = 0.5;
+                // if (z % 2 === 0) frankZ = 0;
                 cubes.push({
-                    position: [x * this.cubeSize, Math.floor(height), z * this.cubeSize],
+                    position: [x * this.cubeSize, 
+                        Math.floor(height / this.heightStep) * this.heightStep, 
+                        z * this.cubeSize],
                     height: this.geometryHeight,
                     color: color
                 });

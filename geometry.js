@@ -1,10 +1,10 @@
-// geometry.js - Defines our cube geometry and shaders for instanced rendering
+// geometry.js - Cube geometry implementation using the same approach as hex-geometry.js
 
-console.log("Initializing cube geometry and shaders with texture support...");
+console.log("Initializing cube geometry using extrusion approach...");
 
 // Global configuration
 window.HexConfig = {
-    useTextures: true,
+    useTextures: false,
     texturePath: 'assets/grass_12.png',
     textureScale: 1.0
 };
@@ -15,7 +15,52 @@ if (typeof THREE === 'undefined' && typeof AFRAME !== 'undefined') {
     THREE = AFRAME.THREE;
 }
 
-// Define the shader for our instanced cubes
+// Define a custom CubeGeometry class for THREE.js that uses the same extrusion approach
+THREE.CubeGeometry = class CubeGeometry extends THREE.BufferGeometry {
+    constructor(size = 0.5, height = 1) {
+        super();
+        
+        this.type = 'CubeGeometry';
+        this.parameters = {
+            size: size,
+            height: height
+        };
+        
+        // Create a square shape instead of a hexagon
+        const shape = new THREE.Shape();
+        
+        // Define the four corners of the square
+        shape.moveTo(-size, -size);
+        shape.lineTo(size, -size);
+        shape.lineTo(size, size);
+        shape.lineTo(-size, size);
+        shape.closePath();
+        
+        // Extrude the shape to create a 3D cube
+        const extrudeSettings = {
+            depth: height,
+            bevelEnabled: false
+        };
+        
+        // Use THREE.js built-in extrusion to create the geometry
+        const geometryData = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+        
+        // Adjust the position so the cube is positioned properly
+        geometryData.rotateX(-Math.PI / 2);
+        
+        // Copy all attributes from the generated geometry
+        this.copy(geometryData);
+        
+        // Compute vertex normals
+        this.computeVertexNormals();
+    }
+};
+
+// Also define a buffer geometry version for compatibility
+THREE.CubeBufferGeometry = THREE.CubeGeometry;
+
+// Use the same vertex and fragment shaders as hex-geometry.js
+// SIMPLIFIED Vertex Shader
 window.cubeVertexShader = `
     // Instance attributes
     attribute vec3 instancePosition;
@@ -27,10 +72,10 @@ window.cubeVertexShader = `
     uniform vec3 directionalLightColor[5];
     uniform vec3 directionalLightDirection[5];
     
+    // Varyings passed to fragment shader
     varying vec3 vColor;
     varying float vHeight;
     varying vec3 vNormal;
-    varying vec3 vViewPosition;
     varying vec2 vUv;
     
     void main() {
@@ -39,29 +84,24 @@ window.cubeVertexShader = `
         vHeight = instanceHeight;
         vUv = uv;
         
-        // Apply instance position and scale height
+        // Apply height scaling - only to the top part
         vec3 transformed = position;
-        
-        // Scale cube vertically by instanceHeight
-        if (position.y > 0.0) {
-            transformed.y *= instanceHeight;
+        if (position.y > 0.1) {
+            transformed.y = (position.y * instanceHeight);
         }
         
-        // Calculate world position
+        // Apply instance position and calculate final position
         vec3 worldPos = transformed + instancePosition;
         
-        // Compute normal for lighting
+        // Calculate the normal in view space for lighting
         vNormal = normalMatrix * normal;
         
         // Final position calculation
-        vec4 worldPosition = modelMatrix * vec4(worldPos, 1.0);
-        vec4 viewPosition = viewMatrix * worldPosition;
-        vViewPosition = viewPosition.xyz;
-        
-        gl_Position = projectionMatrix * viewPosition;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(worldPos, 1.0);
     }
 `;
 
+// SIMPLIFIED Fragment Shader
 window.cubeFragmentShader = `
     // A-Frame specific uniforms
     uniform vec3 ambientLightColor;
@@ -72,20 +112,17 @@ window.cubeFragmentShader = `
     uniform sampler2D diffuseMap;
     uniform float useTexture;
     
+    // Varyings from vertex shader
     varying vec3 vColor;
     varying float vHeight;
     varying vec3 vNormal;
-    varying vec3 vViewPosition;
     varying vec2 vUv;
-    
-    // Define edge detection properties
-    const float edgeWidth = 0.05;
     
     void main() {
         // Ensure normal is normalized
         vec3 normal = normalize(vNormal);
         
-        // Calculate lighting
+        // Basic lighting calculation
         vec3 lighting = ambientLightColor;
         
         // Add directional light contribution
@@ -97,7 +134,7 @@ window.cubeFragmentShader = `
             }
         }
         
-        // Apply basic lighting to base color
+        // Start with base color * lighting
         vec3 finalColor = vColor * max(lighting, vec3(0.3));
         
         // Apply texture if enabled
@@ -106,26 +143,9 @@ window.cubeFragmentShader = `
             finalColor *= texColor.rgb;
         }
         
-        // Add edge detection for cube borders
-        bool isEdge = false;
-        
-        // Check if we're near any edge of the UV coordinates
-        if (vUv.x < edgeWidth || vUv.x > (1.0 - edgeWidth) || 
-            vUv.y < edgeWidth || vUv.y > (1.0 - edgeWidth)) {
-            isEdge = true;
-        }
-        
-        // Apply edge (darker color)
-        if (isEdge) {
-            finalColor *= 0.6; // Darken edges
-        }
-        
-        // Apply height-based shading
-        float heightFactor = clamp(vHeight / 20.0, 0.0, 1.0);
-        
-        // Snow on high peaks
-        if (vHeight > 150.0 && normal.y > 0.8) {
-            float snowAmount = smoothstep(15.0, 20.0, vHeight);
+        // Apply height-based coloring for snow on peaks
+        if (vHeight > 130.0 && normal.y > 0.03) {
+            float snowAmount = smoothstep(30.0, 40.0, vHeight);
             finalColor = mix(finalColor, vec3(0.9, 0.9, 1.0), snowAmount * normal.y);
         }
         
@@ -133,22 +153,21 @@ window.cubeFragmentShader = `
     }
 `;
 
-// Create the cube geometry class for reuse
+// Keep the same function structure for compatibility
 window.CubeTerrainBuilder = {
     // Create a mesh for a terrain chunk using instancing
     createChunkMesh: function(chunkData, material) {
-        const cubes = chunkData.cubes;
+        // Adapt to work with cubes
+        const cubes = chunkData.cubes || [];
         
         if (cubes.length === 0) {
-            console.log("No cubes in chunk data, returning empty group");
+            console.log("No terrain elements in chunk data, returning empty group");
             return new THREE.Group();
         }
         
-        console.log(`Creating instanced mesh with ${cubes.length} cubes`);
-        
         try {
-            // Create a simple cube geometry
-            const geometry = new THREE.BoxGeometry(1, 1, 1);
+            // Create a cube geometry using our extrusion-based approach
+            const geometry = new THREE.CubeGeometry(0.5, 1.0);
             
             // Create the instanced mesh
             const instancedMesh = new THREE.InstancedMesh(
@@ -157,7 +176,7 @@ window.CubeTerrainBuilder = {
                 cubes.length
             );
             
-            // Disable frustum culling to prevent chunks from disappearing at edges
+            // Disable frustum culling to prevent chunks from disappearing
             instancedMesh.frustumCulled = false;
             
             // Create buffer attributes for instance data
@@ -171,10 +190,10 @@ window.CubeTerrainBuilder = {
                 
                 // Position (x, y, z)
                 instancePositions[i * 3] = cube.position[0];
-                instancePositions[i * 3 + 1] = 0; // Bottom of cube starts at 0
+                instancePositions[i * 3 + 1] = cube.position[1] || 0;
                 instancePositions[i * 3 + 2] = cube.position[2];
                 
-                // Height - ensure minimum height for visibility
+                // Height
                 instanceHeights[i] = Math.max(0.1, cube.height);
                 
                 // Color (r, g, b)
@@ -188,21 +207,18 @@ window.CubeTerrainBuilder = {
             geometry.setAttribute('instanceHeight', new THREE.InstancedBufferAttribute(instanceHeights, 1));
             geometry.setAttribute('instanceColor', new THREE.InstancedBufferAttribute(instanceColors, 3));
             
-            console.log("Instanced mesh created successfully");
             return instancedMesh;
             
         } catch (error) {
-            console.error("Error creating instanced mesh:", error);
+            console.error("Error creating instanced cube mesh:", error);
             console.error("Error stack:", error.stack);
             return new THREE.Group(); // Return empty group on error
         }
     },
     
-    // Create shader material for the cubes
+    // Create shader material for the cubes - identical to hex-geometry.js
     createCubeMaterial: function() {
-        // Create a default empty texture first
-        //const emptyTexture = new THREE.Texture();
-        // New: Create a valid fallback texture (1x1 pixel).
+        // Create a valid fallback texture (1x1 pixel)
         const canvas = document.createElement('canvas');
         canvas.width = 1;
         canvas.height = 1;
@@ -226,8 +242,7 @@ window.CubeTerrainBuilder = {
             ? window.HexConfig.textureScale 
             : 1.0;
         
-        console.log(`Texturing: ${useTextures ? 'Enabled' : 'Disabled'}`);
-        
+        // Create the material with the empty texture
         const material = new THREE.ShaderMaterial({
             vertexShader: window.cubeVertexShader,
             fragmentShader: window.cubeFragmentShader,
@@ -251,14 +266,10 @@ window.CubeTerrainBuilder = {
             // Load the texture asynchronously
             const textureLoader = new THREE.TextureLoader();
             
-            console.log(`Loading texture from ${texturePath}...`);
-            
             textureLoader.load(
                 texturePath, 
                 // Success callback
                 function(loadedTexture) {
-                    console.log("Texture loaded successfully");
-                    
                     // Set texture properties
                     loadedTexture.wrapS = THREE.RepeatWrapping;
                     loadedTexture.wrapT = THREE.RepeatWrapping;
@@ -284,7 +295,7 @@ window.CubeTerrainBuilder = {
                 },
                 // Progress callback
                 function(xhr) {
-                    console.log(`Texture loading: ${(xhr.loaded / xhr.total * 100).toFixed(0)}%`);
+                    //console.log(`Texture loading: ${(xhr.loaded / xhr.total * 100).toFixed(0)}%`);
                 },
                 // Error callback
                 function(error) {
@@ -294,7 +305,6 @@ window.CubeTerrainBuilder = {
                     textureLoader.load(
                         altPath,
                         function(loadedTexture) {
-                            console.log("Texture loaded successfully from alternative path");
                             loadedTexture.wrapS = THREE.RepeatWrapping;
                             loadedTexture.wrapT = THREE.RepeatWrapping;
                             loadedTexture.repeat.set(textureScale, textureScale);
@@ -334,4 +344,7 @@ window.CubeTerrainBuilder = {
     }
 };
 
-console.log("Cube geometry and shaders initialized");
+// Don't override BoxGeometry with CubeGeometry - the original code relies on BoxGeometry
+// If you want to use the custom CubeGeometry, use it explicitly
+
+console.log("Cube geometry initialized using extrusion approach");

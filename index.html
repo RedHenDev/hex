@@ -74,7 +74,7 @@
     <a-scene terrain-manager>
         <!-- Camera positioned to view the terrain from above -->
         <a-entity id="subject" position="0 50 0" rotation="0 0 0" 
-                  camera look-controls wasd-controls="acceleration: 50"></a-entity>
+                  camera look-controls wasd-controls="acceleration: 64"></a-entity>
         
         <!-- Lighting to make the terrain visible -->
         <a-entity light="type: ambient; color: #BBB; intensity: 0.5"></a-entity>
@@ -89,8 +89,8 @@
     </a-scene>
     
     <!-- Load scripts in the correct order -->
-    <!-- <script src="hex-geometry.js"></script> -->
-    <script src="geometry.js"></script>
+    <script src="hex-geometry.js"></script>
+    <!-- <script src="geometry.js"></script> -->
     <script src="terrain-system.js"></script>
     <script src="start-terrain.js"></script>
     <script src="direct-terrain-controls.js"></script>

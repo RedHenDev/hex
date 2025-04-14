@@ -155,7 +155,7 @@ window.cubeFragmentShader = `
         
         // Apply height-based coloring for snow on peaks - but only for VERY high terrain
         // Increase height threshold and make the normal.y requirement more strict
-        if (vHeight > 130.0 && normal.y > 0.8) {
+        if (vHeight > 130.0 && normal.y > 0.03) {
             float snowAmount = smoothstep(30.0, 40.0, vHeight);
             finalColor = mix(finalColor, vec3(0.9, 0.9, 1.0), snowAmount * normal.y);
         }

@@ -1,6 +1,13 @@
 // geometry.js - Defines our cube geometry and shaders for instanced rendering
 
-console.log("Initializing cube geometry and shaders...");
+console.log("Initializing cube geometry and shaders with texture support...");
+
+// Global configuration
+window.HexConfig = {
+    useTextures: true,
+    texturePath: 'assets/grass_12.png',
+    textureScale: 1.0
+};
 
 // Make sure THREE is available from A-Frame
 if (typeof THREE === 'undefined' && typeof AFRAME !== 'undefined') {
@@ -61,6 +68,10 @@ window.cubeFragmentShader = `
     uniform vec3 directionalLightColor[5];
     uniform vec3 directionalLightDirection[5];
     
+    // Texture related uniforms
+    uniform sampler2D diffuseMap;
+    uniform float useTexture;
+    
     varying vec3 vColor;
     varying float vHeight;
     varying vec3 vNormal;
@@ -88,6 +99,12 @@ window.cubeFragmentShader = `
         
         // Apply basic lighting to base color
         vec3 finalColor = vColor * max(lighting, vec3(0.3));
+        
+        // Apply texture if enabled
+        if (useTexture > 0.5) {
+            vec4 texColor = texture2D(diffuseMap, vUv);
+            finalColor *= texColor.rgb;
+        }
         
         // Add edge detection for cube borders
         bool isEdge = false;
@@ -183,6 +200,26 @@ window.CubeTerrainBuilder = {
     
     // Create shader material for the cubes
     createCubeMaterial: function() {
+        // Create a default empty texture first
+        const emptyTexture = new THREE.Texture();
+        
+        // Check if textures are enabled in config
+        const useTextures = window.HexConfig && window.HexConfig.useTextures !== undefined 
+            ? window.HexConfig.useTextures 
+            : false;
+            
+        // Get texture path from config or use default
+        const texturePath = window.HexConfig && window.HexConfig.texturePath 
+            ? window.HexConfig.texturePath 
+            : 'assets/grass_12.png';
+            
+        // Get texture scale from config or use default
+        const textureScale = window.HexConfig && window.HexConfig.textureScale !== undefined 
+            ? window.HexConfig.textureScale 
+            : 1.0;
+        
+        console.log(`Texturing: ${useTextures ? 'Enabled' : 'Disabled'}`);
+        
         const material = new THREE.ShaderMaterial({
             vertexShader: window.cubeVertexShader,
             fragmentShader: window.cubeFragmentShader,
@@ -190,12 +227,98 @@ window.CubeTerrainBuilder = {
             lights: true,
             uniforms: THREE.UniformsUtils.merge([
                 THREE.UniformsLib.lights,
-                THREE.UniformsLib.common
+                THREE.UniformsLib.common,
+                {
+                    diffuseMap: { value: emptyTexture },
+                    useTexture: { value: 0.0 } // Start with texture disabled until it's loaded
+                }
             ])
         });
         
         // Explicitly enable lights
         material.lights = true;
+        
+        // Only load texture if enabled in config
+        if (useTextures) {
+            // Load the texture asynchronously
+            const textureLoader = new THREE.TextureLoader();
+            
+            console.log(`Loading texture from ${texturePath}...`);
+            
+            textureLoader.load(
+                texturePath, 
+                // Success callback
+                function(loadedTexture) {
+                    console.log("Texture loaded successfully");
+                    
+                    // Set texture properties
+                    loadedTexture.wrapS = THREE.RepeatWrapping;
+                    loadedTexture.wrapT = THREE.RepeatWrapping;
+                    
+                    // Apply texture scale from config
+                    loadedTexture.repeat.set(textureScale, textureScale);
+                    
+                    // Update the material's texture
+                    material.uniforms.diffuseMap.value = loadedTexture;
+                    material.uniforms.useTexture.value = 1.0;
+                    
+                    // Make sure Three.js knows the texture has been updated
+                    loadedTexture.needsUpdate = true;
+                    
+                    // Dispatch an event that the texture is loaded
+                    const event = new CustomEvent('textureLoaded', { 
+                        detail: { 
+                            texture: loadedTexture,
+                            scale: textureScale 
+                        }
+                    });
+                    document.dispatchEvent(event);
+                },
+                // Progress callback
+                function(xhr) {
+                    console.log(`Texture loading: ${(xhr.loaded / xhr.total * 100).toFixed(0)}%`);
+                },
+                // Error callback
+                function(error) {
+                    console.error(`Error loading texture from ${texturePath}:`, error);
+                    // Try alternative path as fallback
+                    const altPath = texturePath.startsWith('./') ? texturePath.substring(2) : './' + texturePath;
+                    textureLoader.load(
+                        altPath,
+                        function(loadedTexture) {
+                            console.log("Texture loaded successfully from alternative path");
+                            loadedTexture.wrapS = THREE.RepeatWrapping;
+                            loadedTexture.wrapT = THREE.RepeatWrapping;
+                            loadedTexture.repeat.set(textureScale, textureScale);
+                            material.uniforms.diffuseMap.value = loadedTexture;
+                            material.uniforms.useTexture.value = 1.0;
+                            loadedTexture.needsUpdate = true;
+                            
+                            // Dispatch event
+                            const event = new CustomEvent('textureLoaded', { 
+                                detail: { 
+                                    texture: loadedTexture,
+                                    scale: textureScale 
+                                }
+                            });
+                            document.dispatchEvent(event);
+                        },
+                        undefined,
+                        function(secondError) {
+                            console.error("Failed to load texture from both paths:", secondError);
+                            // Dispatch texture failure event
+                            const event = new CustomEvent('textureLoadFailed');
+                            document.dispatchEvent(event);
+                        }
+                    );
+                }
+            );
+        } else {
+            console.log("Texturing disabled in configuration");
+            // Dispatch event for UI to update accordingly
+            const event = new CustomEvent('textureDisabled');
+            document.dispatchEvent(event);
+        }
         
         return material;
     }

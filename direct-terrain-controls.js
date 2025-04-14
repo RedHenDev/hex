@@ -52,7 +52,7 @@ function addTerrainConfigToPanel() {
     });
     
     // Get current terrain configuration
-    const config = window.TerrainConfig || {
+    const config = { ...window.TerrainConfig } || {
         seed: 99,
         heightScale: 128.0,
         noiseScale: 0.008,
@@ -71,6 +71,18 @@ function addTerrainConfigToPanel() {
         colorVariation: 0.8
     };
     
+    // Restore config from localStorage if it exists
+    try {
+        const savedConfig = localStorage.getItem('terrainConfig');
+        if (savedConfig) {
+            const parsedConfig = JSON.parse(savedConfig);
+            console.log("Restored config from localStorage:", parsedConfig);
+            Object.assign(config, parsedConfig);
+        }
+    } catch (e) {
+        console.error("Error restoring config from localStorage:", e);
+    }
+    
     // Create a simple form with key controls
     const form = document.createElement('div');
     form.style.display = 'grid';
@@ -78,7 +90,29 @@ function addTerrainConfigToPanel() {
     form.style.gap = '8px';
     form.style.marginBottom = '10px';
     
-    // Add some key terrain controls
+    // --- Seed ---
+    const seedContainer = document.createElement('div');
+    
+    const seedLabel = document.createElement('label');
+    seedLabel.textContent = 'Seed: ';
+    seedLabel.style.display = 'block';
+    seedLabel.style.fontSize = '12px';
+    
+    const seedInput = document.createElement('input');
+    seedInput.type = 'number';
+    seedInput.min = '0';
+    seedInput.max = '999999';
+    seedInput.step = '1';
+    seedInput.value = config.seed;
+    seedInput.style.width = '100%';
+    
+    seedInput.addEventListener('input', function() {
+        config.seed = parseInt(seedInput.value);
+    });
+    
+    seedContainer.appendChild(seedLabel);
+    seedContainer.appendChild(seedInput);
+    form.appendChild(seedContainer);
     
     // --- Height Scale ---
     const heightScaleContainer = document.createElement('div');
@@ -142,6 +176,92 @@ function addTerrainConfigToPanel() {
     noiseScaleContainer.appendChild(noiseScaleInput);
     form.appendChild(noiseScaleContainer);
     
+    // --- Base Height ---
+    const baseHeightContainer = document.createElement('div');
+    
+    const baseHeightLabel = document.createElement('label');
+    baseHeightLabel.textContent = 'Base Height: ';
+    baseHeightLabel.style.display = 'block';
+    baseHeightLabel.style.fontSize = '12px';
+    
+    const baseHeightValue = document.createElement('span');
+    baseHeightValue.id = 'baseHeight-value';
+    baseHeightValue.textContent = config.baseHeight;
+    baseHeightValue.style.marginLeft = '5px';
+    
+    const baseHeightInput = document.createElement('input');
+    baseHeightInput.type = 'range';
+    baseHeightInput.min = '0';
+    baseHeightInput.max = '1';
+    baseHeightInput.step = '0.05';
+    baseHeightInput.value = config.baseHeight;
+    baseHeightInput.style.width = '100%';
+    
+    baseHeightInput.addEventListener('input', function() {
+        baseHeightValue.textContent = baseHeightInput.value;
+        config.baseHeight = parseFloat(baseHeightInput.value);
+    });
+    
+    baseHeightLabel.appendChild(baseHeightValue);
+    baseHeightContainer.appendChild(baseHeightLabel);
+    baseHeightContainer.appendChild(baseHeightInput);
+    form.appendChild(baseHeightContainer);
+    
+    // --- Ridge Factor ---
+    const ridgeFactorContainer = document.createElement('div');
+    
+    const ridgeFactorLabel = document.createElement('label');
+    ridgeFactorLabel.textContent = 'Ridge Factor: ';
+    ridgeFactorLabel.style.display = 'block';
+    ridgeFactorLabel.style.fontSize = '12px';
+    
+    const ridgeFactorValue = document.createElement('span');
+    ridgeFactorValue.id = 'ridgeFactor-value';
+    ridgeFactorValue.textContent = config.ridgeFactor;
+    ridgeFactorValue.style.marginLeft = '5px';
+    
+    const ridgeFactorInput = document.createElement('input');
+    ridgeFactorInput.type = 'range';
+    ridgeFactorInput.min = '0';
+    ridgeFactorInput.max = '1';
+    ridgeFactorInput.step = '0.05';
+    ridgeFactorInput.value = config.ridgeFactor;
+    ridgeFactorInput.style.width = '100%';
+    
+    ridgeFactorInput.addEventListener('input', function() {
+        ridgeFactorValue.textContent = ridgeFactorInput.value;
+        config.ridgeFactor = parseFloat(ridgeFactorInput.value);
+    });
+    
+    ridgeFactorLabel.appendChild(ridgeFactorValue);
+    ridgeFactorContainer.appendChild(ridgeFactorLabel);
+    ridgeFactorContainer.appendChild(ridgeFactorInput);
+    form.appendChild(ridgeFactorContainer);
+    
+    // --- Use Ridges Checkbox ---
+    const ridgesContainer = document.createElement('div');
+    ridgesContainer.style.display = 'flex';
+    ridgesContainer.style.alignItems = 'center';
+    
+    const ridgesInput = document.createElement('input');
+    ridgesInput.type = 'checkbox';
+    ridgesInput.id = 'useRidges';
+    ridgesInput.checked = config.useRidges;
+    
+    const ridgesLabel = document.createElement('label');
+    ridgesLabel.htmlFor = 'useRidges';
+    ridgesLabel.textContent = 'Use Ridges';
+    ridgesLabel.style.marginLeft = '5px';
+    ridgesLabel.style.fontSize = '12px';
+    
+    ridgesInput.addEventListener('change', function() {
+        config.useRidges = ridgesInput.checked;
+    });
+    
+    ridgesContainer.appendChild(ridgesInput);
+    ridgesContainer.appendChild(ridgesLabel);
+    form.appendChild(ridgesContainer);
+    
     // --- Use Hexagons Checkbox ---
     const hexContainer = document.createElement('div');
     hexContainer.style.display = 'flex';
@@ -184,20 +304,7 @@ function addTerrainConfigToPanel() {
     `;
     
     generateButton.addEventListener('click', function() {
-        // Show loading screen
-        const loadingScreen = document.getElementById('loading-screen');
-        if (loadingScreen) {
-            loadingScreen.style.display = 'flex';
-            loadingScreen.style.opacity = '1';
-        }
-        
-        // Apply configuration changes
-        window.TerrainConfig = config;
-        
-        // Simply reload the page to apply changes
-        setTimeout(() => {
-            window.location.reload();
-        }, 500);
+        generateNewTerrain(config);
     });
     
     content.appendChild(generateButton);
@@ -208,6 +315,94 @@ function addTerrainConfigToPanel() {
     // Add to debug panel
     panel.appendChild(terrainSection);
     console.log("Terrain controls added successfully");
+}
+
+// Function to generate new terrain based on configuration
+function generateNewTerrain(config) {
+    console.log("Generating new terrain with config:", config);
+    
+    // Show loading screen
+    const loadingScreen = document.getElementById('loading-screen');
+    if (loadingScreen) {
+        loadingScreen.style.display = 'flex';
+        loadingScreen.style.opacity = '1';
+    }
+    
+    // Store config in localStorage to persist across reloads
+    try {
+        // Make a copy without any functions
+        const configForStorage = { ...config };
+        delete configForStorage.applyToGenerator;
+        
+        localStorage.setItem('terrainConfig', JSON.stringify(configForStorage));
+        console.log("Config saved to localStorage");
+    } catch (e) {
+        console.error("Error saving config to localStorage:", e);
+    }
+    
+    // Try to apply config in-place
+    try {
+        // Apply config to global TerrainConfig
+        Object.assign(window.TerrainConfig, config);
+        
+        // Get the terrain manager component
+        const terrainManager = document.querySelector('[terrain-manager]').components['terrain-manager'];
+        if (terrainManager && terrainManager.chunkManager) {
+            console.log("Found terrain manager, applying config in-place");
+            
+            // Get the terrain container
+            const terrainContainer = document.getElementById('terrain-container');
+            if (terrainContainer) {
+                // Clear existing terrain
+                while (terrainContainer.firstChild) {
+                    terrainContainer.removeChild(terrainContainer.firstChild);
+                }
+                
+                // Clear existing chunks
+                terrainManager.chunkManager.loadedChunks.clear();
+                
+                // Create a new terrain generator with updated config
+                terrainManager.chunkManager.terrainGenerator = new TerrainGenerator({
+                    cubeSize: config.geometrySize,
+                    seed: config.seed,
+                    hex: config.useHexagons
+                });
+                
+                // Apply all configuration settings to the generator
+                window.TerrainConfig.applyToGenerator(terrainManager.chunkManager.terrainGenerator);
+                
+                // Update terrain
+                terrainManager.updateTerrain(
+                    terrainManager.subjectObj.position.x,
+                    terrainManager.subjectObj.position.z
+                );
+                
+                // Hide loading screen after a short delay
+                setTimeout(() => {
+                    if (loadingScreen) {
+                        loadingScreen.style.opacity = '0';
+                        setTimeout(() => {
+                            loadingScreen.style.display = 'none';
+                        }, 500);
+                    }
+                    
+                    // Dispatch terrain ready event
+                    const event = new CustomEvent('terrainReady');
+                    document.dispatchEvent(event);
+                }, 1000);
+                
+                return; // Successfully applied in-place
+            }
+        }
+    } catch (e) {
+        console.error("Error applying config in-place:", e);
+    }
+    
+    // If in-place application failed, reload the page
+    console.log("Falling back to page reload to apply config");
+    setTimeout(() => {
+        window.location.reload();
+    }, 500);
 }
 
 // Wait for DOM to be ready

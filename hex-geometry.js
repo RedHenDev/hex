@@ -18,7 +18,7 @@ if (typeof THREE === 'undefined' && typeof AFRAME !== 'undefined') {
 
 // Define a custom HexagonGeometry class for THREE.js
 THREE.HexagonGeometry = class HexagonGeometry extends THREE.BufferGeometry {
-    constructor(size = 10, height = 1, flatTop = false) {
+    constructor(size = 1, height = 1, flatTop = false) {
         super();
         
         this.type = 'HexagonGeometry';
@@ -180,7 +180,8 @@ window.CubeTerrainBuilder = {
         
         try {
             // Create a hexagon geometry instead of a box
-            const geometry = new THREE.HexagonGeometry(0.5, 1.0, false);
+            // default values: 0.5, 1.0, false
+            const geometry = new THREE.HexagonGeometry(this.size, 1.0, false);
             
             // Create the instanced mesh
             const instancedMesh = new THREE.InstancedMesh(

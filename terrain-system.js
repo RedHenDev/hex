@@ -21,7 +21,7 @@ window.TerrainConfig = {
     
     // Geometry settings.
     useHexagons: true,       // Use hexagon geometry instead of cubes
-    geometrySize: 0.86,        // Size of terrain geometry units
+    geometrySize: 4,        // Size of terrain geometry units 0.86
     
     // Chunk system settings
     chunkSize: 8,            // Size of each terrain chunk (in geometry units)
@@ -323,8 +323,8 @@ class TerrainGenerator {
                 
                 // Add cube to collection with LOCAL position relative to chunk
                 cubes.push({
-                    position: [x * this.cubeSize, 0, z * this.cubeSize],
-                    height: Math.floor(height),
+                    position: [x * this.cubeSize, Math.floor(height), z * this.cubeSize],
+                    height: 3,
                     color: color
                 });
             }

@@ -18,7 +18,7 @@ if (typeof THREE === 'undefined' && typeof AFRAME !== 'undefined') {
 
 // Define a custom HexagonGeometry class for THREE.js
 THREE.HexagonGeometry = class HexagonGeometry extends THREE.BufferGeometry {
-    constructor(size = 1, height = 1, flatTop = false) {
+    constructor(size = 0.5, height = 1, flatTop = false) {
         super();
         
         this.type = 'HexagonGeometry';

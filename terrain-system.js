@@ -21,7 +21,7 @@ window.TerrainConfig = {
     
     // Geometry settings.
     useHexagons: true,       // Use hexagon geometry instead of cubes
-    geometrySize: 4,        // Size of terrain geometry units 0.86
+    geometrySize: 0.86,        // Size of terrain geometry units 0.86
     
     // Chunk system settings
     chunkSize: 8,            // Size of each terrain chunk (in geometry units)
@@ -522,168 +522,53 @@ AFRAME.registerComponent('terrain-manager', {
         }
     },
     
-    // Setup debug panel
+    // Setup debug panel - UPDATED METHOD
     setupDebugPanel: function() {
-        try {
-            // Create debug panel if it doesn't exist
-            let panel = document.getElementById('debug-panel');
-            if (!panel) {
-                panel = document.createElement('div');
-                panel.id = 'debug-panel';
-                document.body.appendChild(panel);
-            }
-            
-            // Clear any existing content
-            panel.innerHTML = '';
-            
-            // Add title
-            const title = document.createElement('h3');
-            title.textContent = `Cube Terrain (Seed: ${this.data.seed})`;
-            title.style.margin = '0 0 10px 0';
-            panel.appendChild(title);
-            
-            // Add info elements
-            const positionDisplay = document.createElement('div');
-            positionDisplay.id = 'position-display';
-            positionDisplay.textContent = 'Position: (0, 0, 0)';
-            panel.appendChild(positionDisplay);
-            
-            const chunkDisplay = document.createElement('div');
-            chunkDisplay.id = 'chunk-display';
-            chunkDisplay.textContent = 'Current Chunk: (0, 0)';
-            panel.appendChild(chunkDisplay);
-            
-            const heightDisplay = document.createElement('div');
-            heightDisplay.id = 'height-display';
-            heightDisplay.textContent = 'Terrain Height: 0.0';
-            panel.appendChild(heightDisplay);
-            
-            const chunksDisplay = document.createElement('div');
-            chunksDisplay.id = 'chunks-display';
-            chunksDisplay.textContent = 'Loaded Chunks: 0';
-            panel.appendChild(chunksDisplay);
-            
-            // Add teleport buttons
-            const teleportHeading = document.createElement('h4');
-            teleportHeading.textContent = 'Teleport To:';
-            teleportHeading.style.margin = '10px 0 5px 0';
-            panel.appendChild(teleportHeading);
-            
-            const buttonContainer = document.createElement('div');
-            buttonContainer.style.display = 'flex';
-            buttonContainer.style.flexWrap = 'wrap';
-            buttonContainer.style.gap = '5px';
-            
-            // Create teleport buttons
-            const locations = [
-                { name: 'Origin', x: 0, z: 0 },
-                { name: 'Mountains', x: 100, z: 100 },
-                { name: 'Valley', x: -100, z: 50 },
-                { name: 'Far Out', x: 300, z: 300 }
-            ];
-            
-            locations.forEach(loc => {
-                const button = document.createElement('button');
-                button.textContent = loc.name;
-                button.style.cssText = `
-                    background: #333;
-                    color: white;
-                    border: 1px solid #555;
-                    padding: 5px 10px;
-                    cursor: pointer;
-                    border-radius: 3px;
-                `;
-                button.addEventListener('click', () => {
-                    const currentY = this.subjectObj.position.y;
-                    this.subjectObj.position.set(loc.x, currentY, loc.z);
-                });
-                buttonContainer.appendChild(button);
-            });
-            
-            panel.appendChild(buttonContainer);
-            
-            // Add follow terrain checkbox
-            const followContainer = document.createElement('div');
-            followContainer.style.margin = '10px 0';
-            
-            const followCheck = document.createElement('input');
-            followCheck.type = 'checkbox';
-            followCheck.id = 'follow-terrain';
-            followCheck.checked = this.data.followTerrain;
-            
-            const followLabel = document.createElement('label');
-            followLabel.htmlFor = 'follow-terrain';
-            followLabel.textContent = 'Follow Terrain';
-            followLabel.style.marginLeft = '5px';
-            
-            followContainer.appendChild(followCheck);
-            followContainer.appendChild(followLabel);
-            panel.appendChild(followContainer);
-            
-            followCheck.addEventListener('change', () => {
-                this.data.followTerrain = followCheck.checked;
-            });
-            
-            // Add reset button
-            const resetButton = document.createElement('button');
-            resetButton.textContent = 'Reset Terrain (New Seed)';
-            resetButton.style.cssText = `
-                background: #553333;
-                color: white;
-                border: 1px solid #555;
-                padding: 5px 10px;
-                cursor: pointer;
-                border-radius: 3px;
-                margin-top: 10px;
-                width: 100%;
-            `;
-            resetButton.addEventListener('click', () => {
-                window.location.reload();
-            });
-            panel.appendChild(resetButton);
-        } catch (error) {
-            console.error('Error setting up debug panel:', error);
+        // Simply use the DebugPanel singleton instead of creating one here
+        console.log("Using unified debug panel system");
+        
+        // We don't need to create the panel here as it's handled by debug-panel.js
+        // If the debug panel system isn't loaded yet, it will be initialized when ready
+        
+        // Make sure the terrain manager is updated in the debug panel
+        if (window.DebugPanel) {
+            window.DebugPanel.terrainManager = this;
+            window.DebugPanel.updateAllSections();
         }
     },
     
-    // Update debug panel
+    // Update debug panel - UPDATED METHOD
     updateDebugPanel: function() {
         try {
+            if (!window.DebugPanel) return;
+            
             const pos = this.subjectObj.position;
             
-            // Update position display
-            const positionDisplay = document.getElementById('position-display');
-            if (positionDisplay) {
-                positionDisplay.textContent = `Position: (${pos.x.toFixed(1)}, ${pos.y.toFixed(1)}, ${pos.z.toFixed(1)})`;
-            }
+            // Calculate chunk position
+            const chunkWorldSize = this.data.chunkSize * this.data.cubeSize;
+            const chunkX = Math.floor(pos.x / chunkWorldSize);
+            const chunkZ = Math.floor(pos.z / chunkWorldSize);
             
-            // Update chunk display
-            const chunkDisplay = document.getElementById('chunk-display');
-            if (chunkDisplay) {
-                const chunkWorldSize = this.data.chunkSize * this.data.cubeSize;
-                const chunkX = Math.floor(pos.x / chunkWorldSize);
-                const chunkZ = Math.floor(pos.z / chunkWorldSize);
-                
-                chunkDisplay.textContent = `Current Chunk: (${chunkX}, ${chunkZ})`;
-            }
-            
-            // Update height display
-            const heightDisplay = document.getElementById('height-display');
-            if (heightDisplay && this.chunkManager && this.chunkManager.terrainGenerator) {
+            // Calculate terrain height
+            let terrainHeight = 0;
+            if (this.chunkManager && this.chunkManager.terrainGenerator) {
                 try {
-                    const height = this.chunkManager.terrainGenerator.generateTerrainHeight(pos.x, pos.z);
-                    heightDisplay.textContent = `Terrain Height: ${height.toFixed(1)}`;
+                    terrainHeight = this.chunkManager.terrainGenerator.generateTerrainHeight(pos.x, pos.z);
                 } catch (error) {
-                    heightDisplay.textContent = `Terrain Height: Error`;
+                    console.warn("Error calculating terrain height:", error);
                 }
             }
             
-            // Update chunks display
-            const chunksDisplay = document.getElementById('chunks-display');
-            if (chunksDisplay && this.chunkManager) {
-                const loadedChunks = this.chunkManager.loadedChunks.size;
-                chunksDisplay.textContent = `Loaded Chunks: ${loadedChunks}`;
-            }
+            // Get loaded chunks count
+            const loadedChunks = this.chunkManager ? this.chunkManager.loadedChunks.size : 0;
+            
+            // Update the info section
+            window.DebugPanel.updateInfoSection(
+                pos.x, pos.y, pos.z,
+                chunkX, chunkZ,
+                terrainHeight,
+                loadedChunks
+            );
         } catch (error) {
             console.error('Error updating debug panel:', error);
         }

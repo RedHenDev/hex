@@ -26,10 +26,10 @@ window.TerrainConfig = {
     geometryHeight: 12,
     
     // Chunk system settings
-    chunkSize: 16,          // Size of each terrain chunk (in geometry units)
+    chunkSize: 8,          // Size of each terrain chunk (in geometry units)
     // LoadDist and unload dist defaults 100 and 150.
-    loadDistance: 360,      // Distance at which chunks are loaded
-    unloadDistance: 400,    // Distance at which chunks are unloaded
+    loadDistance: 560,      // Distance at which chunks are loaded
+    unloadDistance: 600,    // Distance at which chunks are unloaded
     
     // Color settings
     colorVariation: 11.0,      // Amount of color variation (not normalised.)

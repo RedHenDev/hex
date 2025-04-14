@@ -43,7 +43,6 @@ class DebugPanel {
             this.panel = document.getElementById('debug-panel');
             if (!this.panel) {
                 this.panel = document.createElement('div');
-                this.panel = document.createElement('div');
                 this.panel.id = 'debug-panel';
                 document.body.appendChild(this.panel);
             }

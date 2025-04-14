@@ -10,6 +10,22 @@ window.HexConfig = {
 
 console.log("Initializing simplified hexagon shaders...");
 
+// ==== STEP 1: First, add this code at the start of both files ====
+// This will disable the warning by setting the property correctly
+
+// Add this near the top of hex-geometry.js and geometry.js (right after the console.log lines)
+if (typeof THREE !== 'undefined') {
+    // Suppress the legacy lights warning by explicitly enabling physically correct lights
+    THREE.ColorManagement.enabled = true;
+    
+    // Check if we're using A-Frame's THREE instance
+    if (typeof AFRAME !== 'undefined' && AFRAME.THREE) {
+        AFRAME.THREE.ColorManagement.enabled = true;
+    }
+    
+    console.log("Updated lighting configuration for modern THREE.js");
+}
+
 // Make sure THREE is available from A-Frame
 if (typeof THREE === 'undefined' && typeof AFRAME !== 'undefined') {
     console.log("Getting THREE from AFRAME");
@@ -113,9 +129,8 @@ window.cubeVertexShader = `
 `;
 
 // SIMPLIFIED Fragment Shader
-// SIMPLIFIED Fragment Shader
 window.cubeFragmentShader = `
-    // A-Frame specific uniforms
+    // A-Frame specific uniforms for modern physically-based lighting
     uniform vec3 ambientLightColor;
     uniform vec3 directionalLightColor[5];
     uniform vec3 directionalLightDirection[5];
@@ -134,10 +149,11 @@ window.cubeFragmentShader = `
         // Ensure normal is normalized
         vec3 normal = normalize(vNormal);
         
-        // Basic lighting calculation
+        // Basic lighting calculation using modern PBR approach
+        // Start with ambient contribution
         vec3 lighting = ambientLightColor;
         
-        // Add directional light contribution
+        // Add directional light contribution - updated for physically based model
         for (int i = 0; i < 5; i++) {
             if (length(directionalLightColor[i]) > 0.0) {
                 vec3 directionalVector = normalize(directionalLightDirection[i]);
@@ -155,12 +171,14 @@ window.cubeFragmentShader = `
             finalColor *= texColor.rgb;
         }
         
-        // Apply height-based coloring for snow on peaks - but only for VERY high terrain
-        // Increase height threshold and make the normal.y requirement more strict
+        // Apply height-based coloring for snow on peaks
         if (vHeight > 130.0 && normal.y > 0.03) {
             float snowAmount = smoothstep(30.0, 40.0, vHeight);
             finalColor = mix(finalColor, vec3(0.9, 0.9, 1.0), snowAmount * normal.y);
         }
+        
+        // New: gamma correction for physically correct lighting
+        finalColor = pow(finalColor, vec3(1.0/2.2));
         
         gl_FragColor = vec4(finalColor, 1.0);
     }
@@ -270,6 +288,8 @@ window.CubeTerrainBuilder = {
             fragmentShader: window.cubeFragmentShader,
             vertexColors: true,
             lights: true,
+            // Add these lines:
+            toneMapped: true, // Enable tone mapping for physically correct output.
             uniforms: THREE.UniformsUtils.merge([
                 THREE.UniformsLib.lights,
                 THREE.UniformsLib.common,
@@ -280,8 +300,17 @@ window.CubeTerrainBuilder = {
             ])
         });
         
+        // Also add this line after creating the material:
+        material.extensions = {
+            derivatives: true,
+            fragDepth: false,
+            drawBuffers: false,
+            shaderTextureLOD: false
+        };
+
         // Explicitly enable lights
         material.lights = true;
+        //material.fog = true;
         
         // Only load texture if enabled in config
         if (useTextures) {

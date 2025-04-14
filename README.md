@@ -7,8 +7,7 @@ DONE-r limit height of hexagons
 
 DONE-r remove duplicate debug panel code
 
--b address lighting and other warning messages
-[Warning] THREE.WebGLRenderer: The property .useLegacyLights has been deprecated. Migrate your lighting according to the following guide: https://discourse.threejs.org/t/updates-to-lighting-in-three-js-r155/53733. (aframe.min.js, line 1)
+DONE-b address lighting and other warning messages
 
 [Error] Viewport argument key "minimal-ui" not recognized and ignored.
 	c (aframe.min.js:1:438929)

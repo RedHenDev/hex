@@ -21,12 +21,15 @@ window.TerrainConfig = {
     
     // Geometry settings.
     useHexagons: true,       // Use hexagon geometry instead of cubes
-    geometrySize: 0.86,        // Size of terrain geometry units 0.86
+    // Relates to hex-g size. If this 4, then hex-g 2.
+    geometrySize: 4.4,      // Size of terrain geometry units 0.86
+    geometryHeight: 12,
     
     // Chunk system settings
-    chunkSize: 8,            // Size of each terrain chunk (in geometry units)
-    loadDistance: 100,        // Distance at which chunks are loaded
-    unloadDistance: 150,      // Distance at which chunks are unloaded
+    chunkSize: 16,          // Size of each terrain chunk (in geometry units)
+    // LoadDist and unload dist defaults 100 and 150.
+    loadDistance: 360,      // Distance at which chunks are loaded
+    unloadDistance: 400,    // Distance at which chunks are unloaded
     
     // Color settings
     colorVariation: 11.0,      // Amount of color variation (not normalised.)
@@ -182,10 +185,10 @@ const ImprovedNoise = {
     }
 };
 
-// Terrain Generator
+// Terrain Generator.
 class TerrainGenerator {
     constructor(options = {}) {
-        // Parameters for the terrain - use TerrainConfig as default values if available
+        // Parameters for the terrain - use TerrainConfig as default values if available.
         const config = window.TerrainConfig || {};
         
         this.hex = options.hex !== undefined ? options.hex : config.useHexagons || true;
@@ -194,7 +197,7 @@ class TerrainGenerator {
         this.noiseScale = options.noiseScale || config.noiseScale || 0.03;
         this.baseHeight = options.baseHeight || config.baseHeight || 0.1;
         this.seed = options.seed || config.seed || Math.floor(Math.random() * 65536);
-        
+        this.geometryHeight = options.geometryHeight || config.geometryHeight || 3;
         // Additional parameters
         this.octaves = options.octaves || config.octaves || 8;
         this.ridgeOctaves = options.ridgeOctaves || config.ridgeOctaves || 4;
@@ -324,7 +327,7 @@ class TerrainGenerator {
                 // Add cube to collection with LOCAL position relative to chunk
                 cubes.push({
                     position: [x * this.cubeSize, Math.floor(height), z * this.cubeSize],
-                    height: 3,
+                    height: this.geometryHeight,
                     color: color
                 });
             }
@@ -345,7 +348,7 @@ AFRAME.registerComponent('terrain-manager', {
     schema: {
         loadDistance: {type: 'number', default: 100},
         unloadDistance: {type: 'number', default: 150},
-        heightOffset: {type: 'number', default: 5.0},
+        heightOffset: {type: 'number', default: 16},
         followTerrain: {type: 'boolean', default: true},
         chunkSize: {type: 'number', default: 16},
         cubeSize: {type: 'number', default: 1.0},
@@ -415,7 +418,7 @@ AFRAME.registerComponent('terrain-manager', {
                 chunkSize: this.data.chunkSize,
                 cubeSize: this.data.cubeSize,
                 seed: this.data.seed,
-                useHexagons: window.TerrainConfig ? window.TerrainConfig.useHexagons : false
+                useHexagons: window.TerrainConfig ? window.TerrainConfig.useHexagons : true
             });
             
             // Get initial position
@@ -438,7 +441,8 @@ AFRAME.registerComponent('terrain-manager', {
             this.setupDebugPanel();
             
             // Set up tick function
-            this.tick = AFRAME.utils.throttleTick(this.tick, 100, this);
+            // Default 100.
+            this.tick = AFRAME.utils.throttleTick(this.tick, 1, this);
             
             // Ensure full terrain coverage
             setTimeout(() => {
@@ -485,7 +489,7 @@ AFRAME.registerComponent('terrain-manager', {
             // Check if the player has moved to a new chunk
             const chunkChanged = currentChunkX !== this.lastChunkX || currentChunkZ !== this.lastChunkZ;
             
-            // Update terrain if we've moved significantly
+            // Update terrain if we've moved significantly.
             if (chunkChanged || distance > 10) {
                 this.updateTerrain(x, z);
                 
@@ -508,7 +512,7 @@ AFRAME.registerComponent('terrain-manager', {
                     // Set the new height with smooth transition
                     if (this.subjectObj.position.y !== targetHeight) {
                         this.subjectObj.position.y += (targetHeight - 
-                            this.subjectObj.position.y) * 0.7;
+                            this.subjectObj.position.y) * 0.8;
                     }
                 } catch (error) {
                     console.warn("Error in terrain following:", error);

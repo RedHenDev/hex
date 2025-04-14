@@ -5,8 +5,26 @@ to do
 
 DONE-r limit height of hexagons
 
--r remove duplicate debug panel code
+DONE-r remove duplicate debug panel code
 
 -b address lighting and other warning messages
+[Warning] THREE.WebGLRenderer: The property .useLegacyLights has been deprecated. Migrate your lighting according to the following guide: https://discourse.threejs.org/t/updates-to-lighting-in-three-js-r155/53733. (aframe.min.js, line 1)
+
+[Error] Viewport argument key "minimal-ui" not recognized and ignored.
+	c (aframe.min.js:1:438929)
+	forEach
+	(anonymous function) (aframe.min.js:1:438701)
+	doConnectedCallback (aframe.min.js:1:424551)
+	connectedCallback (aframe.min.js:1:406413)
+	connectedCallback
+	dispatchEvent
+	(anonymous function) (aframe.min.js:1:422292)
 
 DONE-r remove redundant console logs from terrain gen
+
+
+351 of terrain-system
+       heightOffset: {type: 'number', default: 16},
+-r  This offset needs to be refactored to mechanically
+    work with the geometry size. Default is 5. But with
+    a geometryHeight of 12, needs to be 16 or 17.

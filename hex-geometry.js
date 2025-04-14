@@ -111,6 +111,7 @@ window.cubeVertexShader = `
 `;
 
 // SIMPLIFIED Fragment Shader
+// SIMPLIFIED Fragment Shader
 window.cubeFragmentShader = `
     // A-Frame specific uniforms
     uniform vec3 ambientLightColor;
@@ -152,9 +153,10 @@ window.cubeFragmentShader = `
             finalColor *= texColor.rgb;
         }
         
-        // Apply height-based coloring for snow on peaks
-        if (vHeight > 15.0 && normal.y > 0.5) {
-            float snowAmount = smoothstep(15.0, 20.0, vHeight);
+        // Apply height-based coloring for snow on peaks - but only for VERY high terrain
+        // Increase height threshold and make the normal.y requirement more strict
+        if (vHeight > 130.0 && normal.y > 0.8) {
+            float snowAmount = smoothstep(30.0, 40.0, vHeight);
             finalColor = mix(finalColor, vec3(0.9, 0.9, 1.0), snowAmount * normal.y);
         }
         
@@ -174,7 +176,7 @@ window.CubeTerrainBuilder = {
             return new THREE.Group();
         }
         
-        console.log(`Creating instanced hexagon mesh with ${cubes.length} hexagons`);
+        //console.log(`Creating instanced hexagon mesh with ${cubes.length} hexagons`);
         
         try {
             // Create a hexagon geometry instead of a box
@@ -218,7 +220,7 @@ window.CubeTerrainBuilder = {
             geometry.setAttribute('instanceHeight', new THREE.InstancedBufferAttribute(instanceHeights, 1));
             geometry.setAttribute('instanceColor', new THREE.InstancedBufferAttribute(instanceColors, 3));
             
-            console.log("Instanced hex mesh created successfully");
+            //console.log("Instanced hex mesh created successfully");
             return instancedMesh;
             
         } catch (error) {
@@ -231,7 +233,16 @@ window.CubeTerrainBuilder = {
     // Create shader material for the cubes/hexagons
     createCubeMaterial: function() {
         // Create a default empty texture first
-        const emptyTexture = new THREE.Texture();
+        //const emptyTexture = new THREE.Texture();
+        
+        // New: Create a valid fallback texture (1x1 pixel).
+        const canvas = document.createElement('canvas');
+        canvas.width = 1;
+        canvas.height = 1;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, 1, 1);
+        const fallbackTexture = new THREE.CanvasTexture(canvas);
         
         // Check if textures are enabled in config
         const useTextures = window.HexConfig && window.HexConfig.useTextures !== undefined 
@@ -248,7 +259,7 @@ window.CubeTerrainBuilder = {
             ? window.HexConfig.textureScale 
             : 1.0;
         
-        console.log(`Texturing: ${useTextures ? 'Enabled' : 'Disabled'}`);
+        //console.log(`Texturing: ${useTextures ? 'Enabled' : 'Disabled'}`);
         
         // Create the material with the empty texture
         const material = new THREE.ShaderMaterial({
@@ -260,7 +271,7 @@ window.CubeTerrainBuilder = {
                 THREE.UniformsLib.lights,
                 THREE.UniformsLib.common,
                 {
-                    diffuseMap: { value: emptyTexture },
+                    diffuseMap: { value: fallbackTexture },
                     useTexture: { value: 0.0 } // Start with texture disabled until it's loaded
                 }
             ])
@@ -274,13 +285,13 @@ window.CubeTerrainBuilder = {
             // Load the texture asynchronously
             const textureLoader = new THREE.TextureLoader();
             
-            console.log(`Loading texture from ${texturePath}...`);
+            //console.log(`Loading texture from ${texturePath}...`);
             
             textureLoader.load(
                 texturePath, 
                 // Success callback
                 function(loadedTexture) {
-                    console.log("Texture loaded successfully");
+                    //console.log("Texture loaded successfully");
                     
                     // Set texture properties
                     loadedTexture.wrapS = THREE.RepeatWrapping;
@@ -307,7 +318,7 @@ window.CubeTerrainBuilder = {
                 },
                 // Progress callback
                 function(xhr) {
-                    console.log(`Texture loading: ${(xhr.loaded / xhr.total * 100).toFixed(0)}%`);
+                    //console.log(`Texture loading: ${(xhr.loaded / xhr.total * 100).toFixed(0)}%`);
                 },
                 // Error callback
                 function(error) {
@@ -317,7 +328,7 @@ window.CubeTerrainBuilder = {
                     textureLoader.load(
                         altPath,
                         function(loadedTexture) {
-                            console.log("Texture loaded successfully from alternative path");
+                            //console.log("Texture loaded successfully from alternative path");
                             loadedTexture.wrapS = THREE.RepeatWrapping;
                             loadedTexture.wrapT = THREE.RepeatWrapping;
                             loadedTexture.repeat.set(textureScale, textureScale);
@@ -337,6 +348,8 @@ window.CubeTerrainBuilder = {
                         undefined,
                         function(secondError) {
                             console.error("Failed to load texture from both paths:", secondError);
+                            // Explicitly disable texturing when loading fails
+                            material.uniforms.useTexture.value = 0.0;
                             // Dispatch texture failure event
                             const event = new CustomEvent('textureLoadFailed');
                             document.dispatchEvent(event);

@@ -5,23 +5,23 @@ window.TerrainConfig = {
     // General terrain settings
     //seed: Math.floor(Math.random() * 1000000), // Random seed for terrain generation
     seed: 99,
-    heightScale: 128.0,        // Controls the maximum height of terrain
-    noiseScale: 0.008,         // Controls the horizontal scale of terrain features (lower = larger features)
-    baseHeight: 0.2,          // Minimum height for terrain (base level)
+    heightScale: 256.0,        // Controls the maximum height of terrain
+    noiseScale: 0.004,         // Controls the horizontal scale of terrain features (lower = larger features)
+    baseHeight: -22.0,          // Minimum height for terrain (base level)
     
-    // Terrain feature settings
+    // Terrain feature settings.
     useRidges: true,          // Enables ridge-based terrain features (mountains)
-    ridgeFactor: 0.3,         // How prominent ridges/mountains are (0-1)
+    ridgeFactor: 0.07,         // How prominent ridges/mountains are (0-1)
     
-    // Noise algorithm settings
+    // Noise algorithm settings.
     octaves: 8,               // Number of noise octaves for base terrain (more = more detail)
     ridgeOctaves: 4,          // Number of noise octaves for ridge features
     lacunarity: 2.0,          // Controls frequency increase per octave
     gain: 0.5,                // Controls amplitude decrease per octave
     
-    // Geometry settings
+    // Geometry settings.
     useHexagons: true,       // Use hexagon geometry instead of cubes
-    geometrySize: 0.975,        // Size of terrain geometry units
+    geometrySize: 0.86,        // Size of terrain geometry units
     
     // Chunk system settings
     chunkSize: 8,            // Size of each terrain chunk (in geometry units)
@@ -29,7 +29,7 @@ window.TerrainConfig = {
     unloadDistance: 150,      // Distance at which chunks are unloaded
     
     // Color settings
-    colorVariation: 0.8,      // Amount of color variation (0-1)
+    colorVariation: 11.0,      // Amount of color variation (not normalised.)
     
     // Apply all settings to create consistent terrain
     applyToGenerator: function(generator) {
@@ -188,7 +188,7 @@ class TerrainGenerator {
         // Parameters for the terrain - use TerrainConfig as default values if available
         const config = window.TerrainConfig || {};
         
-        this.hex = options.hex !== undefined ? options.hex : config.useHexagons || false;
+        this.hex = options.hex !== undefined ? options.hex : config.useHexagons || true;
         this.cubeSize = options.cubeSize || config.geometrySize || 1.0;
         this.heightScale = options.heightScale || config.heightScale || 20.0;
         this.noiseScale = options.noiseScale || config.noiseScale || 0.03;
@@ -324,7 +324,7 @@ class TerrainGenerator {
                 // Add cube to collection with LOCAL position relative to chunk
                 cubes.push({
                     position: [x * this.cubeSize, 0, z * this.cubeSize],
-                    height: height,
+                    height: Math.floor(height),
                     color: color
                 });
             }
@@ -346,7 +346,7 @@ AFRAME.registerComponent('terrain-manager', {
         loadDistance: {type: 'number', default: 100},
         unloadDistance: {type: 'number', default: 150},
         heightOffset: {type: 'number', default: 5.0},
-        followTerrain: {type: 'boolean', default: false},
+        followTerrain: {type: 'boolean', default: true},
         chunkSize: {type: 'number', default: 16},
         cubeSize: {type: 'number', default: 1.0},
         seed: {type: 'number', default: 0}
@@ -449,6 +449,7 @@ AFRAME.registerComponent('terrain-manager', {
                 document.dispatchEvent(event);
             }, 500);
             
+            
             console.log("Terrain manager initialization complete");
         } catch (error) {
             console.error("Failed to initialize terrain:", error);
@@ -506,7 +507,8 @@ AFRAME.registerComponent('terrain-manager', {
                     
                     // Set the new height with smooth transition
                     if (this.subjectObj.position.y !== targetHeight) {
-                        this.subjectObj.position.y += (targetHeight - this.subjectObj.position.y) * 0.1;
+                        this.subjectObj.position.y += (targetHeight - 
+                            this.subjectObj.position.y) * 0.7;
                     }
                 } catch (error) {
                     console.warn("Error in terrain following:", error);

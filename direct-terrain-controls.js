@@ -51,7 +51,8 @@ function addTerrainConfigToPanel() {
         }
     });
     
-    // Get current terrain configuration
+    // Get current terrain configuration from TerrainConfig rather than localStorage
+    // Always prioritize the default config from terrain-system.js
     const config = { ...window.TerrainConfig } || {
         seed: 99,
         heightScale: 128.0,
@@ -70,18 +71,6 @@ function addTerrainConfigToPanel() {
         unloadDistance: 150,
         colorVariation: 0.8
     };
-    
-    // Restore config from localStorage if it exists
-    try {
-        const savedConfig = localStorage.getItem('terrainConfig');
-        if (savedConfig) {
-            const parsedConfig = JSON.parse(savedConfig);
-            console.log("Restored config from localStorage:", parsedConfig);
-            Object.assign(config, parsedConfig);
-        }
-    } catch (e) {
-        console.error("Error restoring config from localStorage:", e);
-    }
     
     // Create a simple form with key controls
     const form = document.createElement('div');
@@ -289,6 +278,13 @@ function addTerrainConfigToPanel() {
     // Add the form to the content container
     content.appendChild(form);
     
+    // Add buttons container
+    const buttonsContainer = document.createElement('div');
+    buttonsContainer.style.display = 'grid';
+    buttonsContainer.style.gridTemplateColumns = '1fr 1fr';
+    buttonsContainer.style.gap = '8px';
+    buttonsContainer.style.marginTop = '10px';
+    
     // Add generate terrain button
     const generateButton = document.createElement('button');
     generateButton.textContent = 'Generate New Terrain';
@@ -300,14 +296,56 @@ function addTerrainConfigToPanel() {
         cursor: pointer;
         border-radius: 3px;
         width: 100%;
-        margin-top: 10px;
     `;
     
     generateButton.addEventListener('click', function() {
         generateNewTerrain(config);
     });
     
-    content.appendChild(generateButton);
+    // Add save/load configuration buttons
+    const saveConfigButton = document.createElement('button');
+    saveConfigButton.textContent = 'Save Config';
+    saveConfigButton.style.cssText = `
+        background: #333355;
+        color: white;
+        border: 1px solid #555;
+        padding: 8px;
+        cursor: pointer;
+        border-radius: 3px;
+        width: 100%;
+    `;
+    
+    saveConfigButton.addEventListener('click', function() {
+        saveConfigToLocalStorage(config);
+        alert('Configuration saved');
+    });
+    
+    const loadConfigButton = document.createElement('button');
+    loadConfigButton.textContent = 'Load Saved Config';
+    loadConfigButton.style.cssText = `
+        background: #553333;
+        color: white;
+        border: 1px solid #555;
+        padding: 8px;
+        cursor: pointer;
+        border-radius: 3px;
+        width: 100%;
+    `;
+    
+    loadConfigButton.addEventListener('click', function() {
+        if (loadConfigFromLocalStorage(config, form)) {
+            alert('Configuration loaded');
+        } else {
+            alert('No saved configuration found');
+        }
+    });
+    
+    // Add buttons to container
+    buttonsContainer.appendChild(generateButton);
+    buttonsContainer.appendChild(saveConfigButton);
+    buttonsContainer.appendChild(loadConfigButton);
+    
+    content.appendChild(buttonsContainer);
     
     // Add everything to the terrain section
     terrainSection.appendChild(content);
@@ -315,6 +353,70 @@ function addTerrainConfigToPanel() {
     // Add to debug panel
     panel.appendChild(terrainSection);
     console.log("Terrain controls added successfully");
+}
+
+// Function to save configuration to localStorage
+function saveConfigToLocalStorage(config) {
+    try {
+        // Make a copy without any functions
+        const configForStorage = { ...config };
+        delete configForStorage.applyToGenerator;
+        
+        localStorage.setItem('terrainConfig', JSON.stringify(configForStorage));
+        console.log("Config saved to localStorage:", configForStorage);
+        return true;
+    } catch (e) {
+        console.error("Error saving config to localStorage:", e);
+        return false;
+    }
+}
+
+// Function to load configuration from localStorage
+function loadConfigFromLocalStorage(config, form) {
+    try {
+        const savedConfig = localStorage.getItem('terrainConfig');
+        if (savedConfig) {
+            const parsedConfig = JSON.parse(savedConfig);
+            console.log("Loaded config from localStorage:", parsedConfig);
+            
+            // Apply saved values to config object
+            Object.assign(config, parsedConfig);
+            
+            // Update form controls with loaded values
+            updateFormControls(form, config);
+            
+            return true;
+        }
+        return false;
+    } catch (e) {
+        console.error("Error loading config from localStorage:", e);
+        return false;
+    }
+}
+
+// Function to update form controls with config values
+function updateFormControls(form, config) {
+    // Update range inputs
+    ['seed', 'heightScale', 'noiseScale', 'baseHeight', 'ridgeFactor'].forEach(key => {
+        const input = form.querySelector(`#${key}`) || form.querySelector(`input[type="number"][value="${config[key]}"]`);
+        if (input) {
+            input.value = config[key];
+            
+            // Update value display for sliders
+            const valueDisplay = document.getElementById(`${key}-value`);
+            if (valueDisplay) {
+                valueDisplay.textContent = config[key];
+            }
+        }
+    });
+    
+    // Update checkboxes
+    ['useRidges', 'useHexagons'].forEach(key => {
+        const checkbox = document.getElementById(key);
+        if (checkbox) {
+            checkbox.checked = config[key];
+        }
+    });
 }
 
 // Function to generate new terrain based on configuration
@@ -326,18 +428,6 @@ function generateNewTerrain(config) {
     if (loadingScreen) {
         loadingScreen.style.display = 'flex';
         loadingScreen.style.opacity = '1';
-    }
-    
-    // Store config in localStorage to persist across reloads
-    try {
-        // Make a copy without any functions
-        const configForStorage = { ...config };
-        delete configForStorage.applyToGenerator;
-        
-        localStorage.setItem('terrainConfig', JSON.stringify(configForStorage));
-        console.log("Config saved to localStorage");
-    } catch (e) {
-        console.error("Error saving config to localStorage:", e);
     }
     
     // Try to apply config in-place
@@ -400,6 +490,7 @@ function generateNewTerrain(config) {
     
     // If in-place application failed, reload the page
     console.log("Falling back to page reload to apply config");
+    saveConfigToLocalStorage(config); // Save config so it persists through reload
     setTimeout(() => {
         window.location.reload();
     }, 500);

@@ -5,11 +5,11 @@ document.addEventListener('DOMContentLoaded', function() {
     // Function to check if the component is registered and set up the debug panel enhancements
     function checkAndSetupTerrainManager() {
         if (AFRAME && AFRAME.components && AFRAME.components['terrain-manager']) {
-            console.log("Found terrain-manager component, enhancing debug panel");
+            //console.log("Found terrain-manager component, enhancing debug panel");
             
             // Store the original setupDebugPanel function
             const originalSetupDebugPanel = AFRAME.components['terrain-manager'].prototype.setupDebugPanel;
-        
+
             // Replace it with our enhanced version
             AFRAME.components['terrain-manager'].prototype.setupDebugPanel = function() {
                 try {
@@ -135,12 +135,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     });
                     panel.appendChild(resetButton);
                 } catch (error) {
-                    console.error('Error setting up debug panel:', error);
+                    //console.error('Error setting up debug panel:', error);
                 }
             };
-            console.log("Debug panel enhancement complete");
+            //console.log("Debug panel enhancement complete");
         } else {
-            console.warn('terrain-manager component not found yet, waiting...');
+            //console.warn('terrain-manager component not found yet, waiting...');
             // Try again after a short delay
             setTimeout(checkAndSetupTerrainManager, 500);
         }
@@ -152,7 +152,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Hide loading screen when terrain is ready
 document.addEventListener('terrainReady', function() {
-    console.log("Terrain ready event received");
+    //console.log("Terrain ready event received");
     setTimeout(() => {
         const loadingScreen = document.getElementById('loading-screen');
         if (loadingScreen) {

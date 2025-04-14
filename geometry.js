@@ -124,7 +124,7 @@ window.cubeFragmentShader = `
         float heightFactor = clamp(vHeight / 20.0, 0.0, 1.0);
         
         // Snow on high peaks
-        if (vHeight > 15.0 && normal.y > 0.7) {
+        if (vHeight > 150.0 && normal.y > 0.8) {
             float snowAmount = smoothstep(15.0, 20.0, vHeight);
             finalColor = mix(finalColor, vec3(0.9, 0.9, 1.0), snowAmount * normal.y);
         }
@@ -201,7 +201,15 @@ window.CubeTerrainBuilder = {
     // Create shader material for the cubes
     createCubeMaterial: function() {
         // Create a default empty texture first
-        const emptyTexture = new THREE.Texture();
+        //const emptyTexture = new THREE.Texture();
+        // New: Create a valid fallback texture (1x1 pixel).
+        const canvas = document.createElement('canvas');
+        canvas.width = 1;
+        canvas.height = 1;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, 1, 1);
+        const fallbackTexture = new THREE.CanvasTexture(canvas);
         
         // Check if textures are enabled in config
         const useTextures = window.HexConfig && window.HexConfig.useTextures !== undefined 
@@ -229,7 +237,7 @@ window.CubeTerrainBuilder = {
                 THREE.UniformsLib.lights,
                 THREE.UniformsLib.common,
                 {
-                    diffuseMap: { value: emptyTexture },
+                    diffuseMap: { value: fallbackTexture },
                     useTexture: { value: 0.0 } // Start with texture disabled until it's loaded
                 }
             ])
@@ -306,6 +314,8 @@ window.CubeTerrainBuilder = {
                         undefined,
                         function(secondError) {
                             console.error("Failed to load texture from both paths:", secondError);
+                            // Explicitly disable texturing when loading fails
+                            material.uniforms.useTexture.value = 0.0;
                             // Dispatch texture failure event
                             const event = new CustomEvent('textureLoadFailed');
                             document.dispatchEvent(event);

@@ -8,6 +8,7 @@
     
     <!-- Initialize TerrainConfig before loading A-Frame -->
     <script>
+        /*
         // Initialize the terrain configuration
         window.TerrainConfig = {
             // General terrain settings
@@ -56,6 +57,7 @@
         };
         
         console.log("TerrainConfig initialized with seed:", window.TerrainConfig.seed);
+    */
     </script>
     
     <!-- Load A-Frame -->
@@ -77,20 +79,19 @@
         <!-- Lighting to make the terrain visible -->
         <a-entity light="type: ambient; color: #BBB; intensity: 0.5"></a-entity>
         <a-entity light="type: directional; color: #FFF; intensity: 0.8" 
-                  position="-1 2 1"></a-entity>
+                  position="-1 200 1"></a-entity>
         
         <!-- Sky background -->
-        <a-sky color="#00FFFF"></a-sky>
+        <a-sky color="#00BAFF"></a-sky>
         
         <!-- Container for terrain chunks -->
         <a-entity id="terrain-container"></a-entity>
     </a-scene>
     
     <!-- Load scripts in the correct order -->
-    <script src="hex-geometry.js"></script>
-    <!-- <script src="geometry.js"></script> -->
+    <!-- <script src="hex-geometry.js"></script> -->
+    <script src="geometry.js"></script>
     <script src="terrain-system.js"></script>
-    <!-- <script src="texture-controls.js"></script> -->
     <script src="start-terrain.js"></script>
     <script src="direct-terrain-controls.js"></script>
 </body>

@@ -1,14 +1,13 @@
-// Simplified hexagon shader approach
-// Keep the surrounding structure but completely replace the shader code
+// geometry.js - Cube geometry implementation using the same approach as hex-geometry.js
+
+console.log("Initializing cube geometry using extrusion approach...");
 
 // Global configuration
 window.HexConfig = {
     useTextures: true,
-    texturePath: './assets/grass_13.png',
+    texturePath: 'assets/grass_12.png',
     textureScale: 1.0
 };
-
-console.log("Initializing simplified hexagon shaders...");
 
 // ==== STEP 1: First, add this code at the start of both files ====
 // This will disable the warning by setting the property correctly
@@ -32,75 +31,37 @@ if (typeof THREE === 'undefined' && typeof AFRAME !== 'undefined') {
     THREE = AFRAME.THREE;
 }
 
-// Define a custom HexagonGeometry class for THREE.js
-THREE.HexagonGeometry = class HexagonGeometry extends THREE.BufferGeometry {
-    constructor(size = 2.54, height = 1, flatTop = false) {
+// Define a custom CubeGeometry class for THREE.js that uses the same extrusion approach
+THREE.CubeGeometry = class CubeGeometry extends THREE.BufferGeometry {
+    constructor(size = 2.2, height = 1) {
         super();
-        // size relates to terrain-system geometrySize.
-        // Size default is 0.5. GeometrySize default with this
-        // is 0.86.
-        this.type = 'HexagonGeometry';
+        
+        this.type = 'CubeGeometry';
         this.parameters = {
             size: size,
-            height: height,
-            flatTop: flatTop
+            height: height
         };
         
-        // Determine the angle based on orientation (flat-top or pointy-top)
-        const startAngle = flatTop ? 0 : Math.PI / 6;
-        
-        // Create the hexagon shape
+        // Create a square shape instead of a hexagon
         const shape = new THREE.Shape();
         
-        // Store vertices for later UV calculation
-        const vertices = [];
-        
-        // Create the hexagon vertices
-        for (let i = 0; i < 6; i++) {
-            const angle = startAngle + (i * Math.PI / 3);
-            const x = size * Math.cos(angle);
-            const z = size * Math.sin(angle);
-            
-            vertices.push(new THREE.Vector2(x, z));
-            
-            if (i === 0) {
-                shape.moveTo(x, z);
-            } else {
-                shape.lineTo(x, z);
-            }
-        }
+        // Define the four corners of the square
+        shape.moveTo(-size, -size);
+        shape.lineTo(size, -size);
+        shape.lineTo(size, size);
+        shape.lineTo(-size, size);
         shape.closePath();
         
-        // Extrude the shape to create a 3D hexagonal prism
+        // Extrude the shape to create a 3D cube
         const extrudeSettings = {
             depth: height,
-            bevelEnabled: false,
-            // Use simplified UVGenerator to avoid buffer attribute issues
-            UVGenerator: {
-                generateTopUV: function(geometry, vertices, indexA, indexB, indexC) {
-                    // Use default UVs for the top face - will be adjusted in shader
-                    return [
-                        new THREE.Vector2(0, 0),
-                        new THREE.Vector2(1, 0),
-                        new THREE.Vector2(0.5, 1)
-                    ];
-                },
-                generateSideWallUV: function(geometry, vertices, indexA, indexB, indexC, indexD) {
-                    // Use default UVs for side walls
-                    return [
-                        new THREE.Vector2(0, 0),
-                        new THREE.Vector2(1, 0),
-                        new THREE.Vector2(0, 1),
-                        new THREE.Vector2(1, 1)
-                    ];
-                }
-            }
+            bevelEnabled: false
         };
         
         // Use THREE.js built-in extrusion to create the geometry
         const geometryData = new THREE.ExtrudeGeometry(shape, extrudeSettings);
         
-        // Adjust the position so the hexagon is positioned properly
+        // Adjust the position so the cube is positioned properly
         geometryData.rotateX(-Math.PI / 2);
         
         // Copy all attributes from the generated geometry
@@ -112,8 +73,9 @@ THREE.HexagonGeometry = class HexagonGeometry extends THREE.BufferGeometry {
 };
 
 // Also define a buffer geometry version for compatibility
-THREE.HexagonBufferGeometry = THREE.HexagonGeometry;
+THREE.CubeBufferGeometry = THREE.CubeGeometry;
 
+// Use the same vertex and fragment shaders as hex-geometry.js
 // SIMPLIFIED Vertex Shader
 window.cubeVertexShader = `
     // Instance attributes
@@ -126,23 +88,17 @@ window.cubeVertexShader = `
     uniform vec3 directionalLightColor[5];
     uniform vec3 directionalLightDirection[5];
     
-    // Fog calculation
-    varying float vFogDepth;
-    
     // Varyings passed to fragment shader
     varying vec3 vColor;
     varying float vHeight;
     varying vec3 vNormal;
     varying vec2 vUv;
-    varying vec3 vPosition;
-    varying vec3 vWorldPosition;
     
     void main() {
         // Pass variables to fragment shader
         vColor = instanceColor;
         vHeight = instanceHeight;
         vUv = uv;
-        vPosition = position;
         
         // Apply height scaling - only to the top part
         vec3 transformed = position;
@@ -152,21 +108,16 @@ window.cubeVertexShader = `
         
         // Apply instance position and calculate final position
         vec3 worldPos = transformed + instancePosition;
-        vWorldPosition = worldPos;
         
         // Calculate the normal in view space for lighting
         vNormal = normalMatrix * normal;
         
         // Final position calculation
-        vec4 mvPosition = modelViewMatrix * vec4(worldPos, 1.0);
-        gl_Position = projectionMatrix * mvPosition;
-        
-        // Calculate fog depth (distance to camera)
-        vFogDepth = -mvPosition.z;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(worldPos, 1.0);
     }
 `;
 
-// IMPROVED Fragment Shader with better texture mapping
+// SIMPLIFIED Fragment Shader
 window.cubeFragmentShader = `
     // A-Frame specific uniforms for modern physically-based lighting
     uniform vec3 ambientLightColor;
@@ -177,19 +128,11 @@ window.cubeFragmentShader = `
     uniform sampler2D diffuseMap;
     uniform float useTexture;
     
-    // Fog uniforms
-    uniform vec3 fogColor;
-    uniform float fogNear;
-    uniform float fogFar;
-    varying float vFogDepth;
-    
     // Varyings from vertex shader
     varying vec3 vColor;
     varying float vHeight;
     varying vec3 vNormal;
     varying vec2 vUv;
-    varying vec3 vPosition;
-    varying vec3 vWorldPosition;
     
     void main() {
         // Ensure normal is normalized
@@ -211,16 +154,9 @@ window.cubeFragmentShader = `
         // Start with base color * lighting
         vec3 finalColor = vColor * max(lighting, vec3(0.3));
         
-        // Apply texture if enabled - using consistent world-space mapping
+        // Apply texture if enabled
         if (useTexture > 0.5) {
-            // Use world-space XZ coordinates for all faces, regardless of orientation
-            // This ensures the texture looks the same from all viewing angles
-            vec2 texUV = vec2(
-                fract(vWorldPosition.x / 3.0),  // Adjust the 15.0 value to control texture scaling
-                fract(vWorldPosition.z / 3.0)   // Using fract() to repeat the texture
-            );
-            
-            vec4 texColor = texture2D(diffuseMap, texUV);
+            vec4 texColor = texture2D(diffuseMap, vUv);
             finalColor *= texColor.rgb;
         }
         
@@ -233,14 +169,7 @@ window.cubeFragmentShader = `
         // New: gamma correction for physically correct lighting
         finalColor = pow(finalColor, vec3(1.0/2.2));
         
-        // Create the base color
-        vec4 color = vec4(finalColor, 1.0);
-        
-        // Apply fog
-        float fogFactor = smoothstep(fogNear, fogFar, vFogDepth);
-        color.rgb = mix(color.rgb, fogColor, fogFactor);
-        
-        gl_FragColor = color;
+        gl_FragColor = vec4(finalColor, 1.0);
     }
 `;
 
@@ -248,21 +177,17 @@ window.cubeFragmentShader = `
 window.CubeTerrainBuilder = {
     // Create a mesh for a terrain chunk using instancing
     createChunkMesh: function(chunkData, material) {
-        // Adapt to work with either cubes or hexagons
-        const cubes = chunkData.cubes || chunkData.hexagons || [];
+        // Adapt to work with cubes
+        const cubes = chunkData.cubes || [];
         
         if (cubes.length === 0) {
             console.log("No terrain elements in chunk data, returning empty group");
             return new THREE.Group();
         }
         
-        //console.log(`Creating instanced hexagon mesh with ${cubes.length} hexagons`);
-        
         try {
-            // Create a hexagon geometry instead of a box
-            // default values: 0.5, 1.0, false
-            const geometry = new THREE.HexagonGeometry(2.54, 1.0, false);
-            this.size = 2.54; // Store size for future reference
+            // Create a cube geometry using our extrusion-based approach
+            const geometry = new THREE.CubeGeometry(this.size, 1.0);
             
             // Create the instanced mesh
             const instancedMesh = new THREE.InstancedMesh(
@@ -302,22 +227,18 @@ window.CubeTerrainBuilder = {
             geometry.setAttribute('instanceHeight', new THREE.InstancedBufferAttribute(instanceHeights, 1));
             geometry.setAttribute('instanceColor', new THREE.InstancedBufferAttribute(instanceColors, 3));
             
-            //console.log("Instanced hex mesh created successfully");
             return instancedMesh;
             
         } catch (error) {
-            console.error("Error creating instanced hex mesh:", error);
+            console.error("Error creating instanced cube mesh:", error);
             console.error("Error stack:", error.stack);
             return new THREE.Group(); // Return empty group on error
         }
     },
     
-    // Create shader material for the cubes/hexagons
+    // Create shader material for the cubes - identical to hex-geometry.js
     createCubeMaterial: function() {
-        // Create a default empty texture first
-        //const emptyTexture = new THREE.Texture();
-        
-        // New: Create a valid fallback texture (1x1 pixel).
+        // Create a valid fallback texture (1x1 pixel)
         const canvas = document.createElement('canvas');
         canvas.width = 1;
         canvas.height = 1;
@@ -329,19 +250,17 @@ window.CubeTerrainBuilder = {
         // Check if textures are enabled in config
         const useTextures = window.HexConfig && window.HexConfig.useTextures !== undefined 
             ? window.HexConfig.useTextures 
-            : true;
+            : false;
             
         // Get texture path from config or use default
         const texturePath = window.HexConfig && window.HexConfig.texturePath 
             ? window.HexConfig.texturePath 
-            : './assets/grass_13.png';
+            : './assets/grass_12.png';
             
         // Get texture scale from config or use default
         const textureScale = window.HexConfig && window.HexConfig.textureScale !== undefined 
             ? window.HexConfig.textureScale 
             : 1.0;
-        
-        //console.log(`Texturing: ${useTextures ? 'Enabled' : 'Disabled'}`);
         
         // Create the material with the empty texture
         const material = new THREE.ShaderMaterial({
@@ -349,20 +268,18 @@ window.CubeTerrainBuilder = {
             fragmentShader: window.cubeFragmentShader,
             vertexColors: true,
             lights: true,
-            fog: true, // Enable fog
             // Add these lines:
             toneMapped: true, // Enable tone mapping for physically correct output.
             uniforms: THREE.UniformsUtils.merge([
                 THREE.UniformsLib.lights,
                 THREE.UniformsLib.common,
-                THREE.UniformsLib.fog, // Add fog uniforms
                 {
                     diffuseMap: { value: fallbackTexture },
                     useTexture: { value: 0.0 } // Start with texture disabled until it's loaded
                 }
             ])
         });
-        
+
         // Also add this line after creating the material:
         material.extensions = {
             derivatives: true,
@@ -370,40 +287,25 @@ window.CubeTerrainBuilder = {
             drawBuffers: false,
             shaderTextureLOD: false
         };
-
+        
         // Explicitly enable lights
         material.lights = true;
-        //material.fog = true;
         
         // Only load texture if enabled in config
         if (useTextures) {
             // Load the texture asynchronously
             const textureLoader = new THREE.TextureLoader();
             
-            //console.log(`Loading texture from ${texturePath}...`);
-            
             textureLoader.load(
                 texturePath, 
                 // Success callback
                 function(loadedTexture) {
-                    //console.log("Texture loaded successfully");
-                    
-                    // Set texture properties - MODIFIED to use RepeatWrapping
+                    // Set texture properties
                     loadedTexture.wrapS = THREE.RepeatWrapping;
                     loadedTexture.wrapT = THREE.RepeatWrapping;
                     
-                    // Apply texture scale from config (set to 1.0 for single non-repeating texture)
-                    loadedTexture.repeat.set(1.0, 1.0);
-                    
-                    // Improved texture filtering
-                    loadedTexture.magFilter = THREE.LinearFilter;
-                    loadedTexture.minFilter = THREE.LinearMipmapLinearFilter;
-                    
-                    // Enable anisotropy for better texture quality at angles
-                    if (typeof AFRAME !== 'undefined' && AFRAME.THREE && AFRAME.THREE.renderer) {
-                        const maxAnisotropy = AFRAME.THREE.renderer.capabilities.getMaxAnisotropy();
-                        loadedTexture.anisotropy = maxAnisotropy;
-                    }
+                    // Apply texture scale from config
+                    loadedTexture.repeat.set(textureScale, textureScale);
                     
                     // Update the material's texture
                     material.uniforms.diffuseMap.value = loadedTexture;
@@ -433,21 +335,9 @@ window.CubeTerrainBuilder = {
                     textureLoader.load(
                         altPath,
                         function(loadedTexture) {
-                            //console.log("Texture loaded successfully from alternative path");
                             loadedTexture.wrapS = THREE.RepeatWrapping;
                             loadedTexture.wrapT = THREE.RepeatWrapping;
-                            loadedTexture.repeat.set(1.0, 1.0);
-                            
-                            // Improved texture filtering
-                            loadedTexture.magFilter = THREE.LinearFilter;
-                            loadedTexture.minFilter = THREE.LinearMipmapLinearFilter;
-                            
-                            // Enable anisotropy
-                            if (typeof AFRAME !== 'undefined' && AFRAME.THREE && AFRAME.THREE.renderer) {
-                                const maxAnisotropy = AFRAME.THREE.renderer.capabilities.getMaxAnisotropy();
-                                loadedTexture.anisotropy = maxAnisotropy;
-                            }
-                            
+                            loadedTexture.repeat.set(textureScale, textureScale);
                             material.uniforms.diffuseMap.value = loadedTexture;
                             material.uniforms.useTexture.value = 1.0;
                             loadedTexture.needsUpdate = true;
@@ -484,8 +374,7 @@ window.CubeTerrainBuilder = {
     }
 };
 
-// Use the same approach for modifying BoxGeometry for better compatibility
-// Make BoxGeometry actually create a hexagon
-THREE.BoxGeometry = THREE.HexagonGeometry;
+// Don't override BoxGeometry with CubeGeometry - the original code relies on BoxGeometry
+// If you want to use the custom CubeGeometry, use it explicitly
 
-console.log("Simplified hexagon shaders initialized");
+console.log("Cube geometry initialized using extrusion approach");

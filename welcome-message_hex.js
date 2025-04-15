@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
         mobileText: { type: 'string', default: '• swipe to turn • walk button to move • [tap to shoot pulse]' },
         desktopText: { type: 'string', default: '• [SPACE for menu] • [L for leaderboard] • [CLICK to shoot pulse]' },
         vrText: { type: 'string', default: 'tilt head left toggles walk • [tilt head right shoots pulse] • [farther right toggles menu]' },
-        goalText: { type: 'string', default: 'welcome to the real world of the post-singuarlity' }
+        goalText: { type: 'string', default: 'welcome to the post-singuarlity' }
       },
   
       init: function() {
@@ -46,7 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Set styles for message box
         Object.assign(messageBox.style, {
-          backgroundColor: 'rgba(4, 112, 134, 0.85)',
+          backgroundColor: 'rgba(12, 238, 114, 0.85)',
           color: 'white',
           padding: '30px',
           borderRadius: '12px',

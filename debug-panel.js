@@ -17,6 +17,7 @@ class DebugPanel {
         this.panel = null;
         this.terrainManager = null;
         this.initialized = false;
+        this.visible = false; // Initialize panel as hidden
         
         // Initialize when the DOM is ready
         if (document.readyState === 'complete') {
@@ -44,8 +45,19 @@ class DebugPanel {
             if (!this.panel) {
                 this.panel = document.createElement('div');
                 this.panel.id = 'debug-panel';
+                
+                // Position panel to leave space for toggle button
+                this.panel.style.right = '60px'; // Leave space on the right
+                this.panel.style.top = '10px';   // Align top with toggle button
+                
                 document.body.appendChild(this.panel);
+                
+                // Set to hidden by default
+                this.panel.style.display = 'none';
             }
+            
+            // Create toggle button
+            this.createToggleButton();
             
             // Get terrain manager component
             const terrainManagerElement = document.querySelector('[terrain-manager]');
@@ -63,9 +75,79 @@ class DebugPanel {
             
             // Set initialized flag
             this.initialized = true;
-            console.log("Debug panel initialized successfully");
+            console.log("Debug panel initialized successfully (hidden by default)");
         } catch (error) {
             console.error("Error initializing debug panel:", error);
+        }
+    }
+    
+    // Create toggle button for debug panel
+    createToggleButton() {
+        const toggleButton = document.getElementById('debug-panel-toggle');
+        if (!toggleButton) {
+            const button = document.createElement('button');
+            button.id = 'debug-panel-toggle';
+            button.innerHTML = '🥚'; // Gear icon
+            button.title = 'Toggle Terrain Controls';
+            
+            // Style the button
+            Object.assign(button.style, {
+                position: 'fixed',
+                top: '10px',
+                right: '10px',
+                width: '40px',
+                height: '40px',
+                borderRadius: '50%',
+                backgroundColor: 'rgba(0, 0, 0, 0.6)',
+                color: 'white',
+                border: '2px solid rgba(255, 255, 255, 0.5)',
+                fontSize: '20px',
+                cursor: 'pointer',
+                zIndex: '999',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'background-color 0.3s, transform 0.2s'
+            });
+            
+            // Add hover effect
+            button.addEventListener('mouseenter', () => {
+                button.style.backgroundColor = 'rgba(60, 60, 60, 0.8)';
+                button.style.transform = 'scale(1.05)';
+            });
+            
+            button.addEventListener('mouseleave', () => {
+                button.style.backgroundColor = 'rgba(0, 0, 0, 0.6)';
+                button.style.transform = 'scale(1)';
+            });
+            
+            // Add click handler to toggle panel visibility
+            button.addEventListener('click', () => this.toggleVisibility());
+            
+            document.body.appendChild(button);
+        }
+    }
+    
+    // Toggle panel visibility
+    toggleVisibility() {
+        this.visible = !this.visible;
+        
+        if (this.panel) {
+            this.panel.style.display = this.visible ? 'block' : 'none';
+            
+            // Update toggle button to indicate state
+            const toggleButton = document.getElementById('debug-panel-toggle');
+            if (toggleButton) {
+                toggleButton.style.backgroundColor = this.visible ? 
+                    'rgba(60, 100, 150, 0.8)' : 'rgba(0, 0, 0, 0.6)';
+                toggleButton.style.border = this.visible ? 
+                    '2px solid rgba(100, 180, 255, 0.8)' : '2px solid rgba(255, 255, 255, 0.5)';
+            }
+            
+            // If becoming visible, update all sections
+            if (this.visible) {
+                this.updateAllSections();
+            }
         }
     }
     

@@ -110,3 +110,58 @@ button {
 button:hover {
     filter: brightness(1.2);
 }
+
+/* Add these styles to your existing style.css file */
+
+/* Debug panel toggle button styles */
+#debug-panel-toggle {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: rgba(0, 0, 0, 0.6);
+    color: white;
+    border: 2px solid rgba(255, 255, 255, 0.5);
+    font-size: 20px;
+    cursor: pointer;
+    z-index: 1001; /* Make sure it's above the debug panel */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.3s, transform 0.2s;
+}
+
+#debug-panel-toggle:hover {
+    background-color: rgba(60, 60, 60, 0.8);
+    transform: scale(1.05);
+}
+
+#debug-panel-toggle:active {
+    transform: scale(0.95);
+}
+
+/* VR and Mobile specific styles */
+@media (max-width: 768px) {
+    #debug-panel-toggle {
+        width: 50px;
+        height: 50px;
+        font-size: 24px;
+    }
+}
+
+/* Make the debug panel more legible and scrollable on mobile */
+@media (max-width: 768px) {
+    #debug-panel {
+        max-width: 80vw;
+        max-height: 70vh;
+    }
+}
+
+/* Add larger hit area for VR */
+.a-vr-mode #debug-panel-toggle {
+    width: 60px;
+    height: 60px;
+    font-size: 30px;
+}

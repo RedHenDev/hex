@@ -6,8 +6,8 @@ document.addEventListener('DOMContentLoaded', () => {
   AFRAME.registerComponent('forest-system', {
     schema: {
       enabled: { default: true },
-      density: { default: 0.4 }, // Tree density factor (0-1)
-      maxTrees: { default: 40000 }, // Maximum number of trees to render
+      density: { default: 0.1 }, // default 0.4 Tree density factor (0-1)
+      maxTrees: { default: 4000 }, // default 40k Maximum number of trees to render
       treeDistance: { default: 650 }, // Maximum distance to render trees
       updateInterval: { default: 1000 }, // How often to update forests (ms)
       debugMode: { default: false } // Enable debugging visuals

@@ -295,7 +295,7 @@ document.addEventListener('DOMContentLoaded', () => {
       for (const type of this.treeTypes) {
         this.treeMeshes[type].frustumCulled = false; // DISABLE frustum culling - fixes disappearing trees
         this.treeMeshes[type].castShadow = true;
-        this.treeMeshes[type].receiveShadow = true;
+        this.treeMeshes[type].receiveShadow = false;
         scene.add(this.treeMeshes[type]);
       }
     },

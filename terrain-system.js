@@ -351,6 +351,25 @@ class TerrainGenerator {
     }
 }
 
+// Global terrain height function for other components to use
+window.getTerrainHeight = function(x, z) {
+    const scene = document.querySelector('a-scene');
+    if (!scene) return 0;
+    
+    const terrainManagerEl = scene.querySelector('[terrain-manager]');
+    if (!terrainManagerEl) return 0;
+    
+    const terrainManager = terrainManagerEl.components['terrain-manager'];
+    if (!terrainManager || !terrainManager.chunkManager || !terrainManager.chunkManager.terrainGenerator) return 0;
+    
+    try {
+        return terrainManager.chunkManager.terrainGenerator.generateTerrainHeight(x, z);
+    } catch (error) {
+        console.warn("Error getting terrain height:", error);
+        return 0;
+    }
+};
+
 // Register the terrain-manager component
 AFRAME.registerComponent('terrain-manager', {
     schema: {

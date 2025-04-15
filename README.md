@@ -3,6 +3,10 @@ Web-based procedural terrain based on hexagons
 
 to do
 
+-f new loco to incorporate VR controls and mobile
+
+-f welcome message for no cursor and sounds
+
 -r revert to older hex-geo and geo, but implement fog fix.
 
 DONE-r limit height of hexagons

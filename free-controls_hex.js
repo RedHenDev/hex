@@ -22,7 +22,7 @@ AFRAME.registerComponent('free-controls', {
       this.camera = this.el.object3D;
   
       // Get reference to player entity with terrain-movement
-      this.playerEl = document.querySelector('#player');
+      this.playerEl = document.querySelector('#subject');
       if (!this.playerEl) {
         console.warn("Could not find player element with id 'player'");
       } else {
@@ -156,11 +156,11 @@ AFRAME.registerComponent('free-controls', {
       }
   
       if (!this.playerEl) {
-        console.warn("Cannot toggle movement: player element not found");
+        console.warn("Cannot toggle movement: subject element not found");
         return;
       }
   
-      const terrainMovementComponent = this.playerEl.components['terrain-movement'];
+      const terrainMovementComponent = this.playerEl.components['subject-locomotino'];
   
       if (!terrainMovementComponent) {
         console.warn("Cannot toggle movement: terrain-movement component not found");

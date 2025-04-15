@@ -10,6 +10,8 @@
     <!-- Load A-Frame -->
     <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
     
+    <script src="free-controls_hex.js"></script>
+
 </head>
 <body>
     <!-- Loading screen -->
@@ -21,29 +23,60 @@
     
     <a-scene terrain-manager
         fog="type: linear; color: #00BAFF; far: 360;">
+
         <!-- Camera positioned to view the terrain from above -->
-        <a-entity id="subject" position="0 50 0" rotation="0 0 0" 
-                  camera look-controls wasd-controls="acceleration: 164">
-                <!-- Sky background -->
-        <a-sky color="#00BAFF" radius="4000"></a-sky>
-        </a-entity>
+        <!-- <a-entity id="subject" position="0 50 0" rotation="0 0 0" 
+                  camera look-controls wasd-controls="acceleration: 164"> -->
+        <!-- Sky background -->
+        <!-- <a-sky color="#00BAFF" radius="4000"></a-sky> -->
+        <!-- </a-entity> -->
         
         <!-- Lighting to make the terrain visible -->
         <a-entity light="type: ambient; color: #BBB; intensity: 0.5"></a-entity>
         <a-entity light="type: directional; color: #FFF; intensity: 0.8" 
                   position="-1 200 1"></a-entity>
+
+
+
+        <!-- Player with terrain locomotion system -->
+        <a-entity id="subject" position="0 25 0" subject-locomotion="heightOffset: 4.6">
+            <a-camera id="cam" free-controls="enabled: true; sensitivity: 2.0;" 
+                      wasd-controls="enabled: false">
+                <!-- Reticle for interaction -->
+                <a-entity
+                    id="reticle"
+                    cursor="fuse:true;fuseTimeout:720;"
+                    raycaster="objects:.clickable; far:32;"
+                    geometry="primitive:ring;radiusInner: 0.01; radiusOuter: 0.03"
+                    material="shader:flat;color:#777;
+                              depthTest:true;
+                              transparent:false; opacity:0.4;"
+                    position="0 0 -1;"
+                    animation__fusing="property:scale;from:1 1 1;to:0 0 0;dur:720;startEvents:fusing;"
+                    animation__reset="property:scale;from:0 0 0;to: 1 1 1;dur:333;startEvents:mouseleave;">
+                </a-entity>
+            </a-camera>
+            <!-- Lights and sky etc. can go in here -->
+            <!-- Sky background -->
+            <a-sky color="#00BAFF" radius="4000"></a-sky>
+            
+        </a-entity> <!-- end of subject-->
         
         <!-- Container for terrain chunks -->
         <a-entity id="terrain-container"></a-entity>
     </a-scene>
     
     <!-- Load scripts in the correct order -->
-    <!-- <script src="hex-geometry.js"></script> -->
+    <script src="hex-geometry.js"></script>
     <script src="debug-panel.js"></script>
-    <script src="geometry.js"></script>
+    <!-- <script src="geometry.js"></script> -->
     <script src="terrain-system.js"></script>
     <script src="start-terrain.js"></script>
     <script src="portal.js"></script>
+
+    <!-- Movement system -->
+    <script src="a-loco_hex.js"></script>
+    <script src="welcome-message_hex.js"></script>
     
 </body>
 </html>

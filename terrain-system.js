@@ -27,13 +27,13 @@ window.TerrainConfig = {
     heightStep: 4.4,
     
     // Chunk system settings
-    chunkSize: 8,          // Size of each terrain chunk (in geometry units)
+    chunkSize: 9,          // Size of each terrain chunk (in geometry units)
     // LoadDist and unload dist defaults 100 and 150.
-    loadDistance: 560,      // Distance at which chunks are loaded
-    unloadDistance: 600,    // Distance at which chunks are unloaded
+    loadDistance: 760,      // Distance at which chunks are loaded
+    unloadDistance: 800,    // Distance at which chunks are unloaded
     
     // Color settings
-    colorVariation: 12.0,      // Amount of color variation (not normalised.)
+    colorVariation: 18.0,      // Amount of color variation (not normalised.)
     
     // Apply all settings to create consistent terrain
     applyToGenerator: function(generator) {

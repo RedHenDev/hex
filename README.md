@@ -5,7 +5,7 @@ to do
 
 DONE-f not have ui up at start
 
-i think DONE-b walk button unresponsive
+DONE-b walk button unresponsive
 
 DONE-f new loco to incorporate VR controls and mobile
 

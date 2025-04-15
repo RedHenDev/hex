@@ -268,7 +268,7 @@ AFRAME.registerComponent('subject-locomotion', {
         
         // Handle flying mode.
         if (this.flying) {
-            position.y += pitch * this.moveZ;
+            position.y += pitch * this.moveZ * fly_speed;
         }
         
         // Prevent falling below terrain.

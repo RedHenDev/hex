@@ -3,6 +3,12 @@ Web-based procedural terrain based on hexagons
 
 to do
 
+-b forests not generating at new chunks
+
+-r update appearance of trees -- perhaps build from hexagons
+
+-r huge scale of trees
+
 DONE-f not have ui up at start
 
 DONE-b walk button unresponsive

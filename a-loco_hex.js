@@ -122,7 +122,7 @@ AFRAME.registerComponent('subject-locomotion', {
             let cTime = Date.now();
             if (cTime-this.timeStamp > 2000){
                 this.timeStamp=Date.now();
-                this.hudToggle();
+                //this.hudToggle();
             }
         }
 

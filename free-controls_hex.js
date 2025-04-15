@@ -160,7 +160,7 @@ AFRAME.registerComponent('free-controls', {
         return;
       }
   
-      const terrainMovementComponent = this.playerEl.components['subject-locomotino'];
+      const terrainMovementComponent = this.playerEl.components['subject-locomotion'];
   
       if (!terrainMovementComponent) {
         console.warn("Cannot toggle movement: terrain-movement component not found");

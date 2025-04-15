@@ -3,6 +3,10 @@ Web-based procedural terrain based on hexagons
 
 to do
 
+-f not have ui up at start
+
+-b walk button unresponsive
+
 -f new loco to incorporate VR controls and mobile
 
 -f welcome message for no cursor and sounds

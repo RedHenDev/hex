@@ -327,14 +327,14 @@ class TerrainGenerator {
                 const color = this.getColor(worldX, worldZ, height);
                 
                 // Add cube to collection with LOCAL position relative to chunk
-                // let frank = 0;
+                let frank = 0;
                 // let frankZ = 0.5;
-                // if (x % 2 === 0) frank = 0.5;
+                if (x % 2 === 0) frank = 0.5;
                 // if (z % 2 === 0) frankZ = 0;
                 cubes.push({
                     position: [x * this.cubeSize, 
                         Math.floor(height / this.heightStep) * this.heightStep, 
-                        z * this.cubeSize],
+                        z * this.cubeSize +(this.cubeSize*frank)],
                     height: this.geometryHeight,
                     color: color
                 });
@@ -351,32 +351,13 @@ class TerrainGenerator {
     }
 }
 
-// Global terrain height function for other components to use
-window.getTerrainHeight = function(x, z) {
-    const scene = document.querySelector('a-scene');
-    if (!scene) return 0;
-    
-    const terrainManagerEl = scene.querySelector('[terrain-manager]');
-    if (!terrainManagerEl) return 0;
-    
-    const terrainManager = terrainManagerEl.components['terrain-manager'];
-    if (!terrainManager || !terrainManager.chunkManager || !terrainManager.chunkManager.terrainGenerator) return 0;
-    
-    try {
-        return terrainManager.chunkManager.terrainGenerator.generateTerrainHeight(x, z);
-    } catch (error) {
-        console.warn("Error getting terrain height:", error);
-        return 0;
-    }
-};
-
 // Register the terrain-manager component
 AFRAME.registerComponent('terrain-manager', {
     schema: {
         loadDistance: {type: 'number', default: 100},
         unloadDistance: {type: 'number', default: 150},
         heightOffset: {type: 'number', default: 16},
-        followTerrain: {type: 'boolean', default: true},
+        followTerrain: {type: 'boolean', default: false},
         chunkSize: {type: 'number', default: 16},
         cubeSize: {type: 'number', default: 1.0},
         seed: {type: 'number', default: 0}
@@ -779,3 +760,22 @@ class TerrainChunkManager {
         }
     }
 }
+
+// Global terrain height function for other components to use.
+window.getTerrainHeight = function(x, z) {
+    const scene = document.querySelector('a-scene');
+    if (!scene) return 0;
+    
+    const terrainManagerEl = scene.querySelector('[terrain-manager]');
+    if (!terrainManagerEl) return 0;
+    
+    const terrainManager = terrainManagerEl.components['terrain-manager'];
+    if (!terrainManager || !terrainManager.chunkManager || !terrainManager.chunkManager.terrainGenerator) return 0;
+    
+    try {
+        return terrainManager.chunkManager.terrainGenerator.generateTerrainHeight(x, z);
+    } catch (error) {
+        console.warn("Error getting terrain height:", error);
+        return 0;
+    }
+};

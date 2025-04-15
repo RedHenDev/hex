@@ -3,13 +3,13 @@ Web-based procedural terrain based on hexagons
 
 to do
 
--f not have ui up at start
+DONE-f not have ui up at start
 
--b walk button unresponsive
+i think DONE-b walk button unresponsive
 
--f new loco to incorporate VR controls and mobile
+DONE-f new loco to incorporate VR controls and mobile
 
--f welcome message for no cursor and sounds
+DONE-f welcome message for no cursor and sounds
 
 -r revert to older hex-geo and geo, but implement fog fix.
 

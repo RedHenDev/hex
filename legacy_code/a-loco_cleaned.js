@@ -175,7 +175,6 @@ AFRAME.registerComponent('subject-locomotion', {
         this.targetY = terrainY + this.data.heightOffset;
         
         // Test hack to use ridges button as luna bounce.
-        //this.lunaBounce=ridges;
         if (this.flying){
             // Pitch can affect y position...for flight :D
             position.y += pitch * 0.08 * this.moveZ;

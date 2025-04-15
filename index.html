@@ -22,7 +22,7 @@
     </div>
     
     <a-scene terrain-manager
-        fog="type: linear; color: #00BAFF; far: 360;">
+        fog="type: linear; color: #00BAFF; far: 760;">
 
         <!-- Camera positioned to view the terrain from above -->
         <!-- <a-entity id="subject" position="0 50 0" rotation="0 0 0" 
@@ -39,7 +39,7 @@
 
 
         <!-- Player with terrain locomotion system -->
-        <a-entity id="subject" position="0 25 0" subject-locomotion="heightOffset: 5.25">
+        <a-entity id="subject" position="0 255 0" subject-locomotion="heightOffset: 5.25">
             <a-camera id="cam" free-controls="enabled: true; sensitivity: 4.0;" 
                       wasd-controls="enabled: false">
                 <!-- Reticle for interaction -->

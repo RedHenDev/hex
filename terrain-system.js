@@ -23,17 +23,17 @@ window.TerrainConfig = {
     useHexagons: true,       // Use hexagon geometry instead of cubes
     // Relates to hex-g size. If this 4, then hex-g 2.
     geometrySize: 4.4,      // Size of terrain geometry units 0.86
-    geometryHeight: 12,
-    heightStep: 4,
+    geometryHeight: 16,
+    heightStep: 4.4,
     
     // Chunk system settings
-    chunkSize: 12,          // Size of each terrain chunk (in geometry units)
+    chunkSize: 8,          // Size of each terrain chunk (in geometry units)
     // LoadDist and unload dist defaults 100 and 150.
     loadDistance: 560,      // Distance at which chunks are loaded
     unloadDistance: 600,    // Distance at which chunks are unloaded
     
     // Color settings
-    colorVariation: 11.0,      // Amount of color variation (not normalised.)
+    colorVariation: 32.0,      // Amount of color variation (not normalised.)
     
     // Apply all settings to create consistent terrain
     applyToGenerator: function(generator) {
@@ -327,14 +327,14 @@ class TerrainGenerator {
                 const color = this.getColor(worldX, worldZ, height);
                 
                 // Add cube to collection with LOCAL position relative to chunk
-                let frank = 0;
+                //let frank = 0;
                 // let frankZ = 0.5;
-                if (x % 2 === 0) frank = 0.5;
+                //if (x % 2 === 0) frank = 0.5;
                 // if (z % 2 === 0) frankZ = 0;
                 cubes.push({
                     position: [x * this.cubeSize, 
                         Math.floor(height / this.heightStep) * this.heightStep, 
-                        z * this.cubeSize +(this.cubeSize*frank)],
+                        z * this.cubeSize],
                     height: this.geometryHeight,
                     color: color
                 });

@@ -63,7 +63,7 @@ AFRAME.registerComponent('subject-locomotion', {
         document.addEventListener('keyup', (e) => {
             if (e.code === 'Space') {
                 this.flying = !this.flying;
-                if (this.data.debug) console.log('Locomotion: Flying mode:', this.flying);
+                //if (this.data.debug) console.log('Locomotion: Flying mode:', this.flying);
             }
         });
         
@@ -73,7 +73,7 @@ AFRAME.registerComponent('subject-locomotion', {
             this.setupTerrainAccess();
         });
         
-        // Also try a bit later after everything has loaded
+        // Also try a bit later after everything has loaded.
         setTimeout(() => {
             if (!this.terrainGenerator) {
                 if (this.data.debug) console.log('Locomotion: Trying terrain access again after timeout');
@@ -95,8 +95,9 @@ AFRAME.registerComponent('subject-locomotion', {
                 return;
             }
             
-            // IMPORTANT FIX: Check if terrain-manager is on the scene itself
+            // IMPORTANT FIX: Check if terrain-manager is on the scene itself.
             if (scene.hasAttribute('terrain-manager')) {
+                
                 if (this.data.debug) console.log('Locomotion: Found terrain-manager on scene element');
                 
                 const terrainManager = scene.components['terrain-manager'];
@@ -115,11 +116,12 @@ AFRAME.registerComponent('subject-locomotion', {
                     return;
                 }
                 
-                // Store direct reference
+                
+                // Store direct reference.
                 this.terrainGenerator = terrainManager.chunkManager.terrainGenerator;
                 if (this.data.debug) console.log('Locomotion: Successfully obtained terrain generator from scene!');
                 
-                // Test the generator
+                // Test the generator.
                 try {
                     const testHeight = this.terrainGenerator.generateTerrainHeight(0, 0);
                     if (this.data.debug) console.log('Locomotion: Test terrain height at origin:', testHeight);
@@ -168,64 +170,16 @@ AFRAME.registerComponent('subject-locomotion', {
             console.error('Locomotion: Error setting up terrain access:', err);
         }
     },
-
+    
     getTerrainHeight: function(x, z) {
-        // Method 1: Use direct reference to generator (fastest)
+        // Method 1: Use direct reference to generator (fastest).
         if (this.terrainGenerator) {
             try {
                 return this.terrainGenerator.generateTerrainHeight(x, z);
             } catch (err) {
                 if (this.data.debug) console.warn('Locomotion: Error using direct terrain generator:', err);
-                // Fall through to other methods
+                // Fall through to other methods. Nope. Deleted :)
             }
-        }
-        
-        // Method 2: Use global function
-        if (typeof window.getTerrainHeight === 'function') {
-            try {
-                return window.getTerrainHeight(x, z);
-            } catch (err) {
-                if (this.data.debug) console.warn('Locomotion: Error using global getTerrainHeight:', err);
-                // Fall through to other methods
-            }
-        }
-        
-        // Method 3: Get from scene directly
-        try {
-            const scene = document.querySelector('a-scene');
-            if (!scene) return this.rig.position.y - this.data.heightOffset;
-            
-            // Check if terrain manager is on the scene itself
-            if (scene.hasAttribute('terrain-manager')) {
-                const terrainManager = scene.components['terrain-manager'];
-                if (!terrainManager || !terrainManager.chunkManager || !terrainManager.chunkManager.terrainGenerator) {
-                    return this.rig.position.y - this.data.heightOffset;
-                }
-                
-                // Store for future use
-                this.terrainGenerator = terrainManager.chunkManager.terrainGenerator;
-                
-                return terrainManager.chunkManager.terrainGenerator.generateTerrainHeight(x, z);
-            }
-            
-            // Fallback to child element
-            const terrainManagerEl = scene.querySelector('[terrain-manager]');
-            if (!terrainManagerEl) return this.rig.position.y - this.data.heightOffset;
-            
-            const terrainManager = terrainManagerEl.components['terrain-manager'];
-            if (!terrainManager || !terrainManager.chunkManager || !terrainManager.chunkManager.terrainGenerator) {
-                return this.rig.position.y - this.data.heightOffset;
-            }
-            
-            // Store for future use
-            this.terrainGenerator = terrainManager.chunkManager.terrainGenerator;
-            
-            return terrainManager.chunkManager.terrainGenerator.generateTerrainHeight(x, z);
-        } catch (err) {
-            if (this.data.debug) console.warn('Locomotion: Error finding terrain generator:', err);
-            
-            // Fallback: return current position minus offset
-            return this.rig.position.y - this.data.heightOffset;
         }
     },
 
@@ -248,7 +202,7 @@ AFRAME.registerComponent('subject-locomotion', {
             if (cTime - this.timeStamp > 2000) {
                 this.timeStamp = Date.now();
                 this.moveZ = this.moveZ === 1 ? 0 : 1;
-                if (this.data.debug) console.log('Locomotion: Head tilt left - moveZ:', this.moveZ);
+                //if (this.data.debug) console.log('Locomotion: Head tilt left - moveZ:', this.moveZ);
             }
         }
         
@@ -260,7 +214,8 @@ AFRAME.registerComponent('subject-locomotion', {
             if (cTime - this.timeStamp > 2000) {
                 this.timeStamp = Date.now();
                 this.flying = !this.flying;
-                if (this.data.debug) console.log('Locomotion: Head tilt right - flying:', this.flying);
+                this.running = !this.running;
+                //if (this.data.debug) console.log('Locomotion: Head tilt right - flying:', this.flying);
             }
         }
         
@@ -282,10 +237,10 @@ AFRAME.registerComponent('subject-locomotion', {
             }
         }
         
-        // Calculate movement speed
+        // Calculate movement speed.
         let run_speed = this.running ? 5 : 1;
         
-        // Apply movement in camera direction
+        // Apply movement in camera direction.
         if (this.moveX !== 0 || this.moveZ !== 0) {
             const angle = rotation.y;
             const speed = 5 * run_speed;
@@ -301,21 +256,21 @@ AFRAME.registerComponent('subject-locomotion', {
         position.x += this.velocity.x * delta;
         position.z += this.velocity.z * delta;
         
-        // Get terrain height with periodic debug output
-        const terrainY = this.getTerrainHeight(position.x, position.z);
-        this.terrainHeight = terrainY; // Store for debugging
-        
-        
+        // Floor values to aim for centre of voxel.
+        const px = position.x;//Math.floor(position.x);
+        const pz = position.z;//Math.floor(position.z);
+        const terrainY = this.getTerrainHeight(px, pz);
+        //this.terrainHeight = terrainY; // Store for debugging
         
         this.targetY = terrainY + (this.data.heightOffset);
         
-        // Handle flying mode
+        // Handle flying mode.
         if (this.flying) {
             position.y += pitch * this.moveZ;
         }
         
-        // Prevent falling below terrain
-        if (position.y < this.targetY+this.data.heightOffset) {
+        // Prevent falling below terrain.
+        if (position.y < this.targetY) {
             position.y = this.targetY + (this.data.heightOffset*2);
         } else if (!this.flying){
             position.y = this.targetY + (this.data.heightOffset*2);

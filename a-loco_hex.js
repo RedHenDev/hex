@@ -238,12 +238,13 @@ AFRAME.registerComponent('subject-locomotion', {
         }
         
         // Calculate movement speed.
-        let run_speed = this.running ? 5 : 1;
+        const run_speed = this.running ? 5 : 1;
+        const fly_speed = (this.flying && !this.running) ? 15 : 1;
         
         // Apply movement in camera direction.
         if (this.moveX !== 0 || this.moveZ !== 0) {
             const angle = rotation.y;
-            const speed = 5 * run_speed;
+            const speed = 15 * run_speed * fly_speed;
             
             this.velocity.x = (-this.moveZ * Math.sin(angle) + this.moveX * Math.cos(angle)) * speed;
             this.velocity.z = (-this.moveZ * Math.cos(angle) - this.moveX * Math.sin(angle)) * speed;
@@ -252,7 +253,7 @@ AFRAME.registerComponent('subject-locomotion', {
             this.velocity.z *= 0.9;
         }
         
-        // Update position
+        // Update position.
         position.x += this.velocity.x * delta;
         position.z += this.velocity.z * delta;
         
@@ -262,7 +263,8 @@ AFRAME.registerComponent('subject-locomotion', {
         const terrainY = this.getTerrainHeight(px, pz);
         //this.terrainHeight = terrainY; // Store for debugging
         
-        this.targetY = terrainY + (this.data.heightOffset);
+        this.targetY = (window.TerrainConfig.geometryHeight*0.5) 
+        + terrainY + (this.data.heightOffset);
         
         // Handle flying mode.
         if (this.flying) {

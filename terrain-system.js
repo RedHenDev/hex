@@ -33,7 +33,7 @@ window.TerrainConfig = {
     unloadDistance: 600,    // Distance at which chunks are unloaded
     
     // Color settings
-    colorVariation: 32.0,      // Amount of color variation (not normalised.)
+    colorVariation: 12.0,      // Amount of color variation (not normalised.)
     
     // Apply all settings to create consistent terrain
     applyToGenerator: function(generator) {

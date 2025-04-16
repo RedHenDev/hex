@@ -3,6 +3,16 @@ Web-based procedural terrain based on hexagons
 
 to do
 
+-f floating islands, deep caves
+
+-f fun flight (skilled hover flight, embedded in futurology)
+
+-f shadows from trees on terrain.
+
+-f rippling bioluminescence across terrain
+
+-f perhaps ask trees to be generate where dark voxels are
+
 -b forests not generating at new chunks
 
 -r update appearance of trees -- perhaps build from hexagons

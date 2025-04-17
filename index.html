@@ -24,12 +24,17 @@
     <a-scene terrain-manager
         fog="type: linear; color: #00BAFF; far: 760;">
 
-        <!-- Camera positioned to view the terrain from above -->
-        <!-- <a-entity id="subject" position="0 50 0" rotation="0 0 0" 
-                  camera look-controls wasd-controls="acceleration: 164"> -->
-        <!-- Sky background -->
-        <!-- <a-sky color="#00BAFF" radius="4000"></a-sky> -->
-        <!-- </a-entity> -->
+        <a-assets>
+            <!-- Preload our assets. -->
+                <!-- <a-asset-item id="mGlasst" src="./assets/glasst.glb"></a-asset-item> -->
+                <!-- <a-asset-item id="mCublit" src="./assets/cublit.glb"></a-asset-item> -->
+            <a-asset-item id="mShelby" src="./assets/shab.glb"></a-asset-item>
+                <!-- <a-asset-item id="mShab" src="./assets/shelby.glb"></a-asset-item> -->
+            <a-asset-item id="mWibbit" src="./assets/wibbit.glb"></a-asset-item>
+                <!-- <a-asset-item id="mRocks" src="./assets/rocks.glb"></a-asset-item> -->
+            <img id="player-fallback" src="favicon.ico" crossorigin="anonymous">
+        </a-assets>
+        
         
         <!-- Lighting to make the terrain visible -->
         <a-entity light="type: ambient; color: #BBB; intensity: 0.5"></a-entity>
@@ -62,6 +67,9 @@
             
         </a-entity> <!-- end of subject-->
         
+        <!-- Other player entities container (created via WebSocket) -->
+        <a-entity id="players"></a-entity>
+
         <!-- Container for terrain chunks -->
         <a-entity id="terrain-container"></a-entity>
         

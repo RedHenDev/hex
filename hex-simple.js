@@ -2,10 +2,10 @@
 
 // Global configuration
 window.HexConfigSimple = {
-    enablePulse: true, // Toggle pulse effect
+    enablePulse: false, // Toggle pulse effect
     pulseSpeed: 1.0,   // Speed of the pulse
-    pulseIntensity: 0.5, // Intensity of the pulse
-    pulseSpacing: 1.0  // Spacing between waves of pulses
+    pulseIntensity: 0.3, // Intensity of the pulse
+    pulseSpacing: 3.0  // Spacing between waves of pulses
 };
 
 console.log("Initializing simplified hexagon shaders with basic pulse...");
@@ -131,6 +131,9 @@ void main() {
 }
 `;
 
+// Store created materials for runtime updates
+window._hexSimpleMaterials = [];
+
 // CubeTerrainBuilder with simplified material creation
 window.CubeTerrainBuilder = {
     createChunkMesh: function(chunkData, material) {
@@ -200,8 +203,23 @@ window.CubeTerrainBuilder = {
         };
         material.lights = true;
         
+        // Store material for runtime updates
+        window._hexSimpleMaterials.push(material);
         return material;
     }
+};
+
+// Add a function to toggle pulse at runtime and update all materials
+window.toggleHexPulse = function(enable) {
+    window.HexConfigSimple.enablePulse = !!enable;
+    const value = window.HexConfigSimple.enablePulse ? 1.0 : 0.0;
+    (window._hexSimpleMaterials || []).forEach(mat => {
+        if (mat.uniforms && mat.uniforms.pulseEnabled) {
+            mat.uniforms.pulseEnabled.value = value;
+            mat.needsUpdate = true;
+        }
+    });
+    console.log("Pulse effect is now", window.HexConfigSimple.enablePulse ? "ENABLED" : "DISABLED");
 };
 
 console.log("Simplified hexagon shaders with basic pulse initialized");

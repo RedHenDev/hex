@@ -214,7 +214,7 @@ AFRAME.registerComponent('subject-locomotion', {
             if (cTime - this.timeStamp > 2000) {
                 this.timeStamp = Date.now();
                 this.flying = !this.flying;
-                this.running = !this.running;
+                //this.running = !this.running;
                 //if (this.data.debug) console.log('Locomotion: Head tilt right - flying:', this.flying);
             }
         }
@@ -231,6 +231,7 @@ AFRAME.registerComponent('subject-locomotion', {
             if (sTime - this.timeStamp > 500) {
                 if (this.keys.ShiftLeft) {
                     this.running = !this.running;
+                    window.toggleHexPulse(this.running);
                     this.timeStamp = Date.now();
                     if (this.data.debug) console.log('Locomotion: Running:', this.running);
                 }

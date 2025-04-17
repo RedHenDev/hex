@@ -177,7 +177,9 @@ function syncPlayerPosition() {
         return;
     }
     
-    const playerEntity = document.querySelector('#player');
+    const playerEntity = document.querySelector('#subject');
+    if (!playerEntity) return; // Prevent error if player entity is missing
+
     const position = playerEntity.getAttribute('position');
     
     // Get camera rotation
@@ -231,28 +233,56 @@ function updatePlayers(playerData) {
             const playerEntity = document.createElement('a-entity');
             playerEntity.setAttribute('id', `player-${id}`);
             
-            // Create player model using GLB
-            const playerModel = document.createElement('a-entity');
-            playerModel.setAttribute('gltf-model', data.model || config.playerModels[0]);
-            playerModel.setAttribute('scale', '8 8 8'); // Scale to appropriate size
-            playerModel.setAttribute('position', '0 0 0');
-            
+            // --- Fallback logic for model ---
+            let playerModel;
+            const modelId = (data.model || config.playerModels[0]).replace('#', '');
+            const modelAsset = document.getElementById(modelId);
+
+            if (modelAsset) {
+                // Model asset exists, use gltf-model
+                playerModel = document.createElement('a-entity');
+                playerModel.setAttribute('gltf-model', data.model || config.playerModels[0]);
+                playerModel.setAttribute('scale', '8 8 8');
+                playerModel.setAttribute('position', '0 0 0');
+                // Add color to model if specified
+                if (data.color) {
+                    playerModel.setAttribute('material', `color: ${data.color}`);
+                }
+            } else {
+                // Fallback: use a sphere with favicon texture
+                playerModel = document.createElement('a-sphere');
+                playerModel.setAttribute('radius', '6');
+                playerModel.setAttribute('segments-width', '18');
+                playerModel.setAttribute('segments-height', '12');
+                playerModel.setAttribute('position', '0 6 0');
+                playerModel.setAttribute('src', '#player-fallback');
+                playerModel.setAttribute('material', 'shader: standard; transparent: true;');
+            }
+            // --- End fallback logic ---
+
+            // Create name tag background panel
+            const nameBg = document.createElement('a-plane');
+            nameBg.setAttribute('width', '18');
+            nameBg.setAttribute('height', '4');
+            nameBg.setAttribute('position', '0 12.01 0'); // Slightly behind the text
+            if (data.color === 'white') nameBg.setAttribute('color', '#222'); // Contrasting dark background
+            else nameBg.setAttribute('color', '#fff'); // Default white background.
+            nameBg.setAttribute('opacity', '0.75');
+            nameBg.setAttribute('side', 'double');
+            nameBg.setAttribute('billboard', '');
+
             // Create name tag (floating text above player)
             const nameTag = document.createElement('a-text');
             nameTag.setAttribute('value', data.name || 'Unknown Player');
-            nameTag.setAttribute('position', '0 12 0'); // Position above player
+            nameTag.setAttribute('position', '0 12.05 0.01'); // Slightly in front of the panel
             nameTag.setAttribute('align', 'center');
-            nameTag.setAttribute('scale', '8 8 8'); // Scale for readability
+            nameTag.setAttribute('scale', '8 8 8');
             nameTag.setAttribute('color', data.color || '#FFFFFF');
-            nameTag.setAttribute('billboard', ''); // Always face camera using a custom component
-            
-            // Add color to model if specified
-            if (data.color) {
-                playerModel.setAttribute('material', `color: ${data.color}`);
-            }
-            
-            // Add model and name tag to player entity
+            nameTag.setAttribute('billboard', '');
+
+            // Add model, background, and name tag to player entity
             playerEntity.appendChild(playerModel);
+            playerEntity.appendChild(nameBg);
             playerEntity.appendChild(nameTag);
             
             // Add player entity to the scene

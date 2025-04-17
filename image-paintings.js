@@ -33,7 +33,7 @@
         }
     }
 
-    const imageDirectory = '../assets/shots';
+    const imageDirectory = '/assets/shots';
     const manifestUrl = './assets/shots/manifest.json';
     const imageExtensions = ['jpg', 'jpeg', 'png'];
     const loader = new THREE.TextureLoader();

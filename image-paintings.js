@@ -33,7 +33,7 @@
         }
     }
 
-    const imageDirectory = 'hex/assets/shots'; // Use absolute path
+    const imageDirectory = './assets/shots'; // Use absolute path
     const imageExtensions = ['jpg', 'jpeg', 'png'];
     const loader = new THREE.TextureLoader();
 

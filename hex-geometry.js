@@ -2,10 +2,10 @@
 
 // Global configuration
 window.HexConfig = {
-    useTextures: false,
+    useTextures: true,
     texturePath: './assets/grass_13.png',
     textureScale: 1.0,
-    enablePulse: true // <--- Add this parameter to toggle pulse effect
+    enablePulse: false // <--- Add this parameter to toggle pulse effect
 };
 
 console.log("Initializing hexagon shaders with bioluminescent pulse...");

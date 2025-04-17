@@ -2,10 +2,10 @@
 
 // Global configuration
 window.HexConfig = {
-    useTextures: true,
+    useTextures: false,
     texturePath: './assets/grass_13.png',
     textureScale: 1.0,
-    enablePulse: false // <--- Add this parameter to toggle pulse effect
+    enablePulse: true // <--- Add this parameter to toggle pulse effect
 };
 
 console.log("Initializing hexagon shaders with bioluminescent pulse...");
@@ -214,9 +214,9 @@ void main() {
     vec2 projectedXZ = vec2(vWorldPosition.x, vWorldPosition.z);
     vec2 patternPos = mix(projectedXZ, vec2(vWorldPosition.x, vWorldPosition.z), 1.0 - isSide);
 
-    // For sides, override y with the top face y value
+    // For sides, override y with the top face y value;
     if (isSide > 0.5) {
-        patternPos = 4.4*vec2(vWorldPosition.x, vWorldPosition.z);
+        patternPos = 4.4 * vec2(vWorldPosition.x, vWorldPosition.z);
         // Optionally, you can use the xz at the top of the prism:
         // patternPos = vec2(vWorldPosition.x, vWorldPosition.z); // Already correct if prisms are axis-aligned
     }

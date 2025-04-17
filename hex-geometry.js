@@ -4,7 +4,8 @@
 window.HexConfig = {
     useTextures: false,
     texturePath: './assets/grass_13.png',
-    textureScale: 1.0
+    textureScale: 1.0,
+    enablePulse: true // <--- Add this parameter to toggle pulse effect
 };
 
 console.log("Initializing hexagon shaders with bioluminescent pulse...");
@@ -167,6 +168,7 @@ uniform float fogNear;
 uniform float fogFar;
 uniform float time; // Time uniform for pulse effect
 uniform float pulseThreshold; // Uniform to control height threshold for pulse
+uniform float pulseEnabled; // <--- Add this uniform
 
 varying float vFogDepth;
 varying vec3 vColor;
@@ -205,31 +207,34 @@ void main() {
         finalColor = mix(finalColor, vec3(0.9, 0.9, 1.0), snowAmount * normal.y);
     }
 
-    // Compute fractal noise for dendritic patterns
-    float noiseScale = 0.4; // Controls the size of the dendritic patterns
-    float noiseVal = fbm(vWorldPosition.xz * noiseScale, 8); // 8 octaves for detail
+    // Project pattern from the top face onto all faces to avoid vertical stretching
+    // If on the side, use the xz position at the top of the prism
+    float isSide = step(abs(normal.y), 0.5); // 1.0 for sides, 0.0 for top/bottom
+    float topY = vWorldPosition.y + (1.0 - normal.y) * (vHeight - (vWorldPosition.y - vTerrainHeight));
+    vec2 projectedXZ = vec2(vWorldPosition.x, vWorldPosition.z);
+    vec2 patternPos = mix(projectedXZ, vec2(vWorldPosition.x, vWorldPosition.z), 1.0 - isSide);
 
-    // Define pulse phase with noise influence for flow along paths
-    float phaseInfluence = 6.0; // How much noise warps the pulse direction
-    float pulsePhase = dot(vWorldPosition.xz, vec2(0.1, 0.1)) + time * 2.0 + noiseVal * phaseInfluence;
+    // For sides, override y with the top face y value
+    if (isSide > 0.5) {
+        patternPos = 4.4*vec2(vWorldPosition.x, vWorldPosition.z);
+        // Optionally, you can use the xz at the top of the prism:
+        // patternPos = vec2(vWorldPosition.x, vWorldPosition.z); // Already correct if prisms are axis-aligned
+    }
+
+    float noiseScale = 0.4;
+    float noiseVal = fbm(patternPos * noiseScale, 8);
+
+    float phaseInfluence = 6.0;
+    float pulsePhase = dot(patternPos, vec2(0.1, 0.1)) + time * 2.0 + noiseVal * phaseInfluence;
     float pulse = sin(pulsePhase);
-    pulse = (pulse + 1.0) * 0.5; // Normalize to 0-1
+    pulse = (pulse + 1.0) * 0.5;
 
-    /*
-    Tuning Parameters:
-    noiseScale = 0.4: Adjusts the size of the dendritic patterns (smaller values = larger patterns).
-    phaseInfluence = 6.0: Controls how strongly the noise affects the pulse's direction.
-    smoothstep(0.1, 0.9, ...): Defines the width and sharpness of the "rivers."
-    */
-    // Modulate intensity to highlight dendritic paths
-    float intensity = smoothstep(0.1, 0.9, noiseVal); // Paths form where noise is 0.1-0.9
-
-    // Compute pulse factor based on height with smooth transition
+    float intensity = smoothstep(0.1, 0.9, noiseVal);
     float pulseFactor = smoothstep(pulseThreshold - 5.0, pulseThreshold + 5.0, vTerrainHeight);
+    float sideAttenuation = clamp(normal.y, 1.0, 1.0);
 
-    // Apply pulse effect only above the height threshold
-    vec3 pulseColor = vec3(0.1, 0.3, 1.0); // Blue glow for the rivers of light
-    finalColor += pulseColor * pulse * intensity * 0.3 * pulseFactor;
+    vec3 pulseColor = vec3(0.1, 0.3, 1.0);
+    finalColor += pulseEnabled * (pulseColor * pulse * intensity * 0.3 * pulseFactor * sideAttenuation); // <--- Multiply by pulseEnabled
 
     // Gamma correction
     finalColor = pow(finalColor, vec3(1.0/2.2));
@@ -316,7 +321,8 @@ window.CubeTerrainBuilder = {
                     diffuseMap: { value: fallbackTexture },
                     useTexture: { value: 0.0 },
                     time: { value: 0.0 }, // Time uniform for pulse effect
-                    pulseThreshold: { value: 50.0 } // Default height threshold for pulse
+                    pulseThreshold: { value: 50.0 }, // Default height threshold for pulse
+                    pulseEnabled: { value: window.HexConfig && window.HexConfig.enablePulse ? 1.0 : 0.0 } // <--- Set from config
                 }
             ])
         });

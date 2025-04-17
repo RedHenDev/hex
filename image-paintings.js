@@ -33,7 +33,8 @@
         }
     }
 
-    const imageDirectory = './assets/shots'; // Use absolute path
+    const imageDirectory = '/assets/shots';
+    const manifestUrl = '/assets/shots/manifest.json';
     const imageExtensions = ['jpg', 'jpeg', 'png'];
     const loader = new THREE.TextureLoader();
 
@@ -53,19 +54,15 @@
 
     const scene = sceneEl.object3D; // Get the A-Frame scene object3D
 
-    // Helper to fetch image files from the directory
+    // Helper to fetch image files from the manifest
     async function fetchImageFiles() {
         try {
-            const response = await fetch(imageDirectory);
-            const text = await response.text();
-            const parser = new DOMParser();
-            const html = parser.parseFromString(text, 'text/html');
-            const links = Array.from(html.querySelectorAll('a'));
-            return links
-                .map(link => link.href)
-                .filter(href => imageExtensions.some(ext => href.endsWith(ext)));
+            const response = await fetch(manifestUrl);
+            if (!response.ok) throw new Error("Manifest not found");
+            const files = await response.json();
+            return files.map(filename => `${imageDirectory}/${filename}`);
         } catch (error) {
-            console.error("Error fetching image files:", error);
+            console.error("Error fetching image manifest:", error);
             return [];
         }
     }

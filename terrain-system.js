@@ -245,8 +245,11 @@ AFRAME.registerComponent('terrain-manager', {
             return;
         }
         this.subjectObj = this.subject.object3D;
-        this.lastX = 0;
-        this.lastZ = 0;
+        // Move subject to a different world position at start
+        // so that they do
+        //this.subjectObj.position.set(100, 0, 100);
+        this.lastX = this.subject.object3D.position.x;
+        this.lastZ = this.subject.object3D.position.z;
         this.chunkManager = null;
         this.lastChunkX = null;
         this.lastChunkZ = null;

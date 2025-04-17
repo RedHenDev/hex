@@ -88,14 +88,17 @@
         const distanceStep = 12; // Step distance between images.
         const planeSize = { width: 32, height: 32*0.618 }; // Size of each plane.
 
+        // Let's get the subject's position as origin.
+        const subjectPosition = document.querySelector('#subject').object3D.position;
+
         for (let i = 0; i < imageFiles.length; i++) {
             const imageUrl = imageFiles[i];
             const distance = startDistance + i * distanceStep;
 
             // Calculate position
             const angle = (i / imageFiles.length) * Math.PI * 2; // Spread around in a circle
-            const x = Math.cos(angle) * distance;
-            const z = Math.sin(angle) * distance;
+            const x = subjectPosition.x + Math.cos(angle) * distance;
+            const z = subjectPosition.z + Math.sin(angle) * distance;
             const y = getTerrainHeightAt(x, z)+(planeSize.width*0.5) || 800; // Use getTerrainHeightAt
 
             // Load texture and create plane

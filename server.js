@@ -21,20 +21,21 @@ const players = {};
 const usedNames = new Set();
 
 // Name generation data for the server
-const mathematicians = [
-    'Euclid', 'Pythagoras', 'Archimedes', 'Newton', 'Gauss', 'Euler', 'Fermat', 
-    'Riemann', 'Ramanujan', 'Einstein', 'Hilbert', 'Turing', 'Gödel', 'Lovelace', 
-    'Noether', 'Galois', 'Cantor', 'Cauchy', 'Lagrange', 'Leibniz', 'Pascal', 
-    'Poincaré', 'Boole', 'Fibonacci', 'Bernoulli', 'Descartes', 'Fourier', 
-    'Kolmogorov', 'Laplace', 'Hypatia'
+const forenames = [
+    'Amber', 'Bronze', 'Chrome', 'Diamond', 'Emerald', 'Flint', 'Gold', 
+    'Granite', 'Iron', 'Jade', 'Kevlar', 'Lithium', 'Marble', 'Neon', 
+    'Obsidian', 'Onyx', 'Pearl', 'Platinum', 'Quartz', 'Ruby', 'Sapphire', 
+    'Silver', 'Steel', 'Tanzanite', 'Titanium', 'Topaz', 'Tungsten', 'Uranium',
+    'Velvet', 'Zinc'
 ];
 
-const mathConcepts = [
-    'Prime', 'Integer', 'Vector', 'Matrix', 'Tensor', 'Calculus', 'Infinity', 
-    'Fractal', 'Quantum', 'Topology', 'Symmetry', 'Algorithm', 'Quaternion', 
-    'Polynomial', 'Function', 'Manifold', 'Theorem', 'Equation', 'Probability', 
-    'Derivative', 'Integral', 'Sequence', 'Series', 'Group', 'Ring', 'Field', 
-    'Logic', 'Set', 'Graph', 'Dimension'
+const surnames = [
+    'Tyrannosaurus', 'Velociraptor', 'Stegosaurus', 'Triceratops', 'Brachiosaurus',
+    'Pterodactyl', 'Ankylosaurus', 'Diplodocus', 'Spinosaurus', 'Allosaurus',
+    'Parasaurolophus', 'Carnotaurus', 'Megalosaurus', 'Utahraptor', 'Gallimimus',
+    'Protoceratops', 'Brontosaurus', 'Iguanodon', 'Deinonychus', 'Pachycephalosaurus',
+    'Archaeopteryx', 'Compsognathus', 'Dilophosaurus', 'Giganotosaurus', 'Oviraptor',
+    'Therizinosaurus', 'Microraptor', 'Archaeornithomimus', 'Dreadnoughtus', 'Quetzalcoatlus'
 ];
 
 // Generate a name that isn't already in use
@@ -50,9 +51,9 @@ function generateUniqueName(requestedName = null) {
     let name;
     
     do {
-        const mathematician = mathematicians[Math.floor(Math.random() * mathematicians.length)];
-        const concept = mathConcepts[Math.floor(Math.random() * mathConcepts.length)];
-        name = `${mathematician} ${concept}`;
+        const forename = forenames[Math.floor(Math.random() * forenames.length)];
+        const surname = surnames[Math.floor(Math.random() * surnames.length)];
+        name = `${forename} ${surname}`;
         attempts++;
         
         // If we've made too many attempts, add a number to ensure uniqueness

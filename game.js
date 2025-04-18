@@ -29,20 +29,21 @@ AFRAME.registerComponent('billboard', {
 });
 
 // Name generation data
-const mathematicians = [
-    'Euclid', 'Pythagoras', 'Archimedes', 'Newton', 'Gauss', 'Euler', 'Fermat', 
-    'Riemann', 'Ramanujan', 'Einstein', 'Hilbert', 'Turing', 'Gödel', 'Lovelace', 
-    'Noether', 'Galois', 'Cantor', 'Cauchy', 'Lagrange', 'Leibniz', 'Pascal', 
-    'Poincaré', 'Boole', 'Fibonacci', 'Bernoulli', 'Descartes', 'Fourier', 
-    'Kolmogorov', 'Laplace', 'Hypatia', 'Karpathy'
+const forenames = [
+    'Amber', 'Bronze', 'Chrome', 'Diamond', 'Emerald', 'Flint', 'Gold', 
+    'Granite', 'Iron', 'Jade', 'Kevlar', 'Lithium', 'Marble', 'Neon', 
+    'Obsidian', 'Onyx', 'Pearl', 'Platinum', 'Quartz', 'Ruby', 'Sapphire', 
+    'Silver', 'Steel', 'Tanzanite', 'Titanium', 'Topaz', 'Tungsten', 'Uranium',
+    'Velvet', 'Zinc'
 ];
 
-const mathConcepts = [
-    'Prime', 'Integer', 'Vector', 'Matrix', 'Tensor', 'Calculus', 'Infinity', 
-    'Fractal', 'Quantum', 'Topology', 'Symmetry', 'Algorithm', 'Quaternion', 
-    'Polynomial', 'Function', 'Manifold', 'Theorem', 'Equation', 'Probability', 
-    'Derivative', 'Integral', 'Sequence', 'Series', 'Group', 'Ring', 'Field', 
-    'Logic', 'Set', 'Graph', 'Dimension'
+const surnames = [
+    'Tyrannosaurus', 'Velociraptor', 'Stegosaurus', 'Triceratops', 'Brachiosaurus',
+    'Pterodactyl', 'Ankylosaurus', 'Diplodocus', 'Spinosaurus', 'Allosaurus',
+    'Parasaurolophus', 'Carnotaurus', 'Megalosaurus', 'Utahraptor', 'Gallimimus',
+    'Protoceratops', 'Brontosaurus', 'Iguanodon', 'Deinonychus', 'Pachycephalosaurus',
+    'Archaeopteryx', 'Compsognathus', 'Dilophosaurus', 'Giganotosaurus', 'Oviraptor',
+    'Therizinosaurus', 'Microraptor', 'Archaeornithomimus', 'Dreadnoughtus', 'Quetzalcoatlus'
 ];
 
 // Game state - FIXED: Made socket and playerId global with window prefix
@@ -65,9 +66,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Generate a unique mathematical name
 function generateMathName() {
-    const mathematician = mathematicians[Math.floor(Math.random() * mathematicians.length)];
-    const concept = mathConcepts[Math.floor(Math.random() * mathConcepts.length)];
-    return `${mathematician} ${concept}`;
+    const forename = forenames[Math.floor(Math.random() * forenames.length)];
+    const surname = surnames[Math.floor(Math.random() * surnames.length)];
+    return `${forename} ${surname}`;
 }
 
 // Connect to the WebSocket server

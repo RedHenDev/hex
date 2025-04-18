@@ -11,7 +11,7 @@ AFRAME.registerComponent('tree-manager', {
   },
   
   init: function () {
-    console.log("Tree manager initializing with new Perlin noise placement...");
+    //console.log("Tree manager initializing with new Perlin noise placement...");
     this.pool = [];
     this.lastSampledPosition = { x: 0, z: 0 };
     this.needsResampling = true;
@@ -125,12 +125,12 @@ AFRAME.registerComponent('tree-manager', {
         const terrainManager = scene.components['terrain-manager'];
         if (terrainManager && terrainManager.chunkManager && terrainManager.chunkManager.terrainGenerator) {
           this.terrainGenerator = terrainManager.chunkManager.terrainGenerator;
-          console.log('Tree manager: Successfully obtained terrain generator');
+          //console.log('Tree manager: Successfully obtained terrain generator');
           this.needsResampling = true;
         }
       }
     } catch (err) {
-      console.error('Tree manager: Error setting up terrain access:', err);
+      //console.error('Tree manager: Error setting up terrain access:', err);
     }
   },
   
@@ -181,13 +181,13 @@ AFRAME.registerComponent('tree-manager', {
     // Log status every 5 seconds
     const now = Date.now();
     if (now - this.debugTimestamp > 5000) {
-      console.log(`Tree manager: ${this.activeTreeCount} active trees, position: ${JSON.stringify({x: subjectPos.x.toFixed(0), z: subjectPos.z.toFixed(0)})}`);
+      //console.log(`Tree manager: ${this.activeTreeCount} active trees, position: ${JSON.stringify({x: subjectPos.x.toFixed(0), z: subjectPos.z.toFixed(0)})}`);
       this.debugTimestamp = now;
     }
 
     // Check if we need to resample tree positions
     if (this.needsResampling || this.checkNeedsResampling(subjectPos)) {
-      console.log("Tree manager: Resampling trees with Perlin noise");
+      //console.log("Tree manager: Resampling trees with Perlin noise");
       this.sampleTreePositions(subjectPos);
       this.lastSampledPosition = { x: subjectPos.x, z: subjectPos.z };
       this.needsResampling = false;
@@ -282,25 +282,25 @@ AFRAME.registerComponent('tree-manager', {
       // Position tree
       treeObj.entity.setAttribute('position', { 
         x: pos.x, 
-        y: terrainHeight + (this.data.treeHeight * 0.5), 
+        y: terrainHeight + (this.data.treeHeight * 0.1), 
         z: pos.z 
       });
       
       // Set rotation and scale
-      treeObj.entity.setAttribute('rotation', { x: 0, y: randomRotation, z: 0 });
+      //treeObj.entity.setAttribute('rotation', { x: 0, y: randomRotation, z: 0 });
       treeObj.entity.setAttribute('scale', {
         x: this.data.treeScale * randomScale,
         y: this.data.treeScale * randomScale,
         z: this.data.treeScale * randomScale
       });
       
-      // Activate
+      // Activate.
       treeObj.entity.setAttribute('visible', true);
       treeObj.active = true;
       treeObj.worldPos = { x: pos.x, z: pos.z };
       this.activeTreeCount++;
     }
     
-    console.log(`Tree manager: Placed ${this.activeTreeCount} trees out of ${positions.length} candidate positions`);
+    //console.log(`Tree manager: Placed ${this.activeTreeCount} trees out of ${positions.length} candidate positions`);
   }
 });

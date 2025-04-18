@@ -167,8 +167,8 @@ AFRAME.registerComponent('tree-manager', {
     const dz = subjectPos.z - this.lastSampledPosition.z;
     const distance = Math.sqrt(dx * dx + dz * dz);
     
-    // Resample when moved half radius distance
-    return distance > (this.data.radius * 0.05);
+    // Resample when moved 5% of radius distance.
+    return distance > (this.data.radius * 0.01);
   },
   
   tick: function () {

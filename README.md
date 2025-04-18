@@ -1,7 +1,48 @@
 # hex
 Web-based procedural terrain based on hexagons
 
+principles of dev
+
+-longer-term feature ideas, fixes, or tunings
+    kept separate so that not tempting into a 
+    hours/days-stealing digression -long invest-
+
+-different sections to this to-do, organised in order to 
+    conserve progress while providing means to capture
+    creative ideas etc. qua spontaneity. The above is
+    an example of a section that I would like. I should
+    -name them- here.
+
+-section -deeper general dev-
+
+
+
 to do
+
+-r refactor key scripts to create simple, clean version
+    also opportunity to derive template versions for other projects.
+
+-f work out principled means of permitting collisions with both
+    main terrain as well as walls and floating walkways etc.
+
+-i deeper subject of this software: an illustration of our
+    sociological progress into flight and 'transcending' our
+    ignorance of state in confusion -- in other words, something
+    like progress in social norms (likely at level of mechanism)
+    like use of soap or jurisdiction, rather than communal 
+    enlightenment/apocalypse (oh, note how this appears to
+    connect to this project's implied ludic medium of the
+    post-singularity)
+
+-f random idea: giant skull being pushed through a portal by
+    a group of mysterious, much smaller creatures
+
+-d gallery system (aesthetics of planes), as well as thinking about
+    requiring client to rename or be able to upload own files --
+    i.e. a way to make more convenient (to all involved) the need
+    for a manifest file being generated from backend via node script
+
+-r organise project folder: now (18/4/25) mix of legacy & part-operational
 
 -f floating islands, deep caves
 

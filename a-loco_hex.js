@@ -240,7 +240,8 @@ AFRAME.registerComponent('subject-locomotion', {
         
         // Calculate movement speed.
         const run_speed = this.running ? 5 : 1;
-        const fly_speed = (this.flying && !this.running) ? 15 : 1;
+        //const fly_speed = (this.flying && !this.running) ? 15 : 1;
+        const fly_speed = (this.flying && this.running ? 5 : 1);
         
         // Apply movement in camera direction.
         if (this.moveX !== 0 || this.moveZ !== 0) {

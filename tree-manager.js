@@ -276,13 +276,13 @@ AFRAME.registerComponent('tree-manager', {
       const terrainHeight = this.getTerrainHeight(pos.x, pos.z);
       
       // Randomize rotation and scale
-      const randomRotation = Math.random() * 360;
-      const randomScale = 0.8 + Math.random() * 0.4;
+      const randomRotation = 0.0;//Math.random() * 360;
+      const randomScale = 1.0;//0.8 + Math.random() * 0.4;
       
       // Position tree
       treeObj.entity.setAttribute('position', { 
         x: pos.x, 
-        y: terrainHeight + this.data.treeHeight, 
+        y: terrainHeight + (this.data.treeHeight * 0.5), 
         z: pos.z 
       });
       

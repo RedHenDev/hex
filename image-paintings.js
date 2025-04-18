@@ -103,11 +103,11 @@
 
             // Load texture and create plane
             loader.load(imageUrl, texture => {
-                const material = new THREE.MeshBasicMaterial({ map: texture });
+                const material = new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide });
                 const geometry = new THREE.PlaneGeometry(planeSize.width, planeSize.height);
                 const plane = new THREE.Mesh(geometry, material);
 
-                plane.position.set(x, y + planeSize.height / 2, z); // Position above terrain
+                plane.position.set(x, y + planeSize.height * 0.5, z); // Position above terrain
                 plane.lookAt(0, y, 0); // Face the center of the terrain
                 scene.add(plane);
                 console.log(`Added image plane: ${imageUrl} at (${x}, ${y}, ${z})`);

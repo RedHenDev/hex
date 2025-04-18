@@ -32,7 +32,7 @@
                 <!-- <a-asset-item id="mShab" src="./assets/shelby.glb"></a-asset-item> -->
             <a-asset-item id="mWibbit" src="./assets/wibbit.glb"></a-asset-item>
                 <!-- <a-asset-item id="mRocks" src="./assets/rocks.glb"></a-asset-item> -->
-            <img id="player-fallback" src="favicon.ico" crossorigin="anonymous">
+            <img id="player-fallback" src="./assets/RedHenIconAlpha512512.png" crossorigin="anonymous">
         </a-assets>
         
         
@@ -72,7 +72,8 @@
 
         <!-- Container for terrain chunks -->
         <a-entity id="terrain-container"></a-entity>
-        
+        <a-entity id="tree=manager" tree-manager></a-entity>
+
     </a-scene>
     
     <!-- Load scripts in the correct order -->
@@ -83,18 +84,19 @@
     <script src="debug-panel.js"></script>
     <!-- <script src="terrain-system_OP.js"></script> -->
     <script src="terrain-system.js"></script>
-
     <script src="portal.js"></script>
+    <!-- <script src="js/tree-system.js"></script> -->
 
     <!-- Movement system -->
     <script src="a-loco_hex.js"></script>
     <script src="welcome-message_hex.js"></script>
     <script src="start-terrain.js"></script>
     <script src="image-paintings.js"></script>
-    <!-- <script src="bio-pulse.js"></script> -->
+    <script src="tree-manager.js"></script>
+    
     <script src="game.js"></script>
     <!-- Multiplayer connection status -->
-    <div id="connection-status" style="position:fixed;bottom:12px;left:12px;background:rgba(0,0,0,0.7);color:#fff;padding:6px 12px;border-radius:6px;font-size:15px;z-index:9999;">
+    <div id="connection-status" style="position:fixed;top:12px;left:12px;background:rgba(29, 220, 29, 0.7);color:#fff;padding:6px 12px;border-radius:6px;font-size:15px;z-index:9999;">
         Connection status: Not connected
     </div>
 </body>

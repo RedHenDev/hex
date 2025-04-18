@@ -21,6 +21,7 @@ window.TerrainConfig = {
     unloadDistance: 800,
     pulseThreshold: 50.0, 
     colorVariation: 18.0,
+    
     applyToGenerator: function(generator) {
         if (generator) {
             generator.heightScale = this.heightScale;

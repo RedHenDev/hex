@@ -19,6 +19,9 @@ principles of dev
 
 to do
 
+-i understand how the standalone biopulse works. Might prove
+    to be a useful method for other systems.
+
 -r refactor key scripts to create simple, clean version
     also opportunity to derive template versions for other projects.
 

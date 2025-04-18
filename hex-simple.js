@@ -3,7 +3,7 @@
 // Global configuration
 window.HexConfigSimple = {
     enablePulse: false, // Toggle pulse effect
-    pulseSpeed: 1.0,   // Speed of the pulse
+    pulseSpeed: 4.0,   // Speed of the pulse
     pulseIntensity: 0.3, // Intensity of the pulse
     pulseSpacing: 3.0  // Spacing between waves of pulses
 };

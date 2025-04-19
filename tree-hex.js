@@ -5,7 +5,7 @@ AFRAME.registerComponent('tree-hex-manager', {
   schema: {
     // Pool and placement settings
     maxTrees: { type: 'number', default: 128 },
-    poolSize: { type: 'number', default: 512 },
+    poolSize: { type: 'number', default: 128 },
     radius: { type: 'number', default: 800 },
     
     // Noise settings - updated defaults
@@ -100,8 +100,11 @@ AFRAME.registerComponent('tree-hex-manager', {
 
   // Add new method for noise initialization
   initializeNoise: function() {
+    // Fixed seed for deterministic results
+    const NOISE_SEED = 42;
+    
     this.noise = {
-        seed: 99,
+        seed: NOISE_SEED,
         lerp: function(a, b, t) { 
             return a + t * (b - a); 
         },
@@ -117,15 +120,19 @@ AFRAME.registerComponent('tree-hex-manager', {
         p: new Array(512)
     };
     
-    // Initialize permutation table
+    // Initialize permutation table deterministically
     const permutation = new Array(256);
     for (let i = 0; i < 256; i++) {
         permutation[i] = i;
     }
     
-    // Shuffle permutation
+    // Use seeded shuffle (Fisher-Yates with deterministic RNG)
+    let seed = NOISE_SEED;
     for (let i = 255; i > 0; i--) {
-        const j = Math.floor((i + 1) * Math.random());
+        // Simple deterministic RNG
+        seed = (seed * 16807) % 2147483647;
+        const j = seed % (i + 1);
+        // Swap
         [permutation[i], permutation[j]] = [permutation[j], permutation[i]];
     }
     
@@ -133,6 +140,8 @@ AFRAME.registerComponent('tree-hex-manager', {
     for (let i = 0; i < 512; i++) {
         this.noise.p[i] = permutation[i & 255];
     }
+    
+    console.log(`Noise initialized with seed: ${NOISE_SEED}`);
   },
 
   // Add new method for tree pool creation

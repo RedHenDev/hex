@@ -3,17 +3,39 @@
 
 AFRAME.registerComponent('tree-hex-manager', {
   schema: {
-    maxTrees: { type: 'number', default: 128 },     // Maximum active trees
-    poolSize: { type: 'number', default: 128 },     // Total tree pool size
-    radius: { type: 'number', default: 800 },      // Placement radius
-    noiseThreshold: { type: 'number', default: 0.2 }, // Noise threshold for tree placement
-    noiseScale: { type: 'number', default: 1.0 },   // Perlin noise scale
-    treeHeight: { type: 'number', default: 64 },    // Height offset from terrain
-    treeScale: { type: 'number', default: 8 },      // Tree size multiplier
-    trunkSegments: { type: 'number', default: 4 },      // Number of trunk segments
-    foliageHexCount: { type: 'number', default: 12 },   // Number of foliage hexagons
-    trunkTwistFactor: { type: 'number', default: 15 },   // Max degrees of trunk twist
-    debug: { type: 'boolean', default: true }
+    // Pool and placement settings
+    maxTrees: { type: 'number', default: 128 },
+    poolSize: { type: 'number', default: 512 },
+    radius: { type: 'number', default: 800 },
+    
+    // Noise settings - updated defaults
+    noiseThreshold: { type: 'number', default: 0.3 }, // Higher value = fewer trees
+    noiseScale: { type: 'number', default: 0.01 }, // Smaller value = more spread out
+    
+    // Tree overall settings
+    // treeHeight seems to be redundant. Remove it?
+    treeHeight: { type: 'number', default: 1.0},
+    treeScale: { type: 'number', default: 64 },
+    
+    // Trunk settings
+    trunkSegments: { type: 'number', default: 4 },
+    trunkBaseRadius: { type: 'number', default: 0.8 },
+    trunkTwistFactor: { type: 'number', default: 90 },
+    trunkTaper: { type: 'number', default: 0.15 }, // How much trunk narrows per segment
+    
+    // Foliage settings
+    foliageHexCount: { type: 'number', default: 64 },
+    foliageScale: { type: 'number', default: 0.4 }, // Scale relative to treeScale
+    foliageHeight: { type: 'number', default: 0.6 }, // Height of prisms
+    foliageRadius: { type: 'number', default: 3.0 }, // Max distance from trunk
+    foliageTilt: { type: 'number', default: 0.45 }, // Max tilt in radians
+    
+    // Material settings
+    trunkEmissive: { type: 'number', default: 0.2 },
+    foliageEmissive: { type: 'number', default: 0.4 },
+    
+    // Debug
+    debug: { type: 'boolean', default: false }
   },
   
   init: function () {
@@ -40,12 +62,15 @@ AFRAME.registerComponent('tree-hex-manager', {
     console.log(`Created tree pool with ${this.data.poolSize * this.data.trunkSegments} trunk instances and ${this.data.poolSize * this.data.foliageHexCount} foliage instances`);
     
     // Debug sphere at origin
+    /*
     const debugSphere = document.createElement('a-sphere');
     debugSphere.setAttribute('position', '0 0 0');
     debugSphere.setAttribute('radius', '5');
     debugSphere.setAttribute('color', '#ff0000');
     this.el.sceneEl.appendChild(debugSphere);
+    */
     
+    /*
     // Modified debug volume with valid color
     const debugVolume = document.createElement('a-box');
     debugVolume.setAttribute('position', '0 0 0');
@@ -59,6 +84,7 @@ AFRAME.registerComponent('tree-hex-manager', {
         transparent: true
     });
     this.el.sceneEl.appendChild(debugVolume);
+    */
     
     // Setup other components
     this.terrainGenerator = null;
@@ -111,16 +137,25 @@ AFRAME.registerComponent('tree-hex-manager', {
 
   // Add new method for tree pool creation
   createTreePool: function() {
-    // Keep trunk geometry
-    const trunkGeometry = new THREE.CylinderGeometry(0.2, 0.2, 1.0, 6);
+    // Create geometries using schema values
+    const trunkGeometry = new THREE.CylinderGeometry(
+        this.data.trunkBaseRadius, 
+        this.data.trunkBaseRadius, 
+        1.0, 
+        6
+    );
     
-    // Create taller hexagonal prism for foliage
-    const foliageGeometry = new THREE.CylinderGeometry(1.0, 1.0, 2.0, 6);
+    const foliageGeometry = new THREE.CylinderGeometry(
+        1.0, 
+        1.0, 
+        this.data.foliageHeight, 
+        6
+    );
 
     // Use standard materials first to verify visibility
     this.trunkMaterial = new THREE.MeshStandardMaterial({
-        color: 0x00baba,
-        emissive: 0x00baba,
+        color: 'brown',  // Blueish color
+        emissive: 'brown',
         emissiveIntensity: 0.2,
         metalness: 0.0,
         roughness: 0.8
@@ -131,7 +166,9 @@ AFRAME.registerComponent('tree-hex-manager', {
         emissive: 0x11baba,
         emissiveIntensity: 0.4,
         metalness: 0.0,
-        roughness: 0.5
+        roughness: 0.5,
+        transparent: true,
+        opacity: 0.6
     });
 
     // Create instanced meshes
@@ -359,7 +396,7 @@ AFRAME.registerComponent('tree-hex-manager', {
     const minZ = Math.floor((subjectPos.z - radius) / gridStep) * gridStep;
     const maxZ = Math.floor((subjectPos.z + radius) / gridStep) * gridStep;
     
-    // Sample valid positions
+    // Sample valid positions with modified noise check
     for (let x = minX; x <= maxX; x += gridStep) {
         for (let z = minZ; z <= maxZ; z += gridStep) {
             const dx = x - subjectPos.x;
@@ -369,15 +406,18 @@ AFRAME.registerComponent('tree-hex-manager', {
             if (distSq <= radius * radius) {
                 sampledCount++;
                 const noiseValue = this.perlin2D(x * this.data.noiseScale, z * this.data.noiseScale);
-                if (noiseValue < this.data.noiseThreshold) {
+                // Changed comparison: noiseValue must be ABOVE threshold to place tree
+                if (noiseValue > this.data.noiseThreshold) {
                     positions.push({ x, z, noise: noiseValue });
                 }
             }
         }
     }
     
+    // Sort by noise value in DESCENDING order (higher values first)
+    positions.sort((a, b) => b.noise - a.noise);
+    
     // Sort by noise value and limit to maxTrees
-    positions.sort((a, b) => a.noise - b.noise);
     const selectedPositions = positions.slice(0, this.data.maxTrees);
     
     // Place trees at selected positions
@@ -458,16 +498,18 @@ AFRAME.registerComponent('tree-hex-manager', {
     const scale = this.data.treeScale;
     const rotationMatrix = new THREE.Matrix4();
     
-    // Update trunk segments with twist
+    // Update trunk segments with lift
     for (let i = 0; i < this.data.trunkSegments; i++) {
         const trunkIndex = treeObj.trunkStart + i;
         const twist = this.perlin2D(x * 0.1 + i, z * 0.1) * this.data.trunkTwistFactor;
+        const radius = this.data.trunkBaseRadius * (1 - (i * this.data.trunkTaper));
         
         matrix.identity();
-        matrix.makeScale(0.2 * scale, scale, 0.2 * scale);
+        matrix.makeScale(radius * scale, scale, radius * scale);
         rotationMatrix.makeRotationY(twist * Math.PI / 180);
         matrix.multiply(rotationMatrix);
-        matrix.setPosition(x, y + (i * scale), z);
+        // Add 2 units to y position
+        matrix.setPosition(x, y + (i * scale) + 2, z);
         
         this.trunkMesh.setMatrixAt(trunkIndex, matrix);
     }
@@ -478,20 +520,25 @@ AFRAME.registerComponent('tree-hex-manager', {
         
         // Use noise for angle and distance
         const angle = this.perlin2D(x + i * 0.3, z + i * 0.3) * Math.PI * 2;
-        const dist = this.perlin2D(x - i * 0.3, z - i * 0.3) * (scale * 3);
+        const dist = this.perlin2D(x - i * 0.3, z - i * 0.3) * (scale * this.data.foliageRadius);
         
         // Position using noise values
         const posX = x + Math.cos(angle) * dist;
         const posZ = z + Math.sin(angle) * dist;
-        const heightOffset = (scale * 3 - dist) * 0.5;
-        const posY = y + (this.data.trunkSegments * scale) + heightOffset;
+        const heightOffset = (scale * this.data.foliageRadius - dist) * 0.5;
+        // Add 2 units to match trunk lift
+        const posY = y + (this.data.trunkSegments * scale) + heightOffset + 2;
         
         // Create tilted hexagons with deterministic twist
         matrix.identity();
-        matrix.makeScale(scale * 0.4, scale * 0.8, scale * 0.4); // Tall prisms
+        matrix.makeScale(
+            scale * this.data.foliageScale, 
+            scale * this.data.foliageHeight, 
+            scale * this.data.foliageScale
+        );
         
         // Tilt based on distance from trunk
-        const tiltAngle = (dist / (scale * 3)) * Math.PI * 0.15;
+        const tiltAngle = (dist / (scale * this.data.foliageRadius)) * this.data.foliageTilt * Math.PI;
         const tiltMatrix = new THREE.Matrix4().makeRotationX(tiltAngle);
         matrix.multiply(tiltMatrix);
         

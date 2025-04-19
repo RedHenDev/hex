@@ -19,6 +19,12 @@ principles of dev
 
 to do
 
+-i prime number quarry; choice of mode: smart-mine or physical-mine
+
+-d ui menu for VR
+
+-d precision locomotion for VR (via just head tilts)
+
 -i understand how the standalone biopulse works. Might prove
     to be a useful method for other systems.
 

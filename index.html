@@ -72,7 +72,7 @@
 
         <!-- Container for terrain chunks -->
         <a-entity id="terrain-container"></a-entity>
-        <a-entity id="tree-manager" tree-manager></a-entity>
+        <a-entity tree-hex-manager="maxTrees: 128; radius: 800; treeHeight: 64"></a-entity>
 
     </a-scene>
     
@@ -91,7 +91,8 @@
     <script src="welcome-message_hex.js"></script>
     <script src="start-terrain.js"></script>
     <script src="image-paintings.js"></script>
-    <script src="tree-manager.js"></script>
+    <!-- <script src="tree-manager.js"></script> -->
+    <script src="tree-hex.js"></script>
     <!-- <script src="tree-shader.js"></script> -->
     <!-- <script src="trees_grok.js"></script> -->
     

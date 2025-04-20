@@ -5,30 +5,31 @@ AFRAME.registerComponent('tree-hex-manager', {
   schema: {
     // Pool and placement settings
     maxTrees: { type: 'number', default: 128 },
-    poolSize: { type: 'number', default: 128 },
-    radius: { type: 'number', default: 800 },
+    poolSize: { type: 'number', default: 512 },
+    radius: { type: 'number', default: 760 },
     
-    // Noise settings - updated defaults
-    noiseThreshold: { type: 'number', default: 0.3 }, // Higher value = fewer trees
-    noiseScale: { type: 'number', default: 0.01 }, // Smaller value = more spread out
+    // Noise settings
+    noiseThreshold: { type: 'number', default: 0.35 },
+    noiseScale: { type: 'number', default: 5.0 },
+    noiseLacunarity: { type: 'number', default: 2.0 },
+    noiseGain: { type: 'number', default: 0.5 },
+    noiseOctaves: { type: 'number', default: 4 },
     
-    // Tree overall settings
-    // treeHeight seems to be redundant. Remove it?
-    treeHeight: { type: 'number', default: 1.0},
+    // Tree settings
     treeScale: { type: 'number', default: 64 },
     
     // Trunk settings
     trunkSegments: { type: 'number', default: 4 },
     trunkBaseRadius: { type: 'number', default: 0.8 },
     trunkTwistFactor: { type: 'number', default: 90 },
-    trunkTaper: { type: 'number', default: 0.15 }, // How much trunk narrows per segment
+    trunkTaper: { type: 'number', default: 0.15 },
     
     // Foliage settings
     foliageHexCount: { type: 'number', default: 64 },
-    foliageScale: { type: 'number', default: 0.4 }, // Scale relative to treeScale
-    foliageHeight: { type: 'number', default: 0.6 }, // Height of prisms
-    foliageRadius: { type: 'number', default: 3.0 }, // Max distance from trunk
-    foliageTilt: { type: 'number', default: 0.45 }, // Max tilt in radians
+    foliageScale: { type: 'number', default: 0.4 },
+    foliageHeight: { type: 'number', default: 0.6 },
+    foliageRadius: { type: 'number', default: 3.0 },
+    foliageTilt: { type: 'number', default: 0.45 },
     
     // Material settings
     trunkEmissive: { type: 'number', default: 0.2 },
@@ -39,110 +40,124 @@ AFRAME.registerComponent('tree-hex-manager', {
   },
   
   init: function () {
-    console.log(`Initializing Tree Hex Manager with poolSize: ${this.data.poolSize}, maxTrees: ${this.data.maxTrees}`);
-    // Initialize noise first
+    // Initialize basics
     this.initializeNoise();
-    
-    // Then initialize the rest
     this.pool = [];
-    this.lastSampledPosition = { x: 0, z: 0 };
-    this.needsResampling = true;
     
-    // Create shader materials using hex-simple shader
+    // Create materials and pool
     this.trunkMaterial = this.createShaderMaterial('#00BABA', 0.8, 0.2);
     this.foliageMaterial = this.createShaderMaterial('#11BABA', 0.5, 0.4);
-    
-    console.log('Materials created:', {
-        trunkMaterial: this.trunkMaterial,
-        foliageMaterial: this.foliageMaterial
-    });
-    
-    // Create tree pool
     this.createTreePool();
-    console.log(`Created tree pool with ${this.data.poolSize * this.data.trunkSegments} trunk instances and ${this.data.poolSize * this.data.foliageHexCount} foliage instances`);
     
-    // Debug sphere at origin
-    /*
-    const debugSphere = document.createElement('a-sphere');
-    debugSphere.setAttribute('position', '0 0 0');
-    debugSphere.setAttribute('radius', '5');
-    debugSphere.setAttribute('color', '#ff0000');
-    this.el.sceneEl.appendChild(debugSphere);
-    */
-    
-    /*
-    // Modified debug volume with valid color
-    const debugVolume = document.createElement('a-box');
-    debugVolume.setAttribute('position', '0 0 0');
-    debugVolume.setAttribute('width', this.data.radius * 2);
-    debugVolume.setAttribute('depth', this.data.radius * 2);
-    debugVolume.setAttribute('height', '1');
-    debugVolume.setAttribute('color', '#ff0000');
-    debugVolume.setAttribute('material', {
-        color: '#ff0000',
-        opacity: 0.2,
-        transparent: true
-    });
-    this.el.sceneEl.appendChild(debugVolume);
-    */
-    
-    // Setup other components
+    // Wait for terrain to be ready
     this.terrainGenerator = null;
-    this.setupTerrainAccess();
-    
     document.addEventListener('terrainReady', () => {
       this.setupTerrainAccess();
+      // Place trees once terrain is ready
+      this.placeInitialTrees();
     });
-    
-    this.debugTimestamp = 0;
-    this.activeTreeCount = 0;
   },
 
-  // Add new method for noise initialization
+  placeInitialTrees: function() {
+    if (!this.terrainGenerator) {
+        console.warn('Cannot place trees - terrain not ready');
+        return;
+    }
+
+    const startTime = performance.now();
+    const positions = [];
+    
+    // Get subject's initial position
+    const subject = document.querySelector('#subject');
+    const center = subject ? subject.object3D.position : { x: 0, z: 0 };
+    const radius = this.data.radius;
+    
+    // Generate many potential positions using noise
+    const attempts = this.data.maxTrees * 8; // Try 8x more positions than needed
+    
+    for (let i = 0; i < attempts; i++) {
+        // Use noise to generate position within radius
+        const angle = this.perlin2D(i * 0.3, i * 0.7) * Math.PI * 2;
+        const dist = Math.sqrt(this.perlin2D(i * 0.7, i * 0.3) + 1) * radius;
+        
+        const x = center.x + Math.cos(angle) * dist;
+        const z = center.z + Math.sin(angle) * dist;
+        
+        // Get noise value for this exact position
+        const noiseValue = this.fbm(
+            x * this.data.noiseScale, 
+            z * this.data.noiseScale
+        );
+        
+        // Check if noise value exceeds threshold
+        if (noiseValue > this.data.noiseThreshold) {
+            // Add small noise-based offset for natural feel
+            const jitterX = this.perlin2D(x * 0.1, z * 0.1) * 16;
+            const jitterZ = this.perlin2D(x * 0.1, z * 0.2) * 16;
+            
+            positions.push({
+                x: x + jitterX,
+                z: z + jitterZ,
+                noise: noiseValue
+            });
+        }
+    }
+    
+    // Sort by noise value to get best positions
+    positions.sort((a, b) => b.noise - a.noise);
+    
+    // Place trees up to max limit
+    const treeCount = Math.min(positions.length, this.data.maxTrees);
+    for (let i = 0; i < treeCount; i++) {
+        const pos = positions[i];
+        const treeObj = this.pool[i];
+        if (!treeObj) continue;
+        
+        const y = this.getTerrainHeight(pos.x, pos.z);
+        this.updateTree(treeObj, pos.x, y, pos.z, pos.noise);
+        treeObj.active = true;
+        treeObj.worldPos = { x: pos.x, z: pos.z };
+    }
+    
+    console.log(`Found ${positions.length} valid positions, placed ${treeCount} trees in ${Math.round(performance.now() - startTime)}ms`);
+},
+
+  // Remove tick function since we're not doing dynamic updates
+  tick: null,
+
+  // Update noise initialization to match terrain system
   initializeNoise: function() {
-    // Fixed seed for deterministic results
-    const NOISE_SEED = 42;
+    const NOISE_SEED = 99;
     
     this.noise = {
         seed: NOISE_SEED,
-        lerp: function(a, b, t) { 
-            return a + t * (b - a); 
+        p: new Array(512),
+        fade: function(t) {
+            return t * t * t * (t * (t * 6 - 15) + 10);
         },
-        grad: function(hash, x, y) {
+        lerp: function(t, a, b) {
+            return a + t * (b - a);
+        },
+        grad: function(hash, x, y, z) {
             const h = hash & 15;
-            const grad_x = 1 + (h & 7);
-            const grad_y = grad_x & 1 ? 1 : -1;
-            return grad_x * x + grad_y * y;
-        },
-        fade: function(t) { 
-            return t * t * t * (t * (t * 6 - 15) + 10); 
-        },
-        p: new Array(512)
+            const u = h < 8 ? x : y;
+            const v = h < 4 ? y : (h === 12 || h === 14 ? x : z);
+            return ((h & 1) === 0 ? u : -u) + ((h & 2) === 0 ? v : -v);
+        }
     };
-    
-    // Initialize permutation table deterministically
-    const permutation = new Array(256);
-    for (let i = 0; i < 256; i++) {
-        permutation[i] = i;
-    }
-    
-    // Use seeded shuffle (Fisher-Yates with deterministic RNG)
-    let seed = NOISE_SEED;
+
+    // Use same permutation setup as terrain
+    const perm = new Array(256);
+    for (let i = 0; i < 256; i++) perm[i] = i;
     for (let i = 255; i > 0; i--) {
-        // Simple deterministic RNG
-        seed = (seed * 16807) % 2147483647;
-        const j = seed % (i + 1);
-        // Swap
-        [permutation[i], permutation[j]] = [permutation[j], permutation[i]];
+        const seedMix = (NOISE_SEED ^ (NOISE_SEED >> 5) ^ (NOISE_SEED << 7) ^ (i * 13)) & 0xFFFFFFFF;
+        const j = seedMix % (i + 1);
+        [perm[i], perm[j]] = [perm[j], perm[i]];
     }
-    
-    // Extend with duplicates
     for (let i = 0; i < 512; i++) {
-        this.noise.p[i] = permutation[i & 255];
+        this.noise.p[i] = perm[i & 255];
     }
-    
-    console.log(`Noise initialized with seed: ${NOISE_SEED}`);
-  },
+},
 
   // Add new method for tree pool creation
   createTreePool: function() {
@@ -261,39 +276,69 @@ AFRAME.registerComponent('tree-hex-manager', {
     return material;
   },
   
+  // Update perlin2D to match terrain's implementation
   perlin2D: function(x, y) {
-    // Get grid cell coordinates
     const X = Math.floor(x) & 255;
     const Y = Math.floor(y) & 255;
-    
-    // Get relative position in cell
     x -= Math.floor(x);
     y -= Math.floor(y);
-    
-    // Compute fade curves
     const u = this.noise.fade(x);
     const v = this.noise.fade(y);
-    
-    // Get hash values for corners
     const A = this.noise.p[X] + Y;
     const B = this.noise.p[X + 1] + Y;
+    const AA = this.noise.p[A];
+    const AB = this.noise.p[A + 1];
+    const BA = this.noise.p[B];
+    const BB = this.noise.p[B + 1];
+    return this.noise.lerp(v, 
+        this.noise.lerp(u, 
+            this.noise.grad(this.noise.p[AA], x, y, 0),
+            this.noise.grad(this.noise.p[BA], x-1, y, 0)
+        ),
+        this.noise.lerp(u,
+            this.noise.grad(this.noise.p[AB], x, y-1, 0),
+            this.noise.grad(this.noise.p[BB], x-1, y-1, 0)
+        )
+    );
+},
+
+  // Modify fbm function to increase value range
+  fbm: function(x, y) {
+    let value = 0;
+    let amplitude = 1.0;
+    let frequency = 1.0;
+    let maxValue = 0;
     
-    // Blend gradients
-    return this.noise.lerp(
-      this.noise.lerp(
-        this.noise.grad(this.noise.p[A], x, y),
-        this.noise.grad(this.noise.p[B], x - 1, y),
-        u
-      ),
-      this.noise.lerp(
-        this.noise.grad(this.noise.p[A + 1], x, y - 1),
-        this.noise.grad(this.noise.p[B + 1], x - 1, y - 1),
-        u
-      ),
-      v
-    ) * 0.5 + 0.5; // Transform from -1..1 to 0..1
+    for(let i = 0; i < this.data.noiseOctaves; i++) {
+        // Add phase shift per octave for more variation
+        const phaseX = x + (i * 17.31);  // Prime numbers for phase shift
+        const phaseZ = y + (i * 23.67);
+        
+        const noiseVal = this.perlin2D(
+            phaseX * this.data.noiseScale * frequency, 
+            phaseZ * this.data.noiseScale * frequency
+        );
+        
+        // Use different power curve per octave
+        const normalizedNoise = Math.pow((noiseVal + 1) * 0.5, 1.0 + (i * 0.2));
+        
+        value += normalizedNoise * amplitude;
+        maxValue += amplitude;
+        amplitude *= this.data.noiseGain;
+        frequency *= this.data.noiseLacunarity;
+    }
+    
+    const finalValue = value / maxValue;
+    
+    // Add debug visualization if enabled
+    if (this.data.debug && Math.random() < 0.001) {
+        console.log('Noise value at', {x, y, value: finalValue, 
+            threshold: this.data.noiseThreshold});
+    }
+    
+    return finalValue;
   },
-  
+
   setupTerrainAccess: function() {
     try {
       const scene = document.querySelector('a-scene');
@@ -326,126 +371,8 @@ AFRAME.registerComponent('tree-hex-manager', {
     
     return 0;
   },
-  
-  getGridPosition: function(x, z) {
-    // Get grid step from config or fall back to default
-    const gridStep = window.TerrainConfig ? window.TerrainConfig.geometrySize : 4.4;
-    
-    // Snap to grid
-    return {
-      x: Math.round(x / gridStep) * gridStep,
-      z: Math.round(z / gridStep) * gridStep
-    };
-  },
-  
-  checkNeedsResampling: function(subjectPos) {
-    // Calculate distance from last sampled position
-    const dx = subjectPos.x - this.lastSampledPosition.x;
-    const dz = subjectPos.z - this.lastSampledPosition.z;
-    const distance = Math.sqrt(dx * dx + dz * dz);
-    
-    // Resample when moved 5% of radius distance
-    return distance > (this.data.radius * 0.05);
-  },
-  
-  tick: function () {
-    const subject = document.querySelector('#subject');
-    if (!subject || !this.terrainGenerator) return;
-    
-    const subjectPos = subject.object3D.position;
-    
-    // Check if we need to resample tree positions
-    if (this.needsResampling || this.checkNeedsResampling(subjectPos)) {
-        this.sampleTreePositions(subjectPos);
-        this.lastSampledPosition = { 
-            x: subjectPos.x, 
-            z: subjectPos.z 
-        };
-        this.needsResampling = false;
-    }
-},
 
-  sampleTreePositions: function(subjectPos) {
-    const startTime = performance.now();
-    
-    // Reset all trees to inactive first
-    this.pool.forEach(treeObj => {
-        treeObj.active = false;
-        
-        // Clear matrices for inactive trees by moving them far away
-        for (let i = 0; i < this.data.trunkSegments; i++) {
-            const matrix = new THREE.Matrix4();
-            matrix.setPosition(0, -99999, 0);
-            this.trunkMesh.setMatrixAt(treeObj.trunkStart + i, matrix);
-        }
-        for (let i = 0; i < this.data.foliageHexCount; i++) {
-            const matrix = new THREE.Matrix4();
-            matrix.setPosition(0, -99999, 0);
-            this.foliageMesh.setMatrixAt(treeObj.foliageStart + i, matrix);
-        }
-    });
-    
-    // Update matrices after clearing
-    this.trunkMesh.instanceMatrix.needsUpdate = true;
-    this.foliageMesh.instanceMatrix.needsUpdate = true;
-    
-    // Reset active count
-    this.activeTreeCount = 0;
-    
-    // Calculate sampling area
-    const radius = this.data.radius;
-    const gridStep = window.TerrainConfig ? window.TerrainConfig.geometrySize : 4.4;
-    
-    // Sample positions
-    const positions = [];
-    let sampledCount = 0;
-    
-    const minX = Math.floor((subjectPos.x - radius) / gridStep) * gridStep;
-    const maxX = Math.floor((subjectPos.x + radius) / gridStep) * gridStep;
-    const minZ = Math.floor((subjectPos.z - radius) / gridStep) * gridStep;
-    const maxZ = Math.floor((subjectPos.z + radius) / gridStep) * gridStep;
-    
-    // Sample valid positions with modified noise check
-    for (let x = minX; x <= maxX; x += gridStep) {
-        for (let z = minZ; z <= maxZ; z += gridStep) {
-            const dx = x - subjectPos.x;
-            const dz = z - subjectPos.z;
-            const distSq = dx * dx + dz * dz;
-            
-            if (distSq <= radius * radius) {
-                sampledCount++;
-                const noiseValue = this.perlin2D(x * this.data.noiseScale, z * this.data.noiseScale);
-                // Changed comparison: noiseValue must be ABOVE threshold to place tree
-                if (noiseValue > this.data.noiseThreshold) {
-                    positions.push({ x, z, noise: noiseValue });
-                }
-            }
-        }
-    }
-    
-    // Sort by noise value in DESCENDING order (higher values first)
-    positions.sort((a, b) => b.noise - a.noise);
-    
-    // Sort by noise value and limit to maxTrees
-    const selectedPositions = positions.slice(0, this.data.maxTrees);
-    
-    // Place trees at selected positions
-    for (const pos of selectedPositions) {
-        const treeObj = this.pool.find(t => !t.active);
-        if (!treeObj) continue;
-        
-        const terrainHeight = this.getTerrainHeight(pos.x, pos.z);
-        const y = terrainHeight + (this.data.treeHeight * 0.1);
-        
-        this.updateTree(treeObj, pos.x, y, pos.z, pos.noise);
-        treeObj.active = true;
-        treeObj.worldPos = { x: pos.x, z: pos.z };
-        this.activeTreeCount++;
-    }
-    
-    console.log(`Placed ${this.activeTreeCount} trees in ${Math.round(performance.now() - startTime)}ms`);
-  },
-
+  // Update tree sampling to use FBM
   createTrunkSegments: function(parentEntity, noiseValue, x, z) {
     const segmentHeight = 4;
     const baseRadius = 0.4;

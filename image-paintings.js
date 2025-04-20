@@ -12,7 +12,7 @@
                     const terrainManager = scene.components['terrain-manager'];
                     if (terrainManager && terrainManager.chunkManager && terrainManager.chunkManager.terrainGenerator) {
                         terrainGenerator = terrainManager.chunkManager.terrainGenerator;
-                        console.log('Image paintings: Terrain generator initialized.');
+                        //console.log('Image paintings: Terrain generator initialized.');
                     }
                 }
             } catch (err) {
@@ -110,11 +110,11 @@
                 plane.position.set(x, y + planeSize.height * 0.5, z); // Position above terrain
                 plane.lookAt(0, y, 0); // Face the center of the terrain
                 scene.add(plane);
-                console.log(`Added image plane: ${imageUrl} at (${x}, ${y}, ${z})`);
+                //console.log(`Added image plane: ${imageUrl} at (${x}, ${y}, ${z})`);
             });
         }
     }
 
     await createImagePlanes();
-    console.log("Image paintings initialized.");
+    //console.log("Image paintings initialized.");
 })();

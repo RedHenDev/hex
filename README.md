@@ -15,9 +15,17 @@ principles of dev
 
 -section -deeper general dev-
 
+triage
+
+1: -b fix tree placement
+
+2: -f VR menu and tilt (precision etc.) controls
 
 
 to do
+
+
+-f shadows under trees -- or darker light?
 
 -i prime number quarry; choice of mode: smart-mine or physical-mine
 

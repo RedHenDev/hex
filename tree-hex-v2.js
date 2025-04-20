@@ -14,7 +14,7 @@ AFRAME.registerComponent('tree-hex-manager', {
       updateInterval: { type: 'number', default: 2000 }, // Milliseconds between updates
       
       // Noise settings
-      noiseThreshold: { type: 'number', default: 0.35 },
+      noiseThreshold: { type: 'number', default: 0.55 },
       noiseScale: { type: 'number', default: 0.8 },
       noiseLacunarity: { type: 'number', default: 2.0 },
       noiseGain: { type: 'number', default: 0.5 },
@@ -35,13 +35,14 @@ AFRAME.registerComponent('tree-hex-manager', {
       // Foliage settings
       foliageHexCount: { type: 'number', default: 32 },
       foliageScale: { type: 'number', default: 0.4 },
-      foliageHeight: { type: 'number', default: 0.6 },
-      foliageRadius: { type: 'number', default: 3.0 },
+      foliageHeight: { type: 'number', default: 1.1 },
+      foliageRadius: { type: 'number', default: 5.0 },
       foliageTilt: { type: 'number', default: 0.25 },
+      foliageOpacity: { type: 'number', default: 0.9 },
       
       // Branch settings (connecting trunk to foliage)
       enableBranches: { type: 'boolean', default: true },
-      branchWidth: { type: 'number', default: 0.15 },
+      branchWidth: { type: 'number', default: 0.32 },
       
       // Material settings
       trunkEmissive: { type: 'number', default: 0.2 },
@@ -215,7 +216,7 @@ AFRAME.registerComponent('tree-hex-manager', {
       const distMoved = Math.sqrt(distX * distX + distZ * distZ);
       
       // Only update trees if player has moved significantly
-      if (distMoved > 40) {
+      if (distMoved > 80) {
         this.lastSubjectX = subjectPos.x;
         this.lastSubjectZ = subjectPos.z;
         
@@ -515,7 +516,7 @@ AFRAME.registerComponent('tree-hex-manager', {
         metalness: 0.0,
         roughness: 0.5,
         transparent: true,
-        opacity: 0.6
+        opacity: this.data.foliageOpacity || 0.8
       });
       
       if (this.data.enableBranches) {

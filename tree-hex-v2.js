@@ -82,6 +82,9 @@ AFRAME.registerComponent('tree-hex-manager', {
       
       // Set up throttled tick function for tree updates
       this.tick = AFRAME.utils.throttleTick(this.tick, this.data.updateInterval, this);
+
+      // Optionally, set a base ambient intensity for reference (should match index.html ambient light intensity)
+      this.baseAmbientIntensity = 0.5;
     },
   
     placeInitialTrees: function() {
@@ -223,6 +226,9 @@ AFRAME.registerComponent('tree-hex-manager', {
         // Update trees based on distance
         this.updateTreesAroundSubject(subjectPos);
       }
+
+      // New: update shading based on nearby trees.
+      this.updateShadeLighting(subjectPos);
     },
   
     // Update trees around the subject
@@ -824,6 +830,38 @@ AFRAME.registerComponent('tree-hex-manager', {
       }
       if (this.branchMaterial && this.branchMaterial.uniforms) {
         this.branchMaterial.uniforms.emissiveIntensity.value = enable ? 0.4 : 0.2;
+      }
+    },
+
+    // New method to update ambient light based on tree proximity
+    updateShadeLighting: function(subjectPos) {
+      let shadeSum = 0;
+      const shadingRadius = 50; // distance within which trees contribute to shade
+      let activeCount = 0;
+      
+      for (let i = 0; i < this.pool.length; i++) {
+        const treeObj = this.pool[i];
+        if (!treeObj.active) continue;
+        const dx = treeObj.worldPos.x - subjectPos.x;
+        const dz = treeObj.worldPos.z - subjectPos.z;
+        const d = Math.sqrt(dx * dx + dz * dz);
+        if (d < shadingRadius) {
+          // Closer trees contribute more to dimming: value in [0,1]
+          shadeSum += (1 - d / shadingRadius);
+          activeCount++;
+        }
+      }
+      
+      // Compute a shade factor (clamp to maximum reduction of 50% of base intensity)
+      let shadeFactor = Math.min(shadeSum, 1);
+      
+      // Find the ambient light entity by id in the scene
+      const ambientEl = document.getElementById('ambient-light');
+      if (ambientEl && ambientEl.getAttribute('light')) {
+        const base = this.baseAmbientIntensity;
+        // Reduce intensity when under shade (e.g., dim up to 50% when shadeFactor is 1)
+        const newIntensity = base * (1 - 0.5 * shadeFactor);
+        ambientEl.setAttribute('light', 'intensity', newIntensity);
       }
     }
   });

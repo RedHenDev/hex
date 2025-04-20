@@ -16,7 +16,7 @@ window.TerrainConfig = {
     geometrySize: 4.4,
     geometryHeight: 16,
     heightStep: 4.4,
-    chunkSize: 9,
+    chunkSize: 81, // Make sure this is a squeare number.
     loadDistance: 760,
     unloadDistance: 800,
     pulseThreshold: 50.0, 

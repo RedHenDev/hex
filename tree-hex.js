@@ -433,7 +433,9 @@ AFRAME.registerComponent('tree-hex-manager', {
     const matrix = new THREE.Matrix4();
     const scale = this.data.treeScale;
     const rotationMatrix = new THREE.Matrix4();
-    
+    // Lower foliage by this offset (relative to trunk top)
+    const foliageLowering = scale * 0.4; // adjust this value as needed
+
     // Update trunk segments with lift
     for (let i = 0; i < this.data.trunkSegments; i++) {
         const trunkIndex = treeObj.trunkStart + i;
@@ -462,8 +464,8 @@ AFRAME.registerComponent('tree-hex-manager', {
         const posX = x + Math.cos(angle) * dist;
         const posZ = z + Math.sin(angle) * dist;
         const heightOffset = (scale * this.data.foliageRadius - dist) * 0.5;
-        // Add 2 units to match trunk lift
-        const posY = y + (this.data.trunkSegments * scale) + heightOffset + 2;
+        // Add 2 units to match trunk lift, then lower foliage
+        const posY = y + (this.data.trunkSegments * scale) + heightOffset + 2 - foliageLowering;
         
         // Create tilted hexagons with deterministic twist
         matrix.identity();

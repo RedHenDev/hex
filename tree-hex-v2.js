@@ -18,13 +18,13 @@ AFRAME.registerComponent('tree-hex-manager', {
       noiseScale: { type: 'number', default: 0.8 },
       noiseLacunarity: { type: 'number', default: 2.0 },
       noiseGain: { type: 'number', default: 0.5 },
-      noiseOctaves: { type: 'number', default: 8 },
+      noiseOctaves: { type: 'number', default: 4 },
       
       // Tree settings
       baseTreeScale: { type: 'number', default: 64 },    // Base scale for trees
-      minScaleFactor: { type: 'number', default: 0.1 },  // Minimum scale variation
-      maxScaleFactor: { type: 'number', default: 3.0 },  // Maximum scale variation
-      scaleNoiseScale: { type: 'number', default: 0.1 }, // Noise scale for tree size variation
+      minScaleFactor: { type: 'number', default: 0.01 },  // 0.1 Minimum scale variation
+      maxScaleFactor: { type: 'number', default: 1.0 },  // 3.0 Maximum scale variation
+      scaleNoiseScale: { type: 'number', default: 10.0 }, // 0.1 Noise scale for tree size variation
       
       // Trunk settings
       trunkSegments: { type: 'number', default: 4 },
@@ -33,9 +33,9 @@ AFRAME.registerComponent('tree-hex-manager', {
       trunkTaper: { type: 'number', default: 0.15 },
       
       // Foliage settings
-      foliageHexCount: { type: 'number', default: 32 },
+      foliageHexCount: { type: 'number', default: 32 }, // 32.
       foliageScale: { type: 'number', default: 0.4 },
-      foliageHeight: { type: 'number', default: 1.1 },
+      foliageHeight: { type: 'number', default: 0.8 },
       foliageRadius: { type: 'number', default: 5.0 },
       foliageTilt: { type: 'number', default: 0.25 },
       foliageOpacity: { type: 'number', default: 0.9 },

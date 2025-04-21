@@ -17,13 +17,14 @@ principles of dev
 
 triage
 
-1: -b fix tree placement
+1: 
 
 2: -f VR menu and tilt (precision etc.) controls
 
 
 to do
 
+DONE-b fix tree placement
 
 -f shadows under trees -- or darker light?
 

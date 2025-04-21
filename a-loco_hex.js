@@ -26,6 +26,14 @@ AFRAME.registerComponent('subject-locomotion', {
         this.moveZ = 0;
         this.moveX = 0;
 
+        // Added this.moving to allow mobile
+        // and VR users to experience same
+        // colission mechanic as desktop users.
+        // Colission with a tree switches
+        // off this.moveZ rather than this.moving.
+        // For, this.moving is the mode/state of
+        // locomotion toggled.
+        this.moving = false;
         this.running = false;
         this.flying = false;
 
@@ -202,10 +210,19 @@ AFRAME.registerComponent('subject-locomotion', {
             let cTime = Date.now();
             if (cTime - this.timeStamp > 2000) {
                 this.timeStamp = Date.now();
-                this.moveZ = this.moveZ === 1 ? 0 : 1;
+                this.moving = !this.moving;
+                //this.moveZ = this.moveZ === 1 ? 0 : 1;
                 //if (this.data.debug) console.log('Locomotion: Head tilt left - moveZ:', this.moveZ);
             }
         }
+        // Switch on forward movement.
+        // NB this.moveZ can be switched off
+        // by collision with a tree.
+        // While, this.moving is state
+        // remains on.
+        // I.e. we don't want collisions with
+        // trees to toggle off locomotive intent.
+        this.moveZ = this.moving ? 1 : 0;
         
         // Right head tilt
         const RminZ = -0.3;
@@ -248,7 +265,7 @@ AFRAME.registerComponent('subject-locomotion', {
         // New: Collision detection using a Map of tree positions.
         // Placed before locomotive control logic, so that
         // trees feel solid.
-        const baseCollisionRadius = 42; // Base collision radius value.
+        const baseCollisionRadius = 38; // Base collision radius value.
         const cellSize = baseCollisionRadius * 2;
         const subjectCellX = Math.floor(position.x / cellSize);
         const subjectCellZ = Math.floor(position.z / cellSize);
@@ -279,6 +296,7 @@ AFRAME.registerComponent('subject-locomotion', {
                         const d = Math.sqrt(diffX * diffX + diffZ * diffZ);
                         // Effective collision radius depends on the tree's scale factor.
                         const effectiveCollisionRadius = baseCollisionRadius * (tree.scaleFactor || 1);
+                        // Also check we are not over tree (height is 4 * 64 * tree.scaleFactor)
                         if (d < effectiveCollisionRadius) {
                             // Compute overlap and rebound the subject.
                             const overlap = effectiveCollisionRadius - d;

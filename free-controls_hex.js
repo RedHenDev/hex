@@ -173,7 +173,7 @@ AFRAME.registerComponent('free-controls', {
     }
 
     this.isMoving = !this.isMoving;
-    terrainMovementComponent.moveZ = this.isMoving ? 1 : 0;
+    terrainMovementComponent.moving = this.isMoving ? 1 : 0;
 
     console.log("Movement toggled:", this.isMoving ? "ON" : "OFF");
 

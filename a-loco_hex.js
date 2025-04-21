@@ -63,6 +63,7 @@ AFRAME.registerComponent('subject-locomotion', {
         document.addEventListener('keyup', (e) => {
             if (e.code === 'Space') {
                 this.flying = !this.flying;
+                window.toggleHexPulse(this.flying);
                 //if (this.data.debug) console.log('Locomotion: Flying mode:', this.flying);
             }
         });
@@ -214,6 +215,7 @@ AFRAME.registerComponent('subject-locomotion', {
             if (cTime - this.timeStamp > 2000) {
                 this.timeStamp = Date.now();
                 this.flying = !this.flying;
+                window.toggleHexPulse(this.flying);
                 //this.running = !this.running;
                 //if (this.data.debug) console.log('Locomotion: Head tilt right - flying:', this.flying);
             }
@@ -231,7 +233,7 @@ AFRAME.registerComponent('subject-locomotion', {
             if (sTime - this.timeStamp > 500) {
                 if (this.keys.ShiftLeft) {
                     this.running = !this.running;
-                    window.toggleHexPulse(this.running);
+                    //window.toggleHexPulse(this.running);
                     this.timeStamp = Date.now();
                     if (this.data.debug) console.log('Locomotion: Running:', this.running);
                 }
@@ -242,7 +244,70 @@ AFRAME.registerComponent('subject-locomotion', {
         const run_speed = this.running ? 5 : 1;
         //const fly_speed = (this.flying && !this.running) ? 15 : 1;
         const fly_speed = (this.flying && this.running ? 5 : 1);
-        
+
+        // New: Collision detection using a Map of tree positions.
+        // Placed before locomotive control logic, so that
+        // trees feel solid.
+        const baseCollisionRadius = 42; // Base collision radius value.
+        const cellSize = baseCollisionRadius * 2;
+        const subjectCellX = Math.floor(position.x / cellSize);
+        const subjectCellZ = Math.floor(position.z / cellSize);
+        const treeManagerEl = document.querySelector('[tree-hex-manager]');
+        if (treeManagerEl && treeManagerEl.components && treeManagerEl.components['tree-hex-manager']) {
+            const treeManager = treeManagerEl.components['tree-hex-manager'];
+            const collisionMap = new Map();
+            // Build collision map from active trees.
+            for (let tree of treeManager.pool) {
+                if (!tree.active) continue;
+                const cellX = Math.floor(tree.worldPos.x / cellSize);
+                const cellZ = Math.floor(tree.worldPos.z / cellSize);
+                const key = `${cellX},${cellZ}`;
+                if (!collisionMap.has(key)) {
+                    collisionMap.set(key, []);
+                }
+                collisionMap.get(key).push(tree);
+            }
+            
+            // Check subject's cell and neighboring cells.
+            for (let dx = -1; dx <= 1; dx++) {
+                for (let dz = -1; dz <= 1; dz++) {
+                    const key = `${subjectCellX + dx},${subjectCellZ + dz}`;
+                    if (!collisionMap.has(key)) continue;
+                    for (let tree of collisionMap.get(key)) {
+                        const diffX = position.x - tree.worldPos.x;
+                        const diffZ = position.z - tree.worldPos.z;
+                        const d = Math.sqrt(diffX * diffX + diffZ * diffZ);
+                        // Effective collision radius depends on the tree's scale factor.
+                        const effectiveCollisionRadius = baseCollisionRadius * (tree.scaleFactor || 1);
+                        if (d < effectiveCollisionRadius) {
+                            // Compute overlap and rebound the subject.
+                            const overlap = effectiveCollisionRadius - d;
+                            const normX = diffX / (d || 1);
+                            const normZ = diffZ / (d || 1);
+                            // Turn off movement.
+                            this.moveX = 0;
+                            this.moveZ = 0;
+                            this.velocity.x = 0;
+                            this.velocity.z = 0;
+                            // Rebound by adding to velocity.
+                            this.velocity.x += normX * overlap * 100;
+                            this.velocity.z += normZ * overlap * 100;
+                            position.z += normZ * overlap * 2;
+                            position.x += normX * overlap * 2;
+                            
+                            if (this.data.debug) {
+                                console.log('Collision: Rebounding subject from tree at', tree.worldPos, 
+                                            'Effective Radius:', effectiveCollisionRadius.toFixed(2));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+
+
+
         // Apply movement in camera direction.
         if (this.moveX !== 0 || this.moveZ !== 0) {
             const angle = rotation.y;
@@ -275,7 +340,7 @@ AFRAME.registerComponent('subject-locomotion', {
         
         // Prevent falling below terrain.
         if (position.y < this.targetY) {
-            position.y = this.targetY + (this.data.heightOffset*2);
+            position.y = this.targetY + (this.data.heightOffset);
         } else if (!this.flying){
             position.y = this.targetY + (this.data.heightOffset*2);
         }

@@ -323,8 +323,8 @@ AFRAME.registerComponent('tree-hex-manager', {
           z * this.data.noiseScale
         );
         
-        // Check if noise value exceeds threshold
-        if (noiseValue > this.data.noiseThreshold) {
+        // Check if noise value exceeds threshold (lowered threshold for dynamic updates)
+        if (noiseValue > this.data.noiseThreshold * 0.8) {  // <-- MODIFIED CONDITION
           // Add deterministic jitter based on grid position
           const jitterX = this.perlin2D(gridX * 0.4, gridZ * 0.4) * (cellSize * 0.4);
           const jitterZ = this.perlin2D(gridX * 0.4, gridZ * 0.8) * (cellSize * 0.4);

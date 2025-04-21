@@ -4,8 +4,8 @@
 AFRAME.registerComponent('tree-hex-manager', {
     schema: {
       // Pool and placement settings
-      maxTrees: { type: 'number', default: 128 },
-      poolSize: { type: 'number', default: 132 },
+      maxTrees: { type: 'number', default: 64 },
+      poolSize: { type: 'number', default: 128 },
       
       // Distance settings
       loadDistance: { type: 'number', default: 760 },   // Distance to start loading trees
@@ -14,8 +14,8 @@ AFRAME.registerComponent('tree-hex-manager', {
       updateInterval: { type: 'number', default: 2000 }, // Milliseconds between updates
       
       // Noise settings
-      noiseThreshold: { type: 'number', default: 0.56 },
-      noiseScale: { type: 'number', default: 0.8 },
+      noiseThreshold: { type: 'number', default: 0.59 },
+      noiseScale: { type: 'number', default: 0.4 },
       noiseLacunarity: { type: 'number', default: 2.0 },
       noiseGain: { type: 'number', default: 0.5 },
       noiseOctaves: { type: 'number', default: 4 },
@@ -24,7 +24,7 @@ AFRAME.registerComponent('tree-hex-manager', {
       baseTreeScale: { type: 'number', default: 64 },    // Base scale for trees
       minScaleFactor: { type: 'number', default: 0.01 },  // 0.1 Minimum scale variation
       maxScaleFactor: { type: 'number', default: 1.0 },  // 3.0 Maximum scale variation
-      scaleNoiseScale: { type: 'number', default: 10.0 }, // 0.1 Noise scale for tree size variation
+      scaleNoiseScale: { type: 'number', default: 0.1 }, // 0.1 Noise scale for tree size variation
       
       // Trunk settings
       trunkSegments: { type: 'number', default: 4 },

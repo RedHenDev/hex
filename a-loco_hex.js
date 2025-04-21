@@ -297,7 +297,9 @@ AFRAME.registerComponent('subject-locomotion', {
                         // Effective collision radius depends on the tree's scale factor.
                         const effectiveCollisionRadius = baseCollisionRadius * (tree.scaleFactor || 1);
                         // Also check we are not over tree (height is 4 * 64 * tree.scaleFactor)
-                        if (d < effectiveCollisionRadius) {
+                        if (d < effectiveCollisionRadius && position.y < 
+                                this.getTerrainHeight(tree.worldPos.x, 
+                                    tree.worldPos.z) + 232 * tree.scaleFactor) {
                             // Compute overlap and rebound the subject.
                             const overlap = effectiveCollisionRadius - d;
                             const normX = diffX / (d || 1);
@@ -358,7 +360,7 @@ AFRAME.registerComponent('subject-locomotion', {
         
         // Prevent falling below terrain.
         if (position.y < this.targetY) {
-            position.y = this.targetY + (this.data.heightOffset);
+            position.y = this.targetY + (this.data.heightOffset*2);
         } else if (!this.flying){
             position.y = this.targetY + (this.data.heightOffset*2);
         }

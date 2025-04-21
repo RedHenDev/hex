@@ -4,7 +4,7 @@
 AFRAME.registerComponent('tree-hex-manager', {
     schema: {
       // Pool and placement settings
-      maxTrees: { type: 'number', default: 64 },
+      maxTrees: { type: 'number', default: 128 },
       poolSize: { type: 'number', default: 128 },
       
       // Distance settings

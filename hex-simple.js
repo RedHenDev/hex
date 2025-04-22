@@ -6,7 +6,7 @@ window.HexConfigSimple = {
     pulseSpeed: 4.0,          // Speed of the pulse
     pulseIntensity: 0.3,      // Intensity of the pulse
     pulseSpacing: 3.0,        // Spacing between waves of pulses
-    enableOutline: false,      // NEW: Toggle cartoon outlines
+    enableOutline: true,      // NEW: Toggle cartoon outlines
     applyToGenerator: function(generator) {
         if (generator) {
             // ...existing assignments...
@@ -129,7 +129,7 @@ window.simpleFragmentShader = `
         // Apply cartoon outline only when enabled.
         if (enableOutline > 0.5) {
             float d = sdHexagon(vLocal, hexSize);
-            float thickness = 0.66; // increased thickness for more distinct outlines
+            float thickness = 0.33; // increased thickness for more distinct outlines
             float edgeFactor = smoothstep(0.0, fwidth(d), abs(d) - thickness);
             finalColor = mix(vec3(0.0), finalColor, edgeFactor);
         }

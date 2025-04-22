@@ -3,22 +3,22 @@
 // ========== TERRAIN CONFIGURATION ==========
 window.TerrainConfig = {
     seed: 99,
-    heightScale: 1256.0,
-    noiseScale: 0.0008,
+    heightScale: 3256.0, // 1256.0
+    noiseScale: 0.0002, // 0.0008
     baseHeight: -22.0,
     useRidges: true,
-    ridgeFactor: 0.14,
+    ridgeFactor: 0.14, //0.14
     octaves: 8,
-    ridgeOctaves: 4,
-    lacunarity: 2.0,
-    gain: 0.5,
+    ridgeOctaves: 4, //4
+    lacunarity: 2.2, //2.0
+    gain: 0.52, //0.5
     useHexagons: true,
     geometrySize: 4.4,
     geometryHeight: 16,
     heightStep: 4.4,
     chunkSize: 81, // Make sure this is a square number.
-    loadDistance: 760,
-    unloadDistance: 800,
+    loadDistance: 1200,
+    unloadDistance: 1260,
     pulseThreshold: 50.0, 
     colorVariation: 18.0,
     // New section for coloration noise adjustments:

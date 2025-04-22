@@ -2,13 +2,17 @@
 
 // Global configuration
 window.HexConfigSimple = {
-    enablePulse: false, // Toggle pulse effect
-    pulseSpeed: 4.0,   // Speed of the pulse
-    pulseIntensity: 0.3, // Intensity of the pulse
-    pulseSpacing: 3.0  // Spacing between waves of pulses
+    enablePulse: false,       // Toggle pulse effect
+    pulseSpeed: 4.0,          // Speed of the pulse
+    pulseIntensity: 0.3,      // Intensity of the pulse
+    pulseSpacing: 3.0,        // Spacing between waves of pulses
+    enableOutline: false,      // NEW: Toggle cartoon outlines
+    applyToGenerator: function(generator) {
+        if (generator) {
+            // ...existing assignments...
+        }
+    }
 };
-
-console.log("Initializing simplified hexagon shaders with basic pulse...");
 
 // Ensure THREE is available from A-Frame
 if (typeof THREE === 'undefined' && typeof AFRAME !== 'undefined') {
@@ -35,11 +39,9 @@ THREE.HexagonGeometry = class HexagonGeometry extends THREE.BufferGeometry {
             height: height,
             flatTop: flatTop
         };
-        
         const startAngle = flatTop ? 0 : Math.PI / 6;
         const shape = new THREE.Shape();
         const vertices = [];
-        
         for (let i = 0; i < 6; i++) {
             const angle = startAngle + (i * Math.PI / 3);
             const x = size * Math.cos(angle);
@@ -52,12 +54,10 @@ THREE.HexagonGeometry = class HexagonGeometry extends THREE.BufferGeometry {
             }
         }
         shape.closePath();
-        
         const extrudeSettings = {
             depth: height,
             bevelEnabled: false
         };
-        
         const geometryData = new THREE.ExtrudeGeometry(shape, extrudeSettings);
         geometryData.rotateX(-Math.PI / 2);
         this.copy(geometryData);
@@ -67,7 +67,7 @@ THREE.HexagonGeometry = class HexagonGeometry extends THREE.BufferGeometry {
 
 THREE.HexagonBufferGeometry = THREE.HexagonGeometry;
 
-// Vertex Shader
+// Vertex Shader – fixed and cleaned up:
 window.simpleVertexShader = `
     attribute vec3 instancePosition;
     attribute float instanceHeight;
@@ -76,59 +76,69 @@ window.simpleVertexShader = `
     varying vec3 vColor;
     varying float vHeight;
     varying vec3 vWorldPosition;
+    varying vec2 vLocal; // local hexagon coordinate
 
     void main() {
         vColor = instanceColor;
         vHeight = instanceHeight;
-
         vec3 transformed = position;
         if (position.y > 0.1) {
-            transformed.y = (position.y * instanceHeight);
+            transformed.y = position.y * instanceHeight;
         }
-        
         vec3 worldPos = transformed + instancePosition;
         vWorldPosition = worldPos;
-
+        vLocal = transformed.xz; // pass local coordinates for outline
         vec4 mvPosition = modelViewMatrix * vec4(worldPos, 1.0);
         gl_Position = projectionMatrix * mvPosition;
     }
 `;
 
-// Fragment Shader with simple glowing pulse effect
+// Updated Fragment Shader with thicker outlines:
 window.simpleFragmentShader = `
-uniform vec3 ambientLightColor;
-uniform vec3 fogColor;
-uniform float fogNear;
-uniform float fogFar;
-uniform float time; // Time uniform for pulse effect
-uniform float pulseSpeed; // Speed of the pulse
-uniform float pulseIntensity; // Intensity of the pulse
-uniform float pulseEnabled; // Toggle pulse effect
-uniform float pulseSpacing; // Spacing between waves of pulses
+    uniform vec3 ambientLightColor;
+    uniform vec3 fogColor;
+    uniform float fogNear;
+    uniform float fogFar;
+    uniform float time;
+    uniform float pulseSpeed;
+    uniform float pulseIntensity;
+    uniform float pulseEnabled;
+    uniform float pulseSpacing;
+    uniform float hexSize;
+    uniform float enableOutline; // NEW
 
-varying vec3 vColor;
-varying float vHeight;
-varying vec3 vWorldPosition;
+    varying vec3 vColor;
+    varying float vHeight;
+    varying vec3 vWorldPosition;
+    varying vec2 vLocal;
 
-void main() {
-    vec3 finalColor = vColor;
-
-    // Simple pulse effect
-    if (pulseEnabled > 0.5) {
-        float pulse = sin((time * pulseSpeed + vWorldPosition.y) / pulseSpacing) * 0.5 + 0.5;
-        finalColor += pulse * pulseIntensity;
+    float sdHexagon(vec2 p, float r) {
+        vec2 k = vec2(-0.8660254, 0.5);
+        p = abs(p);
+        return max(dot(k, p), p.x) - r;
     }
 
-    // Gamma correction
-    finalColor = pow(finalColor, vec3(1.0 / 2.2));
-    vec4 color = vec4(finalColor, 1.0);
+    void main() {
+        vec3 finalColor = vColor;
+        if (pulseEnabled > 0.5) {
+            float pulse = sin((time * pulseSpeed + vWorldPosition.y) / pulseSpacing) * 0.5 + 0.5;
+            finalColor += pulse * pulseIntensity;
+        }
+        finalColor = pow(finalColor, vec3(1.0 / 2.2));
+        
+        // Apply cartoon outline only when enabled.
+        if (enableOutline > 0.5) {
+            float d = sdHexagon(vLocal, hexSize);
+            float thickness = 0.66; // increased thickness for more distinct outlines
+            float edgeFactor = smoothstep(0.0, fwidth(d), abs(d) - thickness);
+            finalColor = mix(vec3(0.0), finalColor, edgeFactor);
+        }
 
-    // Apply fog
-    float fogFactor = smoothstep(fogNear, fogFar, -gl_FragCoord.z);
-    color.rgb = mix(color.rgb, fogColor, fogFactor);
-
-    gl_FragColor = color;
-}
+        vec4 color = vec4(finalColor, 1.0);
+        float fogFactor = smoothstep(fogNear, fogFar, -gl_FragCoord.z);
+        color.rgb = mix(color.rgb, fogColor, fogFactor);
+        gl_FragColor = color;
+    }
 `;
 
 // Store created materials for runtime updates
@@ -146,11 +156,9 @@ window.CubeTerrainBuilder = {
             const geometry = new THREE.HexagonGeometry(2.54, 1.0, false);
             const instancedMesh = new THREE.InstancedMesh(geometry, material, cubes.length);
             instancedMesh.frustumCulled = false;
-            
             const instancePositions = new Float32Array(cubes.length * 3);
             const instanceHeights = new Float32Array(cubes.length);
             const instanceColors = new Float32Array(cubes.length * 3);
-            
             for (let i = 0; i < cubes.length; i++) {
                 const cube = cubes[i];
                 instancePositions[i * 3] = cube.position[0];
@@ -161,18 +169,15 @@ window.CubeTerrainBuilder = {
                 instanceColors[i * 3 + 1] = cube.color[1];
                 instanceColors[i * 3 + 2] = cube.color[2];
             }
-            
             geometry.setAttribute('instancePosition', new THREE.InstancedBufferAttribute(instancePositions, 3));
             geometry.setAttribute('instanceHeight', new THREE.InstancedBufferAttribute(instanceHeights, 1));
             geometry.setAttribute('instanceColor', new THREE.InstancedBufferAttribute(instanceColors, 3));
-            
             return instancedMesh;
         } catch (error) {
             console.error("Error creating instanced hex mesh:", error);
             return new THREE.Group();
         }
     },
-    
     createCubeMaterial: function() {
         const material = new THREE.ShaderMaterial({
             vertexShader: window.simpleVertexShader,
@@ -186,24 +191,22 @@ window.CubeTerrainBuilder = {
                 THREE.UniformsLib.common,
                 THREE.UniformsLib.fog,
                 {
-                    time: { value: 0.0 }, // Time uniform for pulse effect
+                    time: { value: 0.0 },
                     pulseSpeed: { value: window.HexConfigSimple.pulseSpeed || 2.0 },
                     pulseIntensity: { value: window.HexConfigSimple.pulseIntensity || 0.5 },
-                    pulseSpacing: { value: window.HexConfigSimple.pulseSpacing || 1.0 }, // Add pulseSpacing uniform
-                    pulseEnabled: { value: window.HexConfigSimple.enablePulse ? 1.0 : 0.0 }
+                    pulseSpacing: { value: window.HexConfigSimple.pulseSpacing || 1.0 },
+                    pulseEnabled: { value: window.HexConfigSimple.enablePulse ? 1.0 : 0.0 },
+                    hexSize: { value: 2.54 }, // use same value as the geometry size
+                    enableOutline: { value: window.HexConfigSimple.enableOutline ? 1.0 : 0.0 } // NEW
                 }
             ])
         });
-        
         material.extensions = {
             derivatives: true,
             fragDepth: false,
             drawBuffers: false,
             shaderTextureLOD: false
         };
-        material.lights = true;
-        
-        // Store material for runtime updates
         window._hexSimpleMaterials.push(material);
         return material;
     }

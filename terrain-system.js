@@ -16,12 +16,14 @@ window.TerrainConfig = {
     geometrySize: 4.4,
     geometryHeight: 16,
     heightStep: 4.4,
-    chunkSize: 81, // Make sure this is a squeare number.
+    chunkSize: 81, // Make sure this is a square number.
     loadDistance: 760,
     unloadDistance: 800,
     pulseThreshold: 50.0, 
     colorVariation: 18.0,
-    
+    // New section for coloration noise adjustments:
+    colorNoiseScale: 0.00001,  // 0.1 spatial frequency for hue noise variation
+    colorNoiseRange: 0.02,    // maximum deviation in degrees
     applyToGenerator: function(generator) {
         if (generator) {
             generator.heightScale = this.heightScale;
@@ -154,43 +156,39 @@ class TerrainGenerator {
         return baseHeight;
     }
     
+    // New helper: convert HSV to RGB
+    static hsvToRgb(h, s, v) {
+        // h: 0-360, s: 0-1, v: 0-1
+        let c = v * s;
+        let x = c * (1 - Math.abs((h / 60) % 2 - 1));
+        let m = v - c;
+        let r = 0, g = 0, b = 0;
+        if (h < 60) { r = c; g = x; b = 0; }
+        else if (h < 120) { r = x; g = c; b = 0; }
+        else if (h < 180) { r = 0; g = c; b = x; }
+        else if (h < 240) { r = 0; g = x; b = c; }
+        else if (h < 300) { r = x; g = 0; b = c; }
+        else { r = c; g = 0; b = x; }
+        return [r + m, g + m, b + m];
+    }
+    
     getColor(x, z, height) {
-        const normalizedHeight = (height - this.baseHeight) / this.heightScale;
-        const variationScale = this.noiseScale * 10;
-        const variation = ImprovedNoise.perlin2(x * variationScale, z * variationScale) * this.colorVariation;
-        let r, g, b;
-        if (normalizedHeight < 0.2) {
-            r = 0.0;
-            g = 0.1 + normalizedHeight * 0.5;
-            b = 0.4 + normalizedHeight * 0.5;
-        } else if (normalizedHeight < 0.3) {
-            const t = (normalizedHeight - 0.2) * 10;
-            r = 0.7 * t + 0.0 * (1 - t);
-            g = 0.7 * t + 0.2 * (1 - t);
-            b = 0.5 * t + 0.5 * (1 - t);
-        } else if (normalizedHeight < 0.5) {
-            r = 0.1 + variation * 0.05;
-            g = 0.4 + normalizedHeight * 0.4 + variation * 0.05;
-            b = 0.1 + variation * 0.05;
-        } else if (normalizedHeight < 0.7) {
-            r = 0.2 + variation * 0.05;
-            g = 0.3 + normalizedHeight * 0.2 + variation * 0.05;
-            b = 0.1 + variation * 0.05;
-        } else if (normalizedHeight < 0.85) {
-            r = 0.5 + normalizedHeight * 0.2 + variation * 0.1;
-            g = 0.5 + normalizedHeight * 0.1 + variation * 0.1;
-            b = 0.5 + variation * 0.1;
-        } else {
-            const t = (normalizedHeight - 0.85) * 6.67;
-            r = 0.9 * t + 0.6 * (1 - t);
-            g = 0.9 * t + 0.6 * (1 - t);
-            b = 0.9 * t + 0.6 * (1 - t);
-        }
-        return [
-            Math.min(1.0, Math.max(0.0, r)),
-            Math.min(1.0, Math.max(0.0, g)),
-            Math.min(1.0, Math.max(0.0, b))
-        ];
+        const normalizedHeight = Math.min(1, Math.max(0, (height - this.baseHeight) / this.heightScale));
+        const baseHue = normalizedHeight * 360; // Base hue from height
+        
+        // Amplify hue noise variation significantly.
+        const hueNoise = ImprovedNoise.perlin2(x * TerrainConfig.colorNoiseScale, z * TerrainConfig.colorNoiseScale)
+            * (TerrainConfig.colorNoiseRange * 50); // amplified variation
+        const hue = (baseHue + hueNoise + 360) % 360;
+        
+        // Increase saturation and brightness variations.
+        const satNoise = ImprovedNoise.perlin2((x + 100) * TerrainConfig.colorNoiseScale, (z + 100) * TerrainConfig.colorNoiseScale);
+        const valNoise = ImprovedNoise.perlin2((x - 100) * TerrainConfig.colorNoiseScale, (z - 100) * TerrainConfig.colorNoiseScale);
+        const baseSaturation = 0.85, baseValue = 0.97;//0.8 0.9
+        const saturation = baseSaturation + satNoise * 0.001; // increased variation
+        const value = baseValue + valNoise * 0.001; // increased variation
+        
+        return TerrainGenerator.hsvToRgb(hue, saturation, value);
     }
     
     generateChunk(chunkX, chunkZ, chunkSize) {

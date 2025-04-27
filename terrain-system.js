@@ -13,17 +13,17 @@ window.TerrainConfig = {
     lacunarity: 2.2, //2.0
     gain: 0.52, //0.5
     useHexagons: true,
-    geometrySize: 4.4,
+    geometrySize: 4.0, // 4.4
     geometryHeight: 16,
     heightStep: 4.4,
     chunkSize: 81, // Make sure this is a square number.
     loadDistance: 1200,
     unloadDistance: 1260,
     pulseThreshold: 50.0, 
-    colorVariation: 18.0, //18.0
+    colorVariation: 36.0, //18.0
     // New section for coloration noise adjustments:
-    colorNoiseScale: 0.01,  // 0.00001 spatial frequency for hue noise variation
-    colorNoiseRange: 2.0,    // 0.02 maximum deviation in degrees
+    colorNoiseScale: 0.01,  // 0.01 spatial frequency for hue noise variation
+    colorNoiseRange: 2.0,    // 2.0 maximum deviation in degrees
     applyToGenerator: function(generator) {
         if (generator) {
             generator.heightScale = this.heightScale;
@@ -199,8 +199,12 @@ class TerrainGenerator {
                 const worldZ = chunkZ + z * this.cubeSize;
                 const height = this.generateTerrainHeight(worldX, worldZ);
                 const color = this.getColor(worldX, worldZ, height);
+                // Hex positioning hack.
+                const slider = z % 2 * 1.5; // Hexagon shift ;);
+                const wX = x * this.cubeSize + slider;
+                const wZ = z * this.cubeSize;
                 cubes.push({
-                    position: [x * this.cubeSize, Math.floor(height / this.heightStep) * this.heightStep, z * this.cubeSize],
+                    position: [wX, Math.floor(height / this.heightStep) * this.heightStep, wZ],
                     height: this.geometryHeight,
                     color: color
                 });

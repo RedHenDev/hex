@@ -20,10 +20,10 @@ window.TerrainConfig = {
     loadDistance: 1200,
     unloadDistance: 1260,
     pulseThreshold: 50.0, 
-    colorVariation: 18.0,
+    colorVariation: 18.0, //18.0
     // New section for coloration noise adjustments:
-    colorNoiseScale: 0.00001,  // 0.1 spatial frequency for hue noise variation
-    colorNoiseRange: 0.02,    // maximum deviation in degrees
+    colorNoiseScale: 0.01,  // 0.00001 spatial frequency for hue noise variation
+    colorNoiseRange: 2.0,    // 0.02 maximum deviation in degrees
     applyToGenerator: function(generator) {
         if (generator) {
             generator.heightScale = this.heightScale;

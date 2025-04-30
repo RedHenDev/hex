@@ -44,7 +44,7 @@
 
 
         <!-- Player with terrain locomotion system -->
-        <a-entity id="subject" position="-999 255 0" subject-locomotion="heightOffset: 5.25">
+        <a-entity id="subject" position="9999 255 7977" subject-locomotion="heightOffset: 5.25">
             <a-camera id="cam" free-controls="enabled: true; sensitivity: 4.0;" 
                       wasd-controls="enabled: false">
                 <!-- Reticle for interaction -->
@@ -54,8 +54,8 @@
                     raycaster="objects:.clickable; far:32;"
                     geometry="primitive:ring;radiusInner: 0.01; radiusOuter: 0.03"
                     material="shader:flat;color:#777;
-                              depthTest:true;
-                              transparent:false; opacity:0.4;"
+                              depthTest:false;
+                              transparent:true; opacity:0.4;"
                     position="0 0 -1;"
                     animation__fusing="property:scale;from:1 1 1;to:0 0 0;dur:720;startEvents:fusing;"
                     animation__reset="property:scale;from:0 0 0;to: 1 1 1;dur:333;startEvents:mouseleave;">

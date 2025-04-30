@@ -6,7 +6,7 @@ window.HexConfigSimple = {
     pulseSpeed: 4.0,          // Speed of the pulse
     pulseIntensity: 0.3,      // Intensity of the pulse
     pulseSpacing: 3.0,        // Spacing between waves of pulses
-    enableOutline: true,      // NEW: Toggle cartoon outlines
+    enableOutline: false,      // Toggle cartoon outlines
     applyToGenerator: function(generator) {
         if (generator) {
             // ...existing assignments...
@@ -67,7 +67,7 @@ THREE.HexagonGeometry = class HexagonGeometry extends THREE.BufferGeometry {
 
 THREE.HexagonBufferGeometry = THREE.HexagonGeometry;
 
-// Vertex Shader – fixed and cleaned up:
+// Vertex Shader – includes UV coordinates
 window.simpleVertexShader = `
     attribute vec3 instancePosition;
     attribute float instanceHeight;
@@ -76,24 +76,28 @@ window.simpleVertexShader = `
     varying vec3 vColor;
     varying float vHeight;
     varying vec3 vWorldPosition;
-    varying vec2 vLocal; // local hexagon coordinate
-
+    varying vec2 vLocal;
+    varying vec3 vNormal;
+    varying vec2 vUv;  // UV coordinates
+    
     void main() {
         vColor = instanceColor;
         vHeight = instanceHeight;
+        vNormal = normalize(normalMatrix * normal);
+        vUv = uv;  // Pass UV coordinates
         vec3 transformed = position;
         if (position.y > 0.1) {
             transformed.y = position.y * instanceHeight;
         }
         vec3 worldPos = transformed + instancePosition;
         vWorldPosition = worldPos;
-        vLocal = transformed.xz; // pass local coordinates for outline
+        vLocal = transformed.xz; // Local coordinates for outline
         vec4 mvPosition = modelViewMatrix * vec4(worldPos, 1.0);
         gl_Position = projectionMatrix * mvPosition;
     }
 `;
 
-// Updated Fragment Shader with thicker outlines:
+// Updated Fragment Shader with adjusted outline thickness and logic
 window.simpleFragmentShader = `
     uniform vec3 ambientLightColor;
     uniform vec3 fogColor;
@@ -105,12 +109,14 @@ window.simpleFragmentShader = `
     uniform float pulseEnabled;
     uniform float pulseSpacing;
     uniform float hexSize;
-    uniform float enableOutline; // NEW
+    uniform float enableOutline;
 
     varying vec3 vColor;
     varying float vHeight;
     varying vec3 vWorldPosition;
     varying vec2 vLocal;
+    varying vec3 vNormal;
+    varying vec2 vUv;  // UV coordinates
 
     float sdHexagon(vec2 p, float r) {
         vec2 k = vec2(-0.8660254, 0.5);
@@ -126,11 +132,20 @@ window.simpleFragmentShader = `
         }
         finalColor = pow(finalColor, vec3(1.0 / 2.2));
         
-        // Apply cartoon outline only when enabled.
+        // Apply outlines
         if (enableOutline > 0.5) {
-            float d = sdHexagon(vLocal, hexSize);
-            float thickness = 0.66; // increased thickness for more distinct outlines
-            float edgeFactor = smoothstep(0.0, fwidth(d), abs(d) - thickness);
+            float edgeFactor;
+            if (abs(vNormal.y) > 0.9) {
+                // Top or bottom face
+                float d = sdHexagon(vLocal, hexSize);
+                float thickness = 0.03;  // Reduced thickness for top/bottom faces
+                edgeFactor = smoothstep(0.0, fwidth(d), abs(d) - thickness);
+            } else {
+                // Side face: only outline vertical edges
+                float du = min(vUv.x, 1.0 - vUv.x);
+                float thickness = 0.012;  // Reduced thickness for side faces in UV space
+                edgeFactor = smoothstep(0.0, fwidth(du), du - thickness);
+            }
             finalColor = mix(vec3(0.0), finalColor, edgeFactor);
         }
 
@@ -196,8 +211,8 @@ window.CubeTerrainBuilder = {
                     pulseIntensity: { value: window.HexConfigSimple.pulseIntensity || 0.5 },
                     pulseSpacing: { value: window.HexConfigSimple.pulseSpacing || 1.0 },
                     pulseEnabled: { value: window.HexConfigSimple.enablePulse ? 1.0 : 0.0 },
-                    hexSize: { value: 2.54 }, // use same value as the geometry size
-                    enableOutline: { value: window.HexConfigSimple.enableOutline ? 1.0 : 0.0 } // NEW
+                    hexSize: { value: 2.54 }, // Use same value as the geometry size
+                    enableOutline: { value: window.HexConfigSimple.enableOutline ? 1.0 : 0.0 }
                 }
             ])
         });

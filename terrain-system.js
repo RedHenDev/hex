@@ -17,8 +17,8 @@ window.TerrainConfig = {
     geometryHeight: 16,
     heightStep: 4.4,
     chunkSize: 81, // Make sure this is a square number.
-    loadDistance: 1200,
-    unloadDistance: 1260,
+    loadDistance: 512, // 1200
+    unloadDistance: 572, // 1260
     pulseThreshold: 50.0, 
     colorVariation: 36.0, //18.0
     // New section for coloration noise adjustments:

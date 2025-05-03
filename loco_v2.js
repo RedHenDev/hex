@@ -82,7 +82,8 @@ AFRAME.registerComponent('subject-locomotion', {
             if (e.code === 'Space') {
                 if (!this.flying && !this.jumping) {
                     this.jumping = true;
-                    this.verticalVelocity = 18; // Jump impulse, adjust as needed
+                    // Jump impulse.
+                    this.verticalVelocity = this.running ? 32 : 24; // Adjust jump impulse based on running state.
                 }
                 // If you want to keep flying toggle, use another key or modifier
                 // else remove flying toggle here
@@ -310,6 +311,7 @@ AFRAME.registerComponent('subject-locomotion', {
                         // Effective collision radius depends on the tree's scale factor.
                         const effectiveCollisionRadius = baseCollisionRadius * (tree.scaleFactor || 1);
                         // Also check we are not over tree (height is 4 * 64 * tree.scaleFactor)
+                        // Note that we have calculated the height of tree to 232 by trial and error.
                         if (d < effectiveCollisionRadius && position.y < 
                                 this.getTerrainHeight(tree.worldPos.x, 
                                     tree.worldPos.z) + 232 * tree.scaleFactor) {
@@ -371,10 +373,10 @@ AFRAME.registerComponent('subject-locomotion', {
             position.y += pitch * this.moveZ * fly_speed;
         }
         
-        // Handle jumping and gravity
+        // Handle jumping and gravity.
         if (!this.flying) {
             if (this.jumping) {
-                this.verticalVelocity -= 40 * delta; // Gravity, adjust as needed
+                this.verticalVelocity -= 60 * delta; // Gravity, default 40.
                 position.y += this.verticalVelocity * delta;
                 if (position.y <= this.targetY + (this.data.heightOffset*2)) {
                     position.y = this.targetY + (this.data.heightOffset*2);

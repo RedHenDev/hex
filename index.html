@@ -18,7 +18,7 @@
     <div id="loading-screen">
         <div class="spinner"></div>
         <h2>Loading Hexagon Terrain...</h2>
-        <p>Please wait while system grows terrain.</p>
+        <p>system is growing terrain.</p>
     </div>
     
     <a-scene terrain-manager
@@ -63,7 +63,8 @@
             </a-camera>
             <!-- Lights and sky etc. can go in here -->
             <!-- Sky background -->
-            <a-sky color="#00BAFF" radius="4000"></a-sky>
+            <!-- <a-sky color="#00BAFF" radius="4000"></a-sky> -->
+            <a-sky color="#000000" radius="4000"></a-sky>
             
         </a-entity> <!-- end of subject-->
         
@@ -95,7 +96,7 @@
     
     <script src="tree-hex-v2.js"></script>
     <script src="vr-ui.js"></script>
-
+    <script src="nimbus.js"></script>
     <script src="game.js"></script>
     <!-- Multiplayer connection status -->
     <div id="connection-status" style="position:fixed;bottom:80px;left:12px;background:rgba(29, 220, 29, 0.7);color:#fff;padding:6px 12px;border-radius:6px;font-size:15px;z-index:9999;">

@@ -279,7 +279,7 @@ AFRAME.registerComponent('subject-locomotion', {
         // New: Collision detection using a Map of tree positions.
         // Placed before locomotive control logic, so that
         // trees feel solid.
-        const baseCollisionRadius = 38; // Base collision radius value.
+        const baseCollisionRadius = 38; // Base collision radius value. 38.
         const cellSize = baseCollisionRadius * 2;
         const subjectCellX = Math.floor(position.x / cellSize);
         const subjectCellZ = Math.floor(position.z / cellSize);
@@ -376,7 +376,7 @@ AFRAME.registerComponent('subject-locomotion', {
         // Handle jumping and gravity.
         if (!this.flying) {
             if (this.jumping) {
-                this.verticalVelocity -= 60 * delta; // Gravity, default 40.
+                this.verticalVelocity -= 80 * delta; // Gravity, default 40.
                 position.y += this.verticalVelocity * delta;
                 if (position.y <= this.targetY + (this.data.heightOffset*2)) {
                     position.y = this.targetY + (this.data.heightOffset*2);

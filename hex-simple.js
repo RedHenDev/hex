@@ -8,6 +8,7 @@ window.HexConfigSimple = {
     pulseSpacing: 3.0,        // 3.0 Spacing between waves of pulses
     enableOutline: true,      // Toggle cartoon outlines
     outlineThickness: 0.4,    // 0.1 Thickness of the outline (default 0.1)
+    outlineColor: [0.0, 1.0, 0.0], // Default outline color (black) as RGB array
     applyToGenerator: function(generator) {
         if (generator) {
             // ...existing assignments...
@@ -118,6 +119,7 @@ window.simpleFragmentShader = `
     uniform float hexSize;
     uniform float enableOutline;
     uniform float outlineThickness; // Added
+    uniform vec3 outlineColor; // Added uniform for outline color
 
     varying vec3 vColor;
     varying float vHeight;
@@ -182,7 +184,7 @@ window.simpleFragmentShader = `
                 float thickness = max(outlineThickness, 1.5 * fwidth(d));
                 edgeFactor = smoothstep(0.0, thickness, d);
             }
-            finalColor = mix(vec3(0.0), finalColor, edgeFactor);
+            finalColor = mix(outlineColor, finalColor, edgeFactor); // Use outlineColor
         }
 
         vec4 color = vec4(finalColor, 1.0);
@@ -249,7 +251,8 @@ window.CubeTerrainBuilder = {
                     pulseEnabled: { value: window.HexConfigSimple.enablePulse ? 1.0 : 0.0 },
                     hexSize: { value: 2.54 }, // Use same value as the geometry size
                     enableOutline: { value: window.HexConfigSimple.enableOutline ? 1.0 : 0.0 },
-                    outlineThickness: { value: window.HexConfigSimple.outlineThickness || 0.1 }
+                    outlineThickness: { value: window.HexConfigSimple.outlineThickness || 0.1 },
+                    outlineColor: { value: new THREE.Color(...window.HexConfigSimple.outlineColor) } // Set outline color
                 }
             ])
         });

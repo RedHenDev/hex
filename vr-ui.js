@@ -74,10 +74,10 @@
 		btn.id = 'settings-btn';
 		btn.textContent = 'Settings';
 		btn.style.position = 'fixed';
-		btn.style.bottom = '20px';
+		btn.style.bottom = '80px';
 		btn.style.right = '20px';
 		btn.style.padding = '15px 20px';
-		btn.style.backgroundColor = '#3498db';
+		btn.style.backgroundColor = '#007bff';
 		btn.style.border = 'none';
 		btn.style.borderRadius = '5px';
 		btn.style.color = '#fff';

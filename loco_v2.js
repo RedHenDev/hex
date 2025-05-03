@@ -52,6 +52,7 @@ AFRAME.registerComponent('subject-locomotion', {
             s: false,
             a: false,
             d: false,
+            g: false,
             ShiftLeft: false
         };
         
@@ -71,9 +72,9 @@ AFRAME.registerComponent('subject-locomotion', {
         });
         
         document.addEventListener('keyup', (e) => {
-            if (e.code === 'Space') {
-                //this.flying = !this.flying;
-                //window.toggleHexPulse(this.flying);
+            if (e.code === 'g') {
+                this.flying = !this.flying;
+                window.toggleHexPulse(this.flying);
                 //if (this.data.debug) console.log('Locomotion: Flying mode:', this.flying);
             }
         });
@@ -83,10 +84,17 @@ AFRAME.registerComponent('subject-locomotion', {
                 if (!this.flying && !this.jumping) {
                     this.jumping = true;
                     // Jump impulse.
-                    this.verticalVelocity = this.running ? 32 : 24; // Adjust jump impulse based on running state.
+                    this.verticalVelocity = this.running ? 64 : 42; // Adjust jump impulse based on running state.
                 }
                 // If you want to keep flying toggle, use another key or modifier
                 // else remove flying toggle here
+            }
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'KeyG') {
+                this.flying = !this.flying;
+                window.toggleHexPulse(this.flying);
             }
         });
         

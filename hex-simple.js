@@ -3,10 +3,11 @@
 // Global configuration
 window.HexConfigSimple = {
     enablePulse: false,       // Toggle pulse effect
-    pulseSpeed: 4.0,          // Speed of the pulse
-    pulseIntensity: 0.3,      // Intensity of the pulse
-    pulseSpacing: 3.0,        // Spacing between waves of pulses
-    enableOutline: false,      // Toggle cartoon outlines
+    pulseSpeed: 4.0,          // 4.0 Speed of the pulse
+    pulseIntensity: 0.3,      // 0.3 Intensity of the pulse
+    pulseSpacing: 3.0,        // 3.0 Spacing between waves of pulses
+    enableOutline: true,      // Toggle cartoon outlines
+    outlineThickness: 0.4,    // 0.1 Thickness of the outline (default 0.1)
     applyToGenerator: function(generator) {
         if (generator) {
             // ...existing assignments...
@@ -79,6 +80,7 @@ window.simpleVertexShader = `
     varying vec2 vLocal;
     varying vec3 vNormal;
     varying vec2 vUv;  // UV coordinates
+    varying float vFaceType; // 0: side, 1: top, -1: bottom
     
     void main() {
         vColor = instanceColor;
@@ -92,6 +94,11 @@ window.simpleVertexShader = `
         vec3 worldPos = transformed + instancePosition;
         vWorldPosition = worldPos;
         vLocal = transformed.xz; // Local coordinates for outline
+        if (abs(normal.y) > 0.9) {
+            vFaceType = normal.y > 0.0 ? 1.0 : -1.0;
+        } else {
+            vFaceType = 0.0;
+        }
         vec4 mvPosition = modelViewMatrix * vec4(worldPos, 1.0);
         gl_Position = projectionMatrix * mvPosition;
     }
@@ -110,6 +117,7 @@ window.simpleFragmentShader = `
     uniform float pulseSpacing;
     uniform float hexSize;
     uniform float enableOutline;
+    uniform float outlineThickness; // Added
 
     varying vec3 vColor;
     varying float vHeight;
@@ -117,11 +125,39 @@ window.simpleFragmentShader = `
     varying vec2 vLocal;
     varying vec3 vNormal;
     varying vec2 vUv;  // UV coordinates
+    varying float vFaceType; // 0: side, 1: top, -1: bottom
 
-    float sdHexagon(vec2 p, float r) {
-        vec2 k = vec2(-0.8660254, 0.5);
-        p = abs(p);
-        return max(dot(k, p), p.x) - r;
+    // Compute minimum distance to any of the 6 hexagon edges (for top/bottom)
+    float hexEdgeDistance(vec2 p, float r) {
+        float minDist = 1e6;
+        float angleOffset = 3.1415926 / 6.0; // 30 degrees, matches geometry for pointy-top hex
+        for (int i = 0; i < 6; i++) {
+            float angle1 = angleOffset + float(i) * 3.1415926 / 3.0;
+            float angle2 = angleOffset + float(i + 1) * 3.1415926 / 3.0;
+            vec2 v1 = vec2(r * cos(angle1), r * sin(angle1));
+            vec2 v2 = vec2(r * cos(angle2), r * sin(angle2));
+            // Distance from p to edge v1-v2
+            vec2 e = v2 - v1;
+            vec2 w = p - v1;
+            float t = clamp(dot(w, e) / dot(e, e), 0.0, 1.0);
+            vec2 proj = v1 + t * e;
+            float dist = length(p - proj);
+            minDist = min(minDist, dist);
+        }
+        return minDist;
+    }
+
+    // Compute minimum distance to any of the 6 vertical hexagon edges (for side faces)
+    float hexVerticalEdgeDistance(vec2 p, float r) {
+        float minDist = 1e6;
+        float angleOffset = 3.1415926 / 6.0;
+        for (int i = 0; i < 6; i++) {
+            float angle = angleOffset + float(i) * 3.1415926 / 3.0;
+            vec2 v = vec2(r * cos(angle), r * sin(angle));
+            float dist = length(p - v);
+            minDist = min(minDist, dist);
+        }
+        return minDist;
     }
 
     void main() {
@@ -134,17 +170,17 @@ window.simpleFragmentShader = `
         
         // Apply outlines
         if (enableOutline > 0.5) {
-            float edgeFactor;
-            if (abs(vNormal.y) > 0.9) {
-                // Top or bottom face
-                float d = sdHexagon(vLocal, hexSize);
-                float thickness = 0.03;  // Reduced thickness for top/bottom faces
-                edgeFactor = smoothstep(0.0, fwidth(d), abs(d) - thickness);
+            float edgeFactor = 1.0;
+            if (abs(vFaceType) > 0.5) {
+                // Top or bottom face: outline all 6 edges robustly
+                float d = hexEdgeDistance(vLocal, hexSize - 0.025);
+                float thickness = max(outlineThickness, 1.5 * fwidth(d));
+                edgeFactor = smoothstep(0.0, thickness, d);
             } else {
-                // Side face: only outline vertical edges
-                float du = min(vUv.x, 1.0 - vUv.x);
-                float thickness = 0.012;  // Reduced thickness for side faces in UV space
-                edgeFactor = smoothstep(0.0, fwidth(du), du - thickness);
+                // Side face: outline all 6 vertical edges robustly
+                float d = hexVerticalEdgeDistance(vLocal, hexSize - 0.025);
+                float thickness = max(outlineThickness, 1.5 * fwidth(d));
+                edgeFactor = smoothstep(0.0, thickness, d);
             }
             finalColor = mix(vec3(0.0), finalColor, edgeFactor);
         }
@@ -212,16 +248,23 @@ window.CubeTerrainBuilder = {
                     pulseSpacing: { value: window.HexConfigSimple.pulseSpacing || 1.0 },
                     pulseEnabled: { value: window.HexConfigSimple.enablePulse ? 1.0 : 0.0 },
                     hexSize: { value: 2.54 }, // Use same value as the geometry size
-                    enableOutline: { value: window.HexConfigSimple.enableOutline ? 1.0 : 0.0 }
+                    enableOutline: { value: window.HexConfigSimple.enableOutline ? 1.0 : 0.0 },
+                    outlineThickness: { value: window.HexConfigSimple.outlineThickness || 0.1 }
                 }
             ])
         });
+        // NOTE: polygonOffset does NOT affect fragment-shader outlines, only geometry-based outlines.
+        // For fragment-shader outlines, adjust thickness and smoothstep in the shader above.
         material.extensions = {
             derivatives: true,
             fragDepth: false,
             drawBuffers: false,
             shaderTextureLOD: false
         };
+        // You may remove or set these to zero if not using geometry-based outlines:
+        material.polygonOffset = false;
+        material.polygonOffsetFactor = 0.0;
+        material.polygonOffsetUnits = 0.0;
         window._hexSimpleMaterials.push(material);
         return material;
     }

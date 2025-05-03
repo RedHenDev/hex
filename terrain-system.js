@@ -13,7 +13,7 @@ window.TerrainConfig = {
     lacunarity: 2.2, //2.0
     gain: 0.52, //0.5
     useHexagons: true,
-    geometrySize: 4.0, // 4.4
+    geometrySize: 4.3, // 4.4. Larger number increases spacing between prisms.
     geometryHeight: 16,
     heightStep: 4.4,
     chunkSize: 81, // Make sure this is a square number.
@@ -196,11 +196,11 @@ class TerrainGenerator {
         for (let x = 0; x < chunkSize; x++) {
             for (let z = 0; z < chunkSize; z++) {
                 const worldX = chunkX + x * this.cubeSize;
-                const worldZ = chunkZ + z * this.cubeSize;
+                const worldZ = chunkZ + z * this.cubeSize; // Squeeze hexagons together on Z.
                 const height = this.generateTerrainHeight(worldX, worldZ);
                 const color = this.getColor(worldX, worldZ, height);
                 // Hex positioning hack.
-                const slider = z % 2 * 1.5; // Hexagon shift ;);
+                const slider = z % 2 * 2.0; // Hexagon shift ;);
                 const wX = x * this.cubeSize + slider;
                 const wZ = z * this.cubeSize;
                 cubes.push({

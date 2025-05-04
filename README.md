@@ -17,12 +17,14 @@ principles of dev
 
 triage
 
-1: -f new loco - 'hover-pulse'
+1: 
 
-2: 
+2: -f if very slow or stopped, drift to ground.
 
 
 to do
+
+DONE-f new loco - 'hover-pulse'
 
 -b chunks involve a *0.9 spacing or something...
 

@@ -45,7 +45,7 @@ AFRAME.registerComponent('tree-hex-manager', {
       branchWidth: { type: 'number', default: 0.32 },
       
       // Material settings
-      trunkEmissive: { type: 'number', default: 0.2 },
+      trunkEmissive: { type: 'number', default: 1.0 },
       foliageEmissive: { type: 'number', default: 0.4 },
       
       // Grid cell size for tracking tree placement. 80
@@ -64,8 +64,8 @@ AFRAME.registerComponent('tree-hex-manager', {
 
       // Foliage layer settings.
       foliageLayers: { type: 'number', default: 4 },  // Number of branch/foliage layers
-      layerSpacing: { type: 'number', default: 0.25 }, // Spacing between layers (0-1)
-      layerSizeReduction: { type: 'number', default: 0.2 }, // How much to reduce size per layer
+      layerSpacing: { type: 'number', default: 1.0 }, // Spacing between layers (0-1)
+      layerSizeReduction: { type: 'number', default: 0.8 }, // How much to reduce size per layer
       hexagonsPerLayer: { type: 'number', default: 128/4 }, // Hexagons per layer (32/3 rounded up)
     },
     

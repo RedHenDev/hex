@@ -18,13 +18,13 @@ window.FloatingFormationsConfig = {
     heightNoiseAmount: 100.0,      // 10.0 Amount of height variation
     
     // Performance settings
-    cellSize: 420,                 // 80 Size of grid cells for placement
-    loadDistance: 700,            // 300 Distance to start loading formations
-    unloadDistance: 760,          // 360 Distance to unload formations
+    cellSize: 480,                 // 80 Size of grid cells for placement
+    loadDistance: 300,            // 300 Distance to start loading formations
+    unloadDistance: 360,          // 360 Distance to unload formations
 
     // Color settings.
-    baseColor: '#00AAAA',          // Dark cyan base color
-    topColor: '#AA00AA',          // Dark magenta top color
+    baseColor: '#999999',          // Dark cyan base color
+    topColor: '#AAAAAA',          // Dark magenta top color
     colorIntensity: 1.0,          // Overall color intensity
     colorContrast: 1.0,          // Contrast between base and top colors
     heightColorScale: 100.0,      // How quickly colors change with height

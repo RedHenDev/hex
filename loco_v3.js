@@ -261,19 +261,19 @@ AFRAME.registerComponent('subject-locomotion', {
             this.moveZ = (this.keys.w || this.keys.ArrowUp ? 1 : 0) + 
                          (this.keys.s || this.keys.ArrowDown ? -1 : 0);
             
-            // Running now controls thrust power
+            // Running now controls thrust power.
             this.running = this.keys.ShiftLeft;
         }
         
         // Calculate thrust power
         const thrustMultiplier = this.running ? 5 : 1;
         
-        // Apply thrust in camera direction
+        // Apply thrust in camera direction.
         if (this.moveX !== 0 || this.moveZ !== 0) {
             const angle = rotation.y;
             const thrust = this.data.thrustPower * thrustMultiplier;
             
-            // Add thrust to current velocity
+            // Add thrust to current velocity.
             this.velocity.x += (-this.moveZ * Math.sin(angle) + this.moveX * Math.cos(angle)) * thrust * delta;
             this.velocity.z += (-this.moveZ * Math.cos(angle) - this.moveX * Math.sin(angle)) * thrust * delta;
         }
@@ -289,14 +289,30 @@ AFRAME.registerComponent('subject-locomotion', {
         position.y += this.velocity.y * delta;
         position.z += this.velocity.z * delta;
 
-        // Get terrain height and enforce minimum height
+        
+
+        // Get terrain height and enforce minimum height.
         const terrainY = this.getTerrainHeight(position.x, position.z);
         this.targetY = (window.TerrainConfig.geometryHeight*0.5) + terrainY + this.data.heightOffset;
-        
-        // Prevent going below terrain height
+        // Prevent going below terrain height.
         if (position.y < terrainY + this.data.heightOffset * 4) {
             position.y = terrainY + this.data.heightOffset * 4;
-            this.velocity.y = 0; // Stop downward momentum when hitting terrain.
+            // Stop downward momentum when hitting terrain.
+            if (this.velocity.x === 0 &&
+                this.velocity.z === 0) {
+                    this.velocity.y = 0;
+                }
+            else {
+                // Bounce up if moving.
+                this.velocity.y = Math.abs(this.velocity.length()*0.8); 
+            }
+            
+            } else {
+            // I.e. if above terrain.
+            // Drift to ground if slow enough.
+            if (this.velocity.length() < 1.0) {
+                this.velocity.set(0, -10.0, 0);
+            }
         }
 
         // New: Collision detection using a Map of tree positions.

@@ -9,7 +9,7 @@ window.HexConfigSimple = {
     enableOutline: true,      // Toggle cartoon outlines
     enableVerticalEdges: false, // Toggle vertical edge outlines
     outlineThickness: 0.4,    // 0.1 Thickness of the outline
-    outlineColor: [0.8, 0.8, 0.8], // Default outline color as RGB array
+    outlineColor: [0.4, 0.0, 0.4], // Default outline color as RGB array
     applyToGenerator: function(generator) {
         if (generator) {
             // ...existing assignments...

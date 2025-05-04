@@ -17,20 +17,22 @@ principles of dev
 
 triage
 
-1: -b chunks involve a *0.9 spacing or something...
+1: -f new loco - 'hover-pulse'
 
-2: -f new loco - 'hover-pulse'
+2: 
 
 
 to do
 
--f darken floating formations
+-b chunks involve a *0.9 spacing or something...
+
+DONE-f darken floating formations
 
 -f VR menu and tilt (precision etc.) controls
 
--f tree colour
+DONE-f tree colour
 
--f config controls over terrain colouring
+DONE-f config controls over terrain colouring
 
 -b fit hexagons on z dimension
 

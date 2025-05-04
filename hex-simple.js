@@ -170,19 +170,21 @@ window.simpleFragmentShader = `
         }
         finalColor = pow(finalColor, vec3(1.0 / 2.2));
         
-        // Apply outlines
+        // Apply outlines with adjusted scaling for floating formations
         if (enableOutline > 0.5) {
             float edgeFactor = 1.0;
+            float edgeScale = isFloatingFormation > 0.5 ? 2.0 : 1.0;
+            
             if (abs(vFaceType) > 0.5) {
                 // Top or bottom face: outline all 6 edges robustly
-                float d = hexEdgeDistance(vLocal, hexSize - 0.025);
-                float thickness = max(outlineThickness, 1.5 * fwidth(d));
+                float d = hexEdgeDistance(vLocal, hexSize - 0.025 * edgeScale);
+                float thickness = max(outlineThickness * edgeScale, 1.5 * fwidth(d));
                 edgeFactor = smoothstep(0.0, thickness, d);
             } else if (enableVerticalEdges > 0.5) {
-                // Side face: outline vertical edges only if enabled
-                float d = hexVerticalEdgeDistance(vLocal, hexSize - 0.025);
-                float thickness = max(outlineThickness, 1.5 * fwidth(d));
-                edgeFactor = smoothstep(0.0, thickness * 0.25, d);
+                // Side face: outline vertical edges
+                float d = hexVerticalEdgeDistance(vLocal, hexSize - 0.025 * edgeScale);
+                float thickness = max(outlineThickness * edgeScale, 1.5 * fwidth(d));
+                edgeFactor = smoothstep(0.0, thickness * 0.5, d);  // Increased from 0.25 to 0.5
             }
             finalColor = mix(outlineColor, finalColor, edgeFactor);
         }
@@ -244,6 +246,10 @@ window.CubeTerrainBuilder = {
     },
     createCubeMaterial: function(options = {}) {
         const needsTransparency = options.isFloatingFormation && options.opacity < 1.0;
+        // Scale up outline thickness for floating formations
+        const outlineThickness = options.isFloatingFormation ? 
+            window.HexConfigSimple.outlineThickness * 2.0 : 
+            window.HexConfigSimple.outlineThickness;
         
         const material = new THREE.ShaderMaterial({
             vertexShader: window.simpleVertexShader,
@@ -264,10 +270,11 @@ window.CubeTerrainBuilder = {
                     pulseEnabled: { value: window.HexConfigSimple.enablePulse ? 1.0 : 0.0 },
                     hexSize: { value: 2.54 }, // Will be updated per chunk based on geometry
                     enableOutline: { value: window.HexConfigSimple.enableOutline ? 1.0 : 0.0 },
-                    outlineThickness: { value: window.HexConfigSimple.outlineThickness || 0.1 },
+                    outlineThickness: { value: outlineThickness },
                     outlineColor: { value: new THREE.Color(...window.HexConfigSimple.outlineColor) }, // Set outline color
                     opacity: { value: options.opacity !== undefined ? options.opacity : 1.0 },
-                    isFloatingFormation: { value: options.isFloatingFormation ? 1.0 : 0.0 }
+                    isFloatingFormation: { value: options.isFloatingFormation ? 1.0 : 0.0 },
+                    enableVerticalEdges: { value: options.isFloatingFormation ? 1.0 : window.HexConfigSimple.enableVerticalEdges }
                 }
             ]),
             transparent: needsTransparency,

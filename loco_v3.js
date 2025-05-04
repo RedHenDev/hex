@@ -1,8 +1,12 @@
+// An attempt to implement pulse-thrust.
+
 // Player movement component with terrain following.
 AFRAME.registerComponent('subject-locomotion', {
     schema: {
         heightOffset: {type: 'number', default: 5.25}, // Height above ground.
-        debug: {type: 'boolean', default: true}       // Enable debug logging
+        debug: {type: 'boolean', default: true},       // Enable debug logging
+        thrustPower: {type: 'number', default: 164},    // Power of thrust
+        friction: {type: 'number', default: 0.96}     // Air friction (1 = no friction)
     },
 
     init: function() {
@@ -35,8 +39,6 @@ AFRAME.registerComponent('subject-locomotion', {
         // locomotion toggled.
         this.moving = false;
         this.running = false;
-        this.flying = false;
-        this.jumping = false;
         this.verticalVelocity = 0;
 
         // Setup direct access to terrain generator
@@ -245,8 +247,8 @@ AFRAME.registerComponent('subject-locomotion', {
             let cTime = Date.now();
             if (cTime - this.timeStamp > 2000) {
                 this.timeStamp = Date.now();
-                this.flying = !this.flying;
-                window.toggleHexPulse(this.flying);
+                //this.flying = !this.flying;
+                //window.toggleHexPulse(this.flying);
                 //this.running = !this.running;
                 //if (this.data.debug) console.log('Locomotion: Head tilt right - flying:', this.flying);
             }
@@ -259,22 +261,43 @@ AFRAME.registerComponent('subject-locomotion', {
             this.moveZ = (this.keys.w || this.keys.ArrowUp ? 1 : 0) + 
                          (this.keys.s || this.keys.ArrowDown ? -1 : 0);
             
-            // Running toggle via shift.
-            let sTime = Date.now();
-            if (sTime - this.timeStamp > 500) {
-                if (this.keys.ShiftLeft) {
-                    this.running = !this.running;
-                    //window.toggleHexPulse(this.running);
-                    this.timeStamp = Date.now();
-                    if (this.data.debug) console.log('Locomotion: Running:', this.running);
-                }
-            }
+            // Running now controls thrust power
+            this.running = this.keys.ShiftLeft;
         }
         
-        // Calculate movement speed.
-        const run_speed = this.running ? 5 : 1;
-        //const fly_speed = (this.flying && !this.running) ? 15 : 1;
-        const fly_speed = (this.flying && this.running ? 1 : 1);
+        // Calculate thrust power
+        const thrustMultiplier = this.running ? 5 : 1;
+        
+        // Apply thrust in camera direction
+        if (this.moveX !== 0 || this.moveZ !== 0) {
+            const angle = rotation.y;
+            const thrust = this.data.thrustPower * thrustMultiplier;
+            
+            // Add thrust to current velocity
+            this.velocity.x += (-this.moveZ * Math.sin(angle) + this.moveX * Math.cos(angle)) * thrust * delta;
+            this.velocity.z += (-this.moveZ * Math.cos(angle) - this.moveX * Math.sin(angle)) * thrust * delta;
+        }
+        
+        // Apply vertical thrust based on pitch.
+        this.velocity.y += pitch * 1.8 * this.moveZ * this.data.thrustPower * thrustMultiplier * delta;
+        
+        // Apply friction.
+        this.velocity.multiplyScalar(this.data.friction);
+        
+        // Update position with vertical movement
+        position.x += this.velocity.x * delta;
+        position.y += this.velocity.y * delta;
+        position.z += this.velocity.z * delta;
+
+        // Get terrain height and enforce minimum height
+        const terrainY = this.getTerrainHeight(position.x, position.z);
+        this.targetY = (window.TerrainConfig.geometryHeight*0.5) + terrainY + this.data.heightOffset;
+        
+        // Prevent going below terrain height
+        if (position.y < terrainY + this.data.heightOffset * 4) {
+            position.y = terrainY + this.data.heightOffset * 4;
+            this.velocity.y = 0; // Stop downward momentum when hitting terrain.
+        }
 
         // New: Collision detection using a Map of tree positions.
         // Placed before locomotive control logic, so that
@@ -338,59 +361,6 @@ AFRAME.registerComponent('subject-locomotion', {
                     }
                 }
             }
-        }
-
-        // Apply movement in camera direction.
-        if (this.moveX !== 0 || this.moveZ !== 0) {
-            const angle = rotation.y;
-            const speed = 15 * run_speed * fly_speed;
-            
-            this.velocity.x = (-this.moveZ * Math.sin(angle) + this.moveX * Math.cos(angle)) * speed;
-            this.velocity.z = (-this.moveZ * Math.cos(angle) - this.moveX * Math.sin(angle)) * speed;
-        } else {
-            this.velocity.x *= 0.9;
-            this.velocity.z *= 0.9;
-        }
-        
-        // Update position.
-        position.x += this.velocity.x * delta;
-        position.z += this.velocity.z * delta;
-        
-        // Floor values to aim for centre of voxel.
-        const px = position.x;//Math.floor(position.x);
-        const pz = position.z;//Math.floor(position.z);
-        const terrainY = this.getTerrainHeight(px, pz);
-        //this.terrainHeight = terrainY; // Store for debugging
-        
-        this.targetY = (window.TerrainConfig.geometryHeight*0.5) 
-        + terrainY + (this.data.heightOffset);
-        
-        // Handle flying mode.
-        if (this.flying) {
-            position.y += pitch * this.moveZ * fly_speed;
-        }
-        
-        // Handle jumping and gravity.
-        if (!this.flying) {
-            if (this.jumping) {
-                this.verticalVelocity -= 80 * delta; // Gravity, default 40.
-                position.y += this.verticalVelocity * delta;
-                if (position.y <= this.targetY + (this.data.heightOffset*2)) {
-                    position.y = this.targetY + (this.data.heightOffset*2);
-                    this.jumping = false;
-                    this.verticalVelocity = 0;
-                }
-            }
-        } else {
-            // Flying mode: (keep your flying logic here)
-            // position.y += pitch * this.moveZ * fly_speed;
-        }
-
-        // Prevent falling below terrain.
-        if (position.y < this.targetY) {
-            position.y = this.targetY + (this.data.heightOffset*2);
-        } else if (!this.flying && !this.jumping){
-            position.y = this.targetY + (this.data.heightOffset*2);
         }
     }
 });

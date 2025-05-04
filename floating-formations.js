@@ -1,26 +1,33 @@
 // Global configuration for floating hex formations
 window.FloatingFormationsConfig = {
     // Hexagon settings
-    hexSize: 24.0,                // 2.54 Size of individual hexagons
-    hexHeight: 120.0,               // 6.0 Base height of hexagons
-    heightVariation: 16.0,        // 16.0 Amount hexagons can vary in height
+    hexSize: 18.0,                // 2.54 Size of individual hexagons
+    hexHeight: 9.0,               // 6.0 Base height of hexagons
+    heightVariation: 1.0,        // 16.0 Amount hexagons can vary in height
     opacity: 1.0,               // NEW: Opacity of hexagons
     enableVerticalEdges: true,  // Enable vertical edges for floating formations
     
-    // Formation settings
+    // Formation settings.
     formationDensity: 0.3,        // 0.3 Threshold for formation placement (0-1)
-    maxHexagonsPerFormation: 27,  // 32 Maximum hexagons in a single formation
-    formationSpread: 30.0,        // 30.0 How spread out hexagons are within formation
+    maxHexagonsPerFormation: 9,  // 32 Maximum hexagons in a single formation
+    formationSpread: 64.0,        // 30.0 How spread out hexagons are within formation
     
     // Height settings
-    heightOffset: 12,            // 84 Base height above terrain
+    heightOffset: 24,            // 84 Base height above terrain
     heightNoiseScale: 1.0,        // 0.1 Scale of height variation noise
     heightNoiseAmount: 100.0,      // 10.0 Amount of height variation
     
     // Performance settings
-    cellSize: 256,                 // 80 Size of grid cells for placement
+    cellSize: 420,                 // 80 Size of grid cells for placement
     loadDistance: 700,            // 300 Distance to start loading formations
     unloadDistance: 760,          // 360 Distance to unload formations
+
+    // Color settings.
+    baseColor: '#00AAAA',          // Dark cyan base color
+    topColor: '#AA00AA',          // Dark magenta top color
+    colorIntensity: 1.0,          // Overall color intensity
+    colorContrast: 1.0,          // Contrast between base and top colors
+    heightColorScale: 100.0,      // How quickly colors change with height
 };
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -196,10 +203,22 @@ AFRAME.registerComponent('floating-formations', {
         return { cubes: hexagons };
     },
     getColorForHeight: function(heightFactor) {
-        // More vibrant colors for better visibility
-        const baseColor = new THREE.Color(0x00ffff); // Cyan
-        const highColor = new THREE.Color(0xff00ff); // Magenta
-        const finalColor = baseColor.lerp(highColor, heightFactor);
+        // Scale height factor by config
+        const scaledFactor = Math.min(1.0, Math.max(0.0, heightFactor * 
+            window.FloatingFormationsConfig.heightColorScale));
+        
+        // Create colors from config
+        const baseColor = new THREE.Color(window.FloatingFormationsConfig.baseColor);
+        const topColor = new THREE.Color(window.FloatingFormationsConfig.topColor);
+        
+        // Apply intensity and contrast
+        baseColor.multiplyScalar(window.FloatingFormationsConfig.colorIntensity);
+        topColor.multiplyScalar(window.FloatingFormationsConfig.colorIntensity);
+        
+        // Calculate final color with contrast adjustment
+        const contrastFactor = Math.pow(scaledFactor, 1.0 + window.FloatingFormationsConfig.colorContrast);
+        const finalColor = baseColor.lerp(topColor, contrastFactor);
+        
         return [finalColor.r, finalColor.g, finalColor.b];
     },
     updateFormations: function(subjectX, subjectZ) {

@@ -274,24 +274,22 @@ AFRAME.registerComponent('free-controls', {
     this.controlsContainer.style.zIndex = '1000';
 
     if (this.isMobile) {
-      // Mobile layout: Both buttons centered
+      // Mobile layout: Walk centered, Run left
       this.moveButton = this.createControlButton('walk: OFF', 'rgba(0, 0, 0, 0.6)', this.toggleMovement);
       this.runButton = this.createControlButton('run: OFF', 'rgba(0, 0, 0, 0.6)', this.toggleRunning);
       
-      // Center the walk button
-      this.moveButton.style.position = 'absolute';
-      this.moveButton.style.left = '50%';
-      this.moveButton.style.transform = 'translateX(-50%)';
+      // Center walk button
+      this.moveButton.style.position = 'relative';
+      this.moveButton.style.margin = '0 auto';
       this.moveButton.style.bottom = '0';
       
-      // Position run button slightly above walk button
+      // Position run button on left
       this.runButton.style.position = 'absolute';
-      this.runButton.style.left = '50%';
-      this.runButton.style.transform = 'translateX(-50%)';
-      this.runButton.style.bottom = '60px';
+      this.runButton.style.left = '20px';
+      this.runButton.style.bottom = '0';
       
-      this.controlsContainer.appendChild(this.moveButton);
       this.controlsContainer.appendChild(this.runButton);
+      this.controlsContainer.appendChild(this.moveButton);
     } else {
       // Desktop layout: All buttons centered
       this.moveButton = this.createControlButton('walk: OFF', 'rgba(0, 0, 0, 0.6)', this.toggleMovement);

@@ -209,6 +209,13 @@ window.CubeTerrainBuilder = {
             // Use the size from the hex data or fall back to default
             const hexSize = cubes[0].size || 2.54;
             const geometry = new THREE.HexagonGeometry(hexSize, 1.0, false);
+            
+            // Update material's hexSize uniform to match geometry
+            if (material.uniforms && material.uniforms.hexSize) {
+                material.uniforms.hexSize.value = hexSize;
+                material.needsUpdate = true;
+            }
+            
             const instancedMesh = new THREE.InstancedMesh(geometry, material, cubes.length);
             instancedMesh.frustumCulled = false;
             const instancePositions = new Float32Array(cubes.length * 3);
@@ -251,7 +258,7 @@ window.CubeTerrainBuilder = {
                     pulseIntensity: { value: window.HexConfigSimple.pulseIntensity || 0.5 },
                     pulseSpacing: { value: window.HexConfigSimple.pulseSpacing || 1.0 },
                     pulseEnabled: { value: window.HexConfigSimple.enablePulse ? 1.0 : 0.0 },
-                    hexSize: { value: 2.54 }, // Use same value as the geometry size
+                    hexSize: { value: 2.54 }, // Will be updated per chunk based on geometry
                     enableOutline: { value: window.HexConfigSimple.enableOutline ? 1.0 : 0.0 },
                     outlineThickness: { value: window.HexConfigSimple.outlineThickness || 0.1 },
                     outlineColor: { value: new THREE.Color(...window.HexConfigSimple.outlineColor) } // Set outline color

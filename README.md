@@ -24,6 +24,8 @@ triage
 
 to do
 
+-f darken floating formations
+
 -f VR menu and tilt (precision etc.) controls
 
 -f tree colour

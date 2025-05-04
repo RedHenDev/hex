@@ -1,10 +1,10 @@
 // Global configuration for floating hex formations
 window.FloatingFormationsConfig = {
     // Hexagon settings
-    hexSize: 6.0,                // 2.54 Size of individual hexagons
-    hexHeight: 18.0,               // 6.0 Base height of hexagons
+    hexSize: 24.0,                // 2.54 Size of individual hexagons
+    hexHeight: 120.0,               // 6.0 Base height of hexagons
     heightVariation: 16.0,        // 16.0 Amount hexagons can vary in height
-    opacity: 0.5,               // NEW: Opacity of hexagons
+    opacity: 1.0,               // NEW: Opacity of hexagons
     enableVerticalEdges: true,  // Enable vertical edges for floating formations
     
     // Formation settings
@@ -13,7 +13,7 @@ window.FloatingFormationsConfig = {
     formationSpread: 30.0,        // 30.0 How spread out hexagons are within formation
     
     // Height settings
-    heightOffset: 84,            // 20 Base height above terrain
+    heightOffset: 12,            // 84 Base height above terrain
     heightNoiseScale: 1.0,        // 0.1 Scale of height variation noise
     heightNoiseAmount: 100.0,      // 10.0 Amount of height variation
     
@@ -84,9 +84,9 @@ AFRAME.registerComponent('floating-formations', {
         }
         this.noise = window.ImprovedNoise;
         this.material = window.CubeTerrainBuilder.createCubeMaterial({
-            transparent: true,
+            transparent: window.FloatingFormationsConfig.opacity < 1.0,
             opacity: window.FloatingFormationsConfig.opacity,
-            isFloatingFormation: true,  // Mark these hexagons as floating formations
+            isFloatingFormation: true,
             enableVerticalEdges: window.FloatingFormationsConfig.enableVerticalEdges
         });
         this.lastUpdate = { x: 0, z: 0 };

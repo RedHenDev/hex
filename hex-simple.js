@@ -243,6 +243,8 @@ window.CubeTerrainBuilder = {
         }
     },
     createCubeMaterial: function(options = {}) {
+        const needsTransparency = options.isFloatingFormation && options.opacity < 1.0;
+        
         const material = new THREE.ShaderMaterial({
             vertexShader: window.simpleVertexShader,
             fragmentShader: window.simpleFragmentShader,
@@ -268,8 +270,8 @@ window.CubeTerrainBuilder = {
                     isFloatingFormation: { value: options.isFloatingFormation ? 1.0 : 0.0 }
                 }
             ]),
-            transparent: options.isFloatingFormation || false,
-            depthWrite: !options.isFloatingFormation
+            transparent: needsTransparency,
+            depthWrite: !needsTransparency
         });
         // NOTE: polygonOffset does NOT affect fragment-shader outlines, only geometry-based outlines.
         // For fragment-shader outlines, adjust thickness and smoothstep in the shader above.

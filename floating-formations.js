@@ -1,4 +1,25 @@
-// Floating hex formations that appear around the player using noise-based placement
+// Global configuration for floating hex formations
+window.FloatingFormationsConfig = {
+    // Hexagon settings
+    hexSize: 2.54,                // Size of individual hexagons
+    hexHeight: 8.0,               // Base height of hexagons
+    heightVariation: 16.0,        // Amount hexagons can vary in height
+    
+    // Formation settings
+    formationDensity: 0.3,        // Threshold for formation placement (0-1)
+    maxHexagonsPerFormation: 32,  // Maximum hexagons in a single formation
+    formationSpread: 30.0,        // How spread out hexagons are within formation
+    
+    // Height settings
+    heightOffset: 200,            // Base height above terrain
+    heightNoiseScale: 0.1,        // Scale of height variation noise
+    heightNoiseAmount: 10.0,      // Amount of height variation
+    
+    // Performance settings
+    cellSize: 80,                 // Size of grid cells for placement
+    loadDistance: 600,            // Distance to start loading formations
+    unloadDistance: 640,          // Distance to unload formations
+};
 
 document.addEventListener('DOMContentLoaded', () => {
     const waitForDependencies = () => {
@@ -8,21 +29,21 @@ document.addEventListener('DOMContentLoaded', () => {
             setTimeout(waitForDependencies, 100);
             return;
         }
-
+    
         if (!window.TerrainConfig || !window.ImprovedNoise) {
             console.log('Waiting for terrain system...');
             setTimeout(waitForDependencies, 100);
             return;
         }
-
+    
         console.log('Dependencies ready, initializing floating formations...');
         const formationsEntity = document.createElement('a-entity');
         formationsEntity.setAttribute('id', 'floating-formations');
         formationsEntity.setAttribute('floating-formations', {
             noiseScale: 0.002, // Increased for more variation
             formationDensity: 0.3, // Much higher for more formations
-            minHeight: window.TerrainConfig.baseHeight + 100, // Lower to terrain
-            maxHeight: window.TerrainConfig.baseHeight + 300, // Lower to terrain
+            minHeight: window.TerrainConfig.baseHeight, // Use same height range as terrain
+            maxHeight: window.TerrainConfig.baseHeight + window.TerrainConfig.heightScale, // Use same height range as terrain
             loadDistance: window.TerrainConfig.loadDistance * 0.75,
             unloadDistance: window.TerrainConfig.unloadDistance * 0.75,
             cellSize: 80, // Smaller cells = more formations
@@ -31,7 +52,7 @@ document.addEventListener('DOMContentLoaded', () => {
         scene.appendChild(formationsEntity);
         console.log('Floating hex formations initialized');
     };
-
+    
     if (document.querySelector('a-scene').hasLoaded) {
         waitForDependencies();
     } else {
@@ -43,7 +64,7 @@ AFRAME.registerComponent('floating-formations', {
     schema: {
         loadDistance: { type: 'number', default: 120 },
         unloadDistance: { type: 'number', default: 150 },
-        minHeight: { type: 'number', default: -10 },
+        minHeight: { type: 'number', default: 10 },
         maxHeight: { type: 'number', default: 40 },
         formationDensity: { type: 'number', default: 0.45 }, // Threshold for formation placement
         noiseScale: { type: 'number', default: 0.015 },
@@ -51,7 +72,6 @@ AFRAME.registerComponent('floating-formations', {
         hexSize: { type: 'number', default: 2.54 }, // Size of individual hexagons
         maxHexagonsPerFormation: { type: 'number', default: 24 }
     },
-
     init: function() {
         this.loadedFormations = new Map();
         this.subject = document.querySelector('#subject');
@@ -59,25 +79,45 @@ AFRAME.registerComponent('floating-formations', {
             console.error('Subject not found!');
             return;
         }
-
-        // Use terrain system's noise directly
         this.noise = window.ImprovedNoise;
-        
-        // Create material from hex-simple system
         this.material = window.CubeTerrainBuilder.createCubeMaterial();
-        
-        // Track last position for updates
-        this.lastUpdate = {
-            x: 0,
-            z: 0
-        };
-
-        // Set up faster tick rate for more responsive formation generation
+        this.lastUpdate = { x: 0, z: 0 };
+        this.terrainGenerator = null;
+        document.addEventListener('terrainReady', () => {
+            this.setupTerrainAccess();
+        });
         this.tick = AFRAME.utils.throttleTick(this.tick, 100, this);
-        
-        console.log('Floating formations component initialized');
+        console.log('Floating formations component initialized with instanced hexagons');
     },
-
+    setupTerrainAccess: function() {
+        try {
+            const scene = document.querySelector('a-scene');
+            if (!scene) return;
+            if (scene.hasAttribute('terrain-manager')) {
+                const terrainManager = scene.components['terrain-manager'];
+                if (terrainManager && terrainManager.chunkManager && terrainManager.chunkManager.terrainGenerator) {
+                    this.terrainGenerator = terrainManager.chunkManager.terrainGenerator;
+                    console.log('Floating formations: Successfully connected to terrain generator');
+                }
+            }
+        } catch (err) {
+            console.error('Floating formations: Error setting up terrain access:', err);
+        }
+    },
+    getTerrainHeight: function(x, z) {
+        if (this.terrainGenerator) {
+            try {
+                return this.terrainGenerator.generateTerrainHeight(x, z);
+            } catch (err) {
+                console.warn('Error getting terrain height:', err);
+                return 0;
+            }
+        }
+        if (typeof window.getTerrainHeight === 'function') {
+            return window.getTerrainHeight(x, z);
+        }
+        return 0;
+    },
     setupSimpleNoise: function() {
         // Simplified noise fallback if terrain system's noise isn't available
         this.noise = {
@@ -99,76 +139,67 @@ AFRAME.registerComponent('floating-formations', {
         };
         this.noise.seed(Math.random() * 65536);
     },
-
     createFormation: function(baseX, baseZ) {
+        if (!this.terrainGenerator) return null;
+
         const hexagons = [];
-        // Use absolute value of noise for more frequent formations
         const noiseValue = (Math.abs(this.noise.fbm(
             baseX * this.data.noiseScale, 
             baseZ * this.data.noiseScale,
-            4, 2.0, 0.5
-        )) + 1.0) * 0.5; // Normalize to 0-1 range
-
-        console.log(`Formation check at ${baseX},${baseZ}: noise=${noiseValue.toFixed(3)}, threshold=${this.data.formationDensity}`);
-        
+            4, 2.0, 0.5 
+        )) + 1.0) * 0.5;
         if (noiseValue < this.data.formationDensity) return null;
 
         const formationSize = Math.floor(
             (noiseValue - this.data.formationDensity) * 
-            this.data.maxHexagonsPerFormation * 2
+            this.data.maxHexagonsPerFormation * 4
         );
 
-        // Get terrain height and stay closer to it
-        const terrainHeight = window.getTerrainHeight(baseX, baseZ);
-        const baseHeight = terrainHeight + 100 + (noiseValue * 200); // 100-300 units above terrain
+        const terrainHeight = this.getTerrainHeight(baseX, baseZ);
+        const heightOffset = window.FloatingFormationsConfig.heightOffset;
+        const baseHeight = terrainHeight + heightOffset;
 
-        // Create tighter formation
         for (let i = 0; i < formationSize; i++) {
             const angle = this.noise.perlin2(baseX + i * 0.1, baseZ + i * 0.1) * Math.PI * 2;
-            const distance = this.noise.perlin2(baseX - i * 0.2, baseZ + i * 0.3) * 25; // Tighter spread
-            
+            const distance = this.noise.perlin2(baseX - i * 0.2, baseZ + i * 0.3) * window.FloatingFormationsConfig.formationSpread;
             const x = baseX + Math.cos(angle) * distance;
             const z = baseZ + Math.sin(angle) * distance;
             
-            const heightNoise = this.noise.perlin2(x * 0.1, z * 0.1);
-            const y = baseHeight + heightNoise * 50; // Less vertical spread
+            const heightNoise = this.noise.perlin2(
+                x * window.FloatingFormationsConfig.heightNoiseScale, 
+                z * window.FloatingFormationsConfig.heightNoiseScale
+            );
+            const y = baseHeight + heightNoise * window.FloatingFormationsConfig.heightNoiseAmount;
 
             hexagons.push({
                 position: [x, y, z],
-                height: 8.0 + Math.abs(heightNoise) * 16,
-                color: this.getColorForHeight((y - terrainHeight) / 300) // Color based on height above terrain
+                height: window.FloatingFormationsConfig.hexHeight + Math.abs(heightNoise) * window.FloatingFormationsConfig.heightVariation,
+                color: this.getColorForHeight((y - terrainHeight) / 300)
             });
         }
-
-        console.log(`Created formation with ${hexagons.length} hexagons at height ${baseHeight.toFixed(1)} (${(baseHeight - terrainHeight).toFixed(1)} above terrain)`);
-        return hexagons;
+        console.log(`Created formation with ${hexagons.length} hexagons at height ${baseHeight.toFixed(1)} (relative to terrain at ${terrainHeight.toFixed(1)})`);
+        return { cubes: hexagons };
     },
-
     getColorForHeight: function(heightFactor) {
-        // More distinct colors
-        const baseColor = new THREE.Color(0x88aaff); // Blueish
-        const highColor = new THREE.Color(0xffaa88); // Orangeish
+        // More vibrant colors for better visibility
+        const baseColor = new THREE.Color(0x00ffff); // Cyan
+        const highColor = new THREE.Color(0xff00ff); // Magenta
         const finalColor = baseColor.lerp(highColor, heightFactor);
         return [finalColor.r, finalColor.g, finalColor.b];
     },
-
     updateFormations: function(subjectX, subjectZ) {
         // Get grid coordinates
         const gridX = Math.floor(subjectX / this.data.cellSize);
         const gridZ = Math.floor(subjectZ / this.data.cellSize);
-        
-        // Check cells in range
         const range = Math.ceil(this.data.loadDistance / this.data.cellSize);
-        
+        // Check cells in range
         for (let dx = -range; dx <= range; dx++) {
             for (let dz = -range; dz <= range; dz++) {
                 const cellX = gridX + dx;
                 const cellZ = gridZ + dz;
                 const cellKey = `${cellX},${cellZ}`;
-                
                 const worldX = cellX * this.data.cellSize;
                 const worldZ = cellZ * this.data.cellSize;
-                
                 const distance = Math.sqrt(
                     Math.pow(worldX - subjectX, 2) + 
                     Math.pow(worldZ - subjectZ, 2)
@@ -179,7 +210,7 @@ AFRAME.registerComponent('floating-formations', {
                         const formation = this.createFormation(worldX, worldZ);
                         if (formation) {
                             const mesh = window.CubeTerrainBuilder.createChunkMesh(
-                                { cubes: formation }, 
+                                formation,
                                 this.material
                             );
                             this.loadedFormations.set(cellKey, {
@@ -199,7 +230,6 @@ AFRAME.registerComponent('floating-formations', {
             }
         }
     },
-
     tick: function() {
         if (!this.subject) return;
 

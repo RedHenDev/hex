@@ -5,10 +5,10 @@ window.HexConfigSimple = {
     enablePulse: false,       // Toggle pulse effect
     pulseSpeed: 4.0,          // 4.0 Speed of the pulse
     pulseIntensity: 0.3,      // 0.3 Intensity of the pulse
-    pulseSpacing: 3.0,        // 3.0 Spacing between waves of pulses
+    pulseSpacing: 0.3,        // 3.0 Spacing between waves of pulses
     enableOutline: true,      // Toggle cartoon outlines
     outlineThickness: 0.4,    // 0.1 Thickness of the outline (default 0.1)
-    outlineColor: [0.0, 0.6, 0.0], // Default outline color (black) as RGB array
+    outlineColor: [0.8, 0.8, 0.8], // Default outline color (black) as RGB array
     applyToGenerator: function(generator) {
         if (generator) {
             // ...existing assignments...

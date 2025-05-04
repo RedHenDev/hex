@@ -267,10 +267,10 @@ AFRAME.registerComponent('free-controls', {
     this.controlsContainer.className = 'mobile-controls-container';
     this.controlsContainer.style.position = 'fixed';
     this.controlsContainer.style.bottom = '30px';
-    this.controlsContainer.style.left = '50%';
-    this.controlsContainer.style.transform = 'translateX(-50%)';
+    this.controlsContainer.style.left = '0';
+    this.controlsContainer.style.right = '0';
     this.controlsContainer.style.display = 'flex';
-    this.controlsContainer.style.gap = '15px';
+    this.controlsContainer.style.justifyContent = 'center';
     this.controlsContainer.style.zIndex = '1000';
 
     if (this.isMobile) {
@@ -279,12 +279,14 @@ AFRAME.registerComponent('free-controls', {
       this.moveButton = this.createControlButton('walk: OFF', 'rgba(0, 0, 0, 0.6)', this.toggleMovement);
       
       // Position run button to the left
-      this.runButton.style.position = 'fixed';
+      this.runButton.style.position = 'absolute';
       this.runButton.style.left = '20px';
-      this.runButton.style.bottom = '30px';
-      document.body.appendChild(this.runButton);
       
       // Center the walk button
+      this.moveButton.style.position = 'relative';
+      this.moveButton.style.margin = '0 auto';
+      
+      this.controlsContainer.appendChild(this.runButton);
       this.controlsContainer.appendChild(this.moveButton);
     } else {
       // Desktop layout: All buttons centered
@@ -292,6 +294,7 @@ AFRAME.registerComponent('free-controls', {
       this.runButton = this.createControlButton('run: OFF', 'rgba(0, 0, 0, 0.6)', this.toggleRunning);
       this.flyButton = this.createControlButton('fly: OFF', 'rgba(0, 0, 0, 0.6)', this.toggleFlying);
       
+      this.controlsContainer.style.gap = '15px';
       this.controlsContainer.appendChild(this.moveButton);
       this.controlsContainer.appendChild(this.runButton);
       this.controlsContainer.appendChild(this.flyButton);

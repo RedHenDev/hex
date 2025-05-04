@@ -10,7 +10,7 @@ AFRAME.registerComponent('tree-hex-manager', {
       // Distance settings
       loadDistance: { type: 'number', default: 760 },   // 760 Distance to start loading trees
       unloadDistance: { type: 'number', default: 800 }, // 800 Distance to unload trees
-      minTreeDistance: { type: 'number', default: 128 }, // Minimum distance from player
+      minTreeDistance: { type: 'number', default: 759 }, // 128 Minimum distance from player
       updateInterval: { type: 'number', default: 2000 }, // Milliseconds between updates
       
       // Noise settings.
@@ -36,7 +36,7 @@ AFRAME.registerComponent('tree-hex-manager', {
       foliageHexCount: { type: 'number', default: 128 }, // 32.
       foliageScale: { type: 'number', default: 0.4 },
       foliageHeight: { type: 'number', default: 0.8 },
-      foliageRadius: { type: 'number', default: 3.0 }, //5
+      foliageRadius: { type: 'number', default: 7.0 }, //5
       foliageTilt: { type: 'number', default: 0.05 }, // 0.25
       foliageOpacity: { type: 'number', default: 0.9 },
       
@@ -44,7 +44,7 @@ AFRAME.registerComponent('tree-hex-manager', {
       enableBranches: { type: 'boolean', default: true },
       branchWidth: { type: 'number', default: 0.32 },
       
-      // Material settings
+      // Material settings.
       trunkEmissive: { type: 'number', default: 1.0 },
       foliageEmissive: { type: 'number', default: 0.4 },
       

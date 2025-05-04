@@ -274,28 +274,24 @@ AFRAME.registerComponent('free-controls', {
     this.controlsContainer.style.zIndex = '1000';
 
     if (this.isMobile) {
-      // Mobile layout: Walk centered, Run on left
-      this.runButton = this.createControlButton('run: OFF', 'rgba(0, 0, 0, 0.6)', this.toggleRunning);
+      // Mobile layout: Both buttons centered
       this.moveButton = this.createControlButton('walk: OFF', 'rgba(0, 0, 0, 0.6)', this.toggleMovement);
+      this.runButton = this.createControlButton('run: OFF', 'rgba(0, 0, 0, 0.6)', this.toggleRunning);
       
-      // Create a wrapper for better positioning
-      const buttonsWrapper = document.createElement('div');
-      buttonsWrapper.style.display = 'flex';
-      buttonsWrapper.style.gap = '20px';
-      buttonsWrapper.style.justifyContent = 'center';
-      buttonsWrapper.style.width = '100%';
-      buttonsWrapper.style.maxWidth = '300px';
-      buttonsWrapper.style.margin = '0 auto';
+      // Center the walk button
+      this.moveButton.style.position = 'absolute';
+      this.moveButton.style.left = '50%';
+      this.moveButton.style.transform = 'translateX(-50%)';
+      this.moveButton.style.bottom = '0';
       
-      // Reset absolute positioning
-      this.runButton.style.position = 'relative';
-      this.runButton.style.left = 'auto';
-      this.moveButton.style.position = 'relative';
-      this.moveButton.style.margin = '0';
+      // Position run button slightly above walk button
+      this.runButton.style.position = 'absolute';
+      this.runButton.style.left = '50%';
+      this.runButton.style.transform = 'translateX(-50%)';
+      this.runButton.style.bottom = '60px';
       
-      buttonsWrapper.appendChild(this.runButton);
-      buttonsWrapper.appendChild(this.moveButton);
-      this.controlsContainer.appendChild(buttonsWrapper);
+      this.controlsContainer.appendChild(this.moveButton);
+      this.controlsContainer.appendChild(this.runButton);
     } else {
       // Desktop layout: All buttons centered
       this.moveButton = this.createControlButton('walk: OFF', 'rgba(0, 0, 0, 0.6)', this.toggleMovement);

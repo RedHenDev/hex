@@ -206,7 +206,9 @@ window.CubeTerrainBuilder = {
             return new THREE.Group();
         }
         try {
-            const geometry = new THREE.HexagonGeometry(2.54, 1.0, false);
+            // Use the size from the hex data or fall back to default
+            const hexSize = cubes[0].size || 2.54;
+            const geometry = new THREE.HexagonGeometry(hexSize, 1.0, false);
             const instancedMesh = new THREE.InstancedMesh(geometry, material, cubes.length);
             instancedMesh.frustumCulled = false;
             const instancePositions = new Float32Array(cubes.length * 3);

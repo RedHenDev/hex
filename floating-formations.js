@@ -1,8 +1,8 @@
 // Global configuration for floating hex formations
 window.FloatingFormationsConfig = {
     // Hexagon settings
-    hexSize: 2.54,                // Size of individual hexagons
-    hexHeight: 8.0,               // Base height of hexagons
+    hexSize: 6.0,                // 2.54 Size of individual hexagons
+    hexHeight: 6.0,               // Base height of hexagons
     heightVariation: 16.0,        // Amount hexagons can vary in height
     
     // Formation settings
@@ -11,14 +11,14 @@ window.FloatingFormationsConfig = {
     formationSpread: 30.0,        // How spread out hexagons are within formation
     
     // Height settings
-    heightOffset: 200,            // Base height above terrain
+    heightOffset: 20,            // Base height above terrain
     heightNoiseScale: 0.1,        // Scale of height variation noise
     heightNoiseAmount: 10.0,      // Amount of height variation
     
     // Performance settings
     cellSize: 80,                 // Size of grid cells for placement
-    loadDistance: 600,            // Distance to start loading formations
-    unloadDistance: 640,          // Distance to unload formations
+    loadDistance: 300,            // Distance to start loading formations
+    unloadDistance: 360,          // Distance to unload formations
 };
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -40,14 +40,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const formationsEntity = document.createElement('a-entity');
         formationsEntity.setAttribute('id', 'floating-formations');
         formationsEntity.setAttribute('floating-formations', {
-            noiseScale: 0.002, // Increased for more variation
-            formationDensity: 0.3, // Much higher for more formations
-            minHeight: window.TerrainConfig.baseHeight, // Use same height range as terrain
-            maxHeight: window.TerrainConfig.baseHeight + window.TerrainConfig.heightScale, // Use same height range as terrain
-            loadDistance: window.TerrainConfig.loadDistance * 0.75,
-            unloadDistance: window.TerrainConfig.unloadDistance * 0.75,
-            cellSize: 80, // Smaller cells = more formations
-            maxHexagonsPerFormation: 32 // Fewer but more visible
+            noiseScale: 0.002,
+            formationDensity: window.FloatingFormationsConfig.formationDensity,
+            minHeight: window.TerrainConfig.baseHeight,
+            maxHeight: window.TerrainConfig.baseHeight + window.TerrainConfig.heightScale,
+            loadDistance: window.FloatingFormationsConfig.loadDistance,
+            unloadDistance: window.FloatingFormationsConfig.unloadDistance,
+            cellSize: window.FloatingFormationsConfig.cellSize,
+            maxHexagonsPerFormation: window.FloatingFormationsConfig.maxHexagonsPerFormation,
+            hexSize: window.FloatingFormationsConfig.hexSize // Pass hexSize from config
         });
         scene.appendChild(formationsEntity);
         console.log('Floating hex formations initialized');
@@ -142,7 +143,10 @@ AFRAME.registerComponent('floating-formations', {
     createFormation: function(baseX, baseZ) {
         if (!this.terrainGenerator) return null;
 
+        // Create custom mesh for this formation using configured hex size
         const hexagons = [];
+        const hexSize = window.FloatingFormationsConfig.hexSize;
+
         const noiseValue = (Math.abs(this.noise.fbm(
             baseX * this.data.noiseScale, 
             baseZ * this.data.noiseScale,
@@ -160,8 +164,10 @@ AFRAME.registerComponent('floating-formations', {
         const baseHeight = terrainHeight + heightOffset;
 
         for (let i = 0; i < formationSize; i++) {
+            // Increase spacing based on hexSize
             const angle = this.noise.perlin2(baseX + i * 0.1, baseZ + i * 0.1) * Math.PI * 2;
-            const distance = this.noise.perlin2(baseX - i * 0.2, baseZ + i * 0.3) * window.FloatingFormationsConfig.formationSpread;
+            const distance = this.noise.perlin2(baseX - i * 0.2, baseZ + i * 0.3) * 
+                           window.FloatingFormationsConfig.formationSpread * (hexSize / 2.54); // Scale spread with hex size
             const x = baseX + Math.cos(angle) * distance;
             const z = baseZ + Math.sin(angle) * distance;
             
@@ -173,7 +179,9 @@ AFRAME.registerComponent('floating-formations', {
 
             hexagons.push({
                 position: [x, y, z],
-                height: window.FloatingFormationsConfig.hexHeight + Math.abs(heightNoise) * window.FloatingFormationsConfig.heightVariation,
+                size: hexSize, // Add size to the hex data
+                height: window.FloatingFormationsConfig.hexHeight + 
+                        Math.abs(heightNoise) * window.FloatingFormationsConfig.heightVariation,
                 color: this.getColorForHeight((y - terrainHeight) / 300)
             });
         }

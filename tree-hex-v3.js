@@ -4,13 +4,13 @@
 AFRAME.registerComponent('tree-hex-manager', {
     schema: {
       // Pool and placement settings
-      maxTrees: { type: 'number', default: 128 },
+      maxTrees: { type: 'number', default: 64 },
       poolSize: { type: 'number', default: 128 },
       
       // Distance settings
       loadDistance: { type: 'number', default: 760 },   // 760 Distance to start loading trees
       unloadDistance: { type: 'number', default: 800 }, // 800 Distance to unload trees
-      minTreeDistance: { type: 'number', default: 759 }, // 128 Minimum distance from player
+      minTreeDistance: { type: 'number', default: 128 }, // 128 Minimum distance from player
       updateInterval: { type: 'number', default: 2000 }, // Milliseconds between updates
       
       // Noise settings.
@@ -21,7 +21,7 @@ AFRAME.registerComponent('tree-hex-manager', {
       noiseOctaves: { type: 'number', default: 4 },
       
       // Tree settings.
-      baseTreeScale: { type: 'number', default: 64 },    // Base scale for trees
+      baseTreeScale: { type: 'number', default: 64 },    // 64 Base scale for trees
       minScaleFactor: { type: 'number', default: 0.01 },  // 0.1 Minimum scale variation
       maxScaleFactor: { type: 'number', default: 1.0 },  // 3.0 Maximum scale variation
       scaleNoiseScale: { type: 'number', default: 0.1 }, // 0.1 Noise scale for tree size variation
@@ -45,7 +45,7 @@ AFRAME.registerComponent('tree-hex-manager', {
       branchWidth: { type: 'number', default: 0.32 },
       
       // Material settings.
-      trunkEmissive: { type: 'number', default: 1.0 },
+      trunkEmissive: { type: 'number', default: 10.0 },
       foliageEmissive: { type: 'number', default: 0.4 },
       
       // Grid cell size for tracking tree placement. 80
@@ -55,12 +55,12 @@ AFRAME.registerComponent('tree-hex-manager', {
       debug: { type: 'boolean', default: false },
 
       // Color settings.
-      trunkColor: { type: 'color', default: '#aaaaba' }, // '#2e3c2f'
-      trunkEmissiveColor: { type: 'color', default: '#aaaaba' }, // '#1a221a'
+      trunkColor: { type: 'color', default: '#888888' }, // '#2e3c2f'
+      trunkEmissiveColor: { type: 'color', default: '#888888' }, // '#1a221a'
       foliageColor: { type: 'color', default: '#EEEEEE' }, // '#11baba'
       foliageEmissiveColor: { type: 'color', default: '#EEEEEE' }, // '#11baba'
-      branchColor: { type: 'color', default: '#aaaabb' }, // '#2e3c2f'
-      branchEmissiveColor: { type: 'color', default: '#aaaabb' }, // '#1a221a'
+      branchColor: { type: 'color', default: '#888888' }, // '#2e3c2f'
+      branchEmissiveColor: { type: 'color', default: '#888888' }, // '#1a221a'
 
       // Foliage layer settings.
       foliageLayers: { type: 'number', default: 4 },  // Number of branch/foliage layers
@@ -98,7 +98,7 @@ AFRAME.registerComponent('tree-hex-manager', {
       this.tick = AFRAME.utils.throttleTick(this.tick, this.data.updateInterval, this);
 
       // Optionally, set a base ambient intensity for reference (should match index.html ambient light intensity)
-      this.baseAmbientIntensity = 0.5;
+      this.baseAmbientIntensity = 1.5;
     },
   
     placeInitialTrees: function() {
@@ -517,32 +517,34 @@ AFRAME.registerComponent('tree-hex-manager', {
       // Create geometries
       this.createGeometries();
 
-      // Use MeshStandardMaterial for base color (no custom shader, no outline mesh)
+      // Modify materials for better visibility
       this.trunkMaterial = new THREE.MeshStandardMaterial({
         color: new THREE.Color(this.data.trunkColor),
         emissive: new THREE.Color(this.data.trunkEmissiveColor),
-        emissiveIntensity: 0.18,
+        emissiveIntensity: 1.0,  // Increased from 0.18
         metalness: 0.0,
-        roughness: 0.85
+        roughness: 0.5,  // Decreased from 0.85
+        side: THREE.DoubleSide
       });
 
       this.foliageMaterial = new THREE.MeshStandardMaterial({
         color: new THREE.Color(this.data.foliageColor),
         emissive: new THREE.Color(this.data.foliageEmissiveColor),
-        emissiveIntensity: 0.35,
+        emissiveIntensity: 1.2,  // Increased from 0.35
         metalness: 0.0,
-        roughness: 0.5,
+        roughness: 0.3,  // Decreased from 0.5
         transparent: true,
-        opacity: this.data.foliageOpacity || 0.9
+        opacity: this.data.foliageOpacity || 0.9,
+        side: THREE.DoubleSide
       });
 
       if (this.data.enableBranches) {
         this.branchMaterial = new THREE.MeshStandardMaterial({
           color: new THREE.Color(this.data.branchColor),
           emissive: new THREE.Color(this.data.branchEmissiveColor),
-          emissiveIntensity: 0.18,
+          emissiveIntensity: 1.0,  // Increased from 0.18
           metalness: 0.0,
-          roughness: 0.85,
+          roughness: 0.5,  // Decreased from 0.85
           side: THREE.DoubleSide
         });
       }

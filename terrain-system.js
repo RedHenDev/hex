@@ -4,21 +4,21 @@
 window.TerrainConfig = {
     seed: 99,
     heightScale: 3256.0, // 1256.0
-    noiseScale: 0.0002, // 0.0008
+    noiseScale: 0.0003, // 0.0002 0.0008
     baseHeight: -22.0,
     useRidges: true,
-    ridgeFactor: 0.14, //0.14
+    ridgeFactor: 0.28, //0.14
     octaves: 8,
     ridgeOctaves: 4, //4
-    lacunarity: 2.2, //2.0
+    lacunarity: 2.0, //2.0
     gain: 0.52, //0.5
     useHexagons: true,
-    geometrySize: 4.3, // 4.4. Larger number increases spacing between prisms.
-    geometryHeight: 16,
+    geometrySize: 4.02, // 4.4. Larger number increases spacing between prisms.
+    geometryHeight: 12,
     heightStep: 4.4,
     chunkSize: 81, // Make sure this is a square number.
-    loadDistance: 81*9, // 1200
-    unloadDistance: 81*9+81, // 1260
+    loadDistance: 81*9, // 81*9 1200
+    unloadDistance: 81*9+81, // 81*9+81 1260
     pulseThreshold: 50.0, 
     colorVariation: 36.0, //18.0
     // New section for coloration noise adjustments:
@@ -202,8 +202,8 @@ class TerrainGenerator {
                 const height = this.generateTerrainHeight(worldX, worldZ);
                 const color = this.getColor(worldX, worldZ, height);
                 // Hex positioning hack.
-                const slider = z % 2 * 2.0; // Hexagon shift ;);
-                const wX = x * this.cubeSize + slider;
+                const slider = z % 2 * 2.04;
+                const wX = x * this.cubeSize * 1.04 + slider;
                 const wZ = z * this.cubeSize;
                 cubes.push({
                     position: [wX, Math.floor(height / this.heightStep) * this.heightStep, wZ],

@@ -5,11 +5,12 @@ window.HexConfigSimple = {
     enablePulse: false,       // Toggle pulse effect
     pulseSpeed: 4.0,          // 4.0 Speed of the pulse
     pulseIntensity: 0.3,      // 0.3 Intensity of the pulse
-    pulseSpacing: 0.3,        // 3.0 Spacing between waves of pulses
-    enableOutline: true,      // Toggle cartoon outlines
+    pulseSpacing: 1.0,        // 3.0 Spacing between waves of pulses
+    enableOutline: true,     // Toggle cartoon outlines for terrain
+    enableFloatingOutline: true, // Toggle cartoon outlines for floating formations
     enableVerticalEdges: false, // Toggle vertical edge outlines
     outlineThickness: 0.4,    // 0.1 Thickness of the outline
-    outlineColor: [0.4, 0.0, 0.4], // Default outline color as RGB array
+    outlineColor: [0.5, 0.0, 0.5], // Default outline color as RGB array
     applyToGenerator: function(generator) {
         if (generator) {
             // ...existing assignments...
@@ -250,6 +251,11 @@ window.CubeTerrainBuilder = {
         const outlineThickness = options.isFloatingFormation ? 
             window.HexConfigSimple.outlineThickness * 2.0 : 
             window.HexConfigSimple.outlineThickness;
+
+        // Determine outline enable state based on formation type
+        const outlineEnabled = options.isFloatingFormation ? 
+            window.HexConfigSimple.enableFloatingOutline : 
+            window.HexConfigSimple.enableOutline;
         
         const material = new THREE.ShaderMaterial({
             vertexShader: window.simpleVertexShader,
@@ -269,7 +275,7 @@ window.CubeTerrainBuilder = {
                     pulseSpacing: { value: window.HexConfigSimple.pulseSpacing || 1.0 },
                     pulseEnabled: { value: window.HexConfigSimple.enablePulse ? 1.0 : 0.0 },
                     hexSize: { value: 2.54 }, // Will be updated per chunk based on geometry
-                    enableOutline: { value: window.HexConfigSimple.enableOutline ? 1.0 : 0.0 },
+                    enableOutline: { value: outlineEnabled ? 1.0 : 0.0 },
                     outlineThickness: { value: outlineThickness },
                     outlineColor: { value: new THREE.Color(...window.HexConfigSimple.outlineColor) }, // Set outline color
                     opacity: { value: options.opacity !== undefined ? options.opacity : 1.0 },

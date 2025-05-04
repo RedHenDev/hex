@@ -300,6 +300,8 @@ AFRAME.registerComponent('subject-locomotion', {
             // Stop downward momentum when hitting terrain.
             if (this.velocity.x === 0 &&
                 this.velocity.z === 0) {
+                    // Land deftly if no other
+                    // velocity, no movement.
                     this.velocity.y = 0;
                 }
             else {
@@ -311,7 +313,8 @@ AFRAME.registerComponent('subject-locomotion', {
             // I.e. if above terrain.
             // Drift to ground if slow enough.
             if (this.velocity.length() < 1.0) {
-                this.velocity.set(0, -10.0, 0);
+                // this.velocity.set(0, -32.0, 0);
+                this.velocity.y = -1.1;
             }
         }
 

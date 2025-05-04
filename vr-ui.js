@@ -1,9 +1,4 @@
 (function () {
-	// Utility function to detect if the user is on a mobile device
-	function isMobile() {
-		return /Mobi|Android/i.test(navigator.userAgent);
-	}
-
 	// Create and inject UI overlay
 	function createUIOverlay() {
 		const overlay = document.createElement('div');
@@ -24,24 +19,10 @@
 			<h2>Terrain Settings</h2>
 			<p>Adjust settings as needed.</p>
 			<button id="toggle-run" tabindex="0" style="padding:10px 20px; margin:5px; border:none; background:#27ae60; color:#fff; border-radius:5px; cursor:pointer;">Toggle Run Mode</button>
-			${!isMobile() ? `
 			<button id="toggle-fly" tabindex="0" style="padding:10px 20px; margin:5px; border:none; background:#2980b9; color:#fff; border-radius:5px; cursor:pointer;">Toggle Fly Mode</button>
-			` : ''}
 			<div id="subject-coords" style="margin-top:10px; color:#ccc; font-size:14px;"></div>
 			<button id="close-settings" tabindex="0" style="padding:10px 20px; margin-top:10px; border:none; background:#e74c3c; color:#fff; border-radius:5px; cursor:pointer;">Close</button>
 		`;
-
-		// Adjust button positions for mobile
-		if (isMobile()) {
-			const runButton = overlay.querySelector('#toggle-run');
-			runButton.style.float = 'left';
-			runButton.style.margin = '5px auto';
-
-			const closeButton = overlay.querySelector('#close-settings');
-			closeButton.style.clear = 'both';
-			closeButton.style.marginTop = '20px';
-		}
-
 		document.body.appendChild(overlay);
 		
 		// Close button event listener
@@ -60,16 +41,14 @@
 		});
 		
 		// Toggle Fly Mode button event listener
-		if (!isMobile()) {
-			document.getElementById('toggle-fly').addEventListener('click', function () {
-				const subject = document.querySelector('#subject');
-				if (subject && subject.components && subject.components['subject-locomotion']) {
-					const loco = subject.components['subject-locomotion'];
-					loco.flying = !loco.flying;
-					this.textContent = loco.flying ? 'Fly Mode: ON' : 'Fly Mode: OFF';
-				}
-			});
-		}
+		document.getElementById('toggle-fly').addEventListener('click', function () {
+			const subject = document.querySelector('#subject');
+			if (subject && subject.components && subject.components['subject-locomotion']) {
+				const loco = subject.components['subject-locomotion'];
+				loco.flying = !loco.flying;
+				this.textContent = loco.flying ? 'Fly Mode: ON' : 'Fly Mode: OFF';
+			}
+		});
 		
 		return overlay;
 	}

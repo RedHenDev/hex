@@ -18,12 +18,12 @@ document.addEventListener('DOMContentLoaded', () => {
     schema: {
       enabled: { default: true },
       // Cloud distribution
-      totalClouds: { type: 'number', default: 64 }, // Total cloud instances
-      skyRadius: { type: 'number', default: 720 },
-      cloudBaseHeight: { type: 'number', default: 2000 },
+      totalClouds: { type: 'number', default: 81 }, // Total cloud instances.
+      skyRadius: { type: 'number', default: 820 }, // 720.
+      cloudBaseHeight: { type: 'number', default: 2800 }, //2100.
       heightRange: { type: 'number', default: 32 },
       // Visual properties
-      cloudColor: { type: 'color', default: '#FFFFFF' },
+      cloudColor: { type: 'color', default: '#DDDDDD' },
       // Optimization settings
       useInstancing: { type: 'boolean', default: true },
       useBillboards: { type: 'boolean', default: false },
@@ -58,7 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const cloudMaterial = new THREE.MeshBasicMaterial({
         color: this.data.cloudColor,
         transparent: true,  // Enable transparency if you want soft edges
-        opacity: 0.9,       // Slightly transparent for softer look
+        opacity: 0.6,       // Slightly transparent for softer look
         side: THREE.DoubleSide,  // Visible from both sides
         depthWrite: false    // Prevents z-fighting between overlapping clouds
     });
@@ -92,10 +92,11 @@ document.addEventListener('DOMContentLoaded', () => {
       this.cloudContainer.add(this.mediumCloudMesh);
       this.cloudContainer.add(this.largeCloudMesh);
       
-      // Set up cloud instances
+      // Set up cloud instances.
       this.setupCloudInstances(this.smallCloudMesh, 20, 40, 0.5);
       this.setupCloudInstances(this.mediumCloudMesh, 60, 90, 1.0);
-      this.setupCloudInstances(this.largeCloudMesh, 120, 160, 2.0);
+      // min = 120, max 160.
+      this.setupCloudInstances(this.largeCloudMesh, 220, 260, 2.0);
       
       console.log(`Created cloud system with ${this.data.totalClouds} instanced clouds`);
     },

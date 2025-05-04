@@ -2,34 +2,41 @@
 
 document.addEventListener('DOMContentLoaded', () => {
     const waitForDependencies = () => {
-        // Wait for both terrain system and ImprovedNoise
+        const scene = document.querySelector('a-scene');
+        if (!scene || !scene.hasLoaded) {
+            console.log('Waiting for scene to load...');
+            setTimeout(waitForDependencies, 100);
+            return;
+        }
+
         if (!window.TerrainConfig || !window.ImprovedNoise) {
             console.log('Waiting for terrain system...');
             setTimeout(waitForDependencies, 100);
             return;
         }
 
-        // Initialize floating formations component
-        const scene = document.querySelector('a-scene');
-        if (scene) {
-            const formationsEntity = document.createElement('a-entity');
-            formationsEntity.setAttribute('id', 'floating-formations');
-            formationsEntity.setAttribute('floating-formations', {
-                noiseScale: window.TerrainConfig.noiseScale * 2,
-                formationDensity: 0.25,
-                // Increase height range significantly
-                minHeight: window.TerrainConfig.baseHeight + 200, // Float well above terrain
-                maxHeight: window.TerrainConfig.baseHeight + 400,
-                loadDistance: window.TerrainConfig.loadDistance * 0.5,
-                unloadDistance: window.TerrainConfig.unloadDistance * 0.5,
-                cellSize: window.TerrainConfig.geometrySize * 4
-            });
-            scene.appendChild(formationsEntity);
-            console.log('Floating hex formations initialized with terrain config');
-        }
+        console.log('Dependencies ready, initializing floating formations...');
+        const formationsEntity = document.createElement('a-entity');
+        formationsEntity.setAttribute('id', 'floating-formations');
+        formationsEntity.setAttribute('floating-formations', {
+            noiseScale: 0.002, // Increased for more variation
+            formationDensity: 0.3, // Much higher for more formations
+            minHeight: window.TerrainConfig.baseHeight + 100, // Lower to terrain
+            maxHeight: window.TerrainConfig.baseHeight + 300, // Lower to terrain
+            loadDistance: window.TerrainConfig.loadDistance * 0.75,
+            unloadDistance: window.TerrainConfig.unloadDistance * 0.75,
+            cellSize: 80, // Smaller cells = more formations
+            maxHexagonsPerFormation: 32 // Fewer but more visible
+        });
+        scene.appendChild(formationsEntity);
+        console.log('Floating hex formations initialized');
     };
 
-    waitForDependencies();
+    if (document.querySelector('a-scene').hasLoaded) {
+        waitForDependencies();
+    } else {
+        document.querySelector('a-scene').addEventListener('loaded', waitForDependencies);
+    }
 });
 
 AFRAME.registerComponent('floating-formations', {
@@ -95,13 +102,14 @@ AFRAME.registerComponent('floating-formations', {
 
     createFormation: function(baseX, baseZ) {
         const hexagons = [];
-        const noiseValue = this.noise.fbm(
+        // Use absolute value of noise for more frequent formations
+        const noiseValue = (Math.abs(this.noise.fbm(
             baseX * this.data.noiseScale, 
             baseZ * this.data.noiseScale,
-             4,
-            2.0,
-            0.5
-        );
+            4, 2.0, 0.5
+        )) + 1.0) * 0.5; // Normalize to 0-1 range
+
+        console.log(`Formation check at ${baseX},${baseZ}: noise=${noiseValue.toFixed(3)}, threshold=${this.data.formationDensity}`);
         
         if (noiseValue < this.data.formationDensity) return null;
 
@@ -110,45 +118,36 @@ AFRAME.registerComponent('floating-formations', {
             this.data.maxHexagonsPerFormation * 2
         );
 
-        // Get terrain height at this position
+        // Get terrain height and stay closer to it
         const terrainHeight = window.getTerrainHeight(baseX, baseZ);
-        
-        // Base height for the formation, ensuring it's well above terrain
-        const baseHeight = Math.max(
-            terrainHeight + 200, // Minimum 200 units above terrain
-            this.data.minHeight + (noiseValue * (this.data.maxHeight - this.data.minHeight))
-        );
+        const baseHeight = terrainHeight + 100 + (noiseValue * 200); // 100-300 units above terrain
 
-        // Create cluster of hexagons
+        // Create tighter formation
         for (let i = 0; i < formationSize; i++) {
             const angle = this.noise.perlin2(baseX + i * 0.1, baseZ + i * 0.1) * Math.PI * 2;
-            const distance = this.noise.perlin2(baseX - i * 0.2, baseZ + i * 0.3) * 15; // Increased spread
+            const distance = this.noise.perlin2(baseX - i * 0.2, baseZ + i * 0.3) * 25; // Tighter spread
             
             const x = baseX + Math.cos(angle) * distance;
             const z = baseZ + Math.sin(angle) * distance;
             
-            // Vary height based on distance from center with larger variation
             const heightNoise = this.noise.perlin2(x * 0.1, z * 0.1);
-            const y = baseHeight + heightNoise * 50; // Increased height variation
-
-            const heightFactor = (y - this.data.minHeight) / 
-                               (this.data.maxHeight - this.data.minHeight);
-            const color = this.getColorForHeight(heightFactor);
+            const y = baseHeight + heightNoise * 50; // Less vertical spread
 
             hexagons.push({
                 position: [x, y, z],
-                height: 4.0 + Math.abs(heightNoise) * 8, // Increased hexagon height
-                color: color
+                height: 8.0 + Math.abs(heightNoise) * 16,
+                color: this.getColorForHeight((y - terrainHeight) / 300) // Color based on height above terrain
             });
         }
 
+        console.log(`Created formation with ${hexagons.length} hexagons at height ${baseHeight.toFixed(1)} (${(baseHeight - terrainHeight).toFixed(1)} above terrain)`);
         return hexagons;
     },
 
     getColorForHeight: function(heightFactor) {
-        // Use a color gradient based on height
-        const baseColor = new THREE.Color(0x666677);
-        const highColor = new THREE.Color(0x8888aa);
+        // More distinct colors
+        const baseColor = new THREE.Color(0x88aaff); // Blueish
+        const highColor = new THREE.Color(0xffaa88); // Orangeish
         const finalColor = baseColor.lerp(highColor, heightFactor);
         return [finalColor.r, finalColor.g, finalColor.b];
     },

@@ -2,23 +2,25 @@
 window.FloatingFormationsConfig = {
     // Hexagon settings
     hexSize: 6.0,                // 2.54 Size of individual hexagons
-    hexHeight: 6.0,               // Base height of hexagons
-    heightVariation: 16.0,        // Amount hexagons can vary in height
+    hexHeight: 18.0,               // 6.0 Base height of hexagons
+    heightVariation: 16.0,        // 16.0 Amount hexagons can vary in height
+    opacity: 0.5,               // NEW: Opacity of hexagons
+    enableVerticalEdges: true,  // Enable vertical edges for floating formations
     
     // Formation settings
-    formationDensity: 0.3,        // Threshold for formation placement (0-1)
-    maxHexagonsPerFormation: 32,  // Maximum hexagons in a single formation
-    formationSpread: 30.0,        // How spread out hexagons are within formation
+    formationDensity: 0.3,        // 0.3 Threshold for formation placement (0-1)
+    maxHexagonsPerFormation: 27,  // 32 Maximum hexagons in a single formation
+    formationSpread: 30.0,        // 30.0 How spread out hexagons are within formation
     
     // Height settings
-    heightOffset: 20,            // Base height above terrain
-    heightNoiseScale: 0.1,        // Scale of height variation noise
-    heightNoiseAmount: 10.0,      // Amount of height variation
+    heightOffset: 84,            // 20 Base height above terrain
+    heightNoiseScale: 1.0,        // 0.1 Scale of height variation noise
+    heightNoiseAmount: 100.0,      // 10.0 Amount of height variation
     
     // Performance settings
-    cellSize: 80,                 // Size of grid cells for placement
-    loadDistance: 300,            // Distance to start loading formations
-    unloadDistance: 360,          // Distance to unload formations
+    cellSize: 256,                 // 80 Size of grid cells for placement
+    loadDistance: 700,            // 300 Distance to start loading formations
+    unloadDistance: 760,          // 360 Distance to unload formations
 };
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -63,8 +65,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
 AFRAME.registerComponent('floating-formations', {
     schema: {
-        loadDistance: { type: 'number', default: 120 },
-        unloadDistance: { type: 'number', default: 150 },
+        loadDistance: { type: 'number', default: 700 }, // 120
+        unloadDistance: { type: 'number', default: 720 }, // 150
         minHeight: { type: 'number', default: 10 },
         maxHeight: { type: 'number', default: 40 },
         formationDensity: { type: 'number', default: 0.45 }, // Threshold for formation placement
@@ -81,7 +83,12 @@ AFRAME.registerComponent('floating-formations', {
             return;
         }
         this.noise = window.ImprovedNoise;
-        this.material = window.CubeTerrainBuilder.createCubeMaterial();
+        this.material = window.CubeTerrainBuilder.createCubeMaterial({
+            transparent: true,
+            opacity: window.FloatingFormationsConfig.opacity,
+            isFloatingFormation: true,  // Mark these hexagons as floating formations
+            enableVerticalEdges: window.FloatingFormationsConfig.enableVerticalEdges
+        });
         this.lastUpdate = { x: 0, z: 0 };
         this.terrainGenerator = null;
         document.addEventListener('terrainReady', () => {
@@ -185,7 +192,7 @@ AFRAME.registerComponent('floating-formations', {
                 color: this.getColorForHeight((y - terrainHeight) / 300)
             });
         }
-        console.log(`Created formation with ${hexagons.length} hexagons at height ${baseHeight.toFixed(1)} (relative to terrain at ${terrainHeight.toFixed(1)})`);
+        // console.log(`Created formation with ${hexagons.length} hexagons at height ${baseHeight.toFixed(1)} (relative to terrain at ${terrainHeight.toFixed(1)})`);
         return { cubes: hexagons };
     },
     getColorForHeight: function(heightFactor) {

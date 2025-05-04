@@ -7,8 +7,9 @@ window.HexConfigSimple = {
     pulseIntensity: 0.3,      // 0.3 Intensity of the pulse
     pulseSpacing: 0.3,        // 3.0 Spacing between waves of pulses
     enableOutline: true,      // Toggle cartoon outlines
-    outlineThickness: 0.4,    // 0.1 Thickness of the outline (default 0.1)
-    outlineColor: [0.8, 0.8, 0.8], // Default outline color (black) as RGB array
+    enableVerticalEdges: false, // Toggle vertical edge outlines
+    outlineThickness: 0.4,    // 0.1 Thickness of the outline
+    outlineColor: [0.8, 0.8, 0.8], // Default outline color as RGB array
     applyToGenerator: function(generator) {
         if (generator) {
             // ...existing assignments...
@@ -66,7 +67,6 @@ THREE.HexagonGeometry = class HexagonGeometry extends THREE.BufferGeometry {
         this.computeVertexNormals();
     }
 };
-
 THREE.HexagonBufferGeometry = THREE.HexagonGeometry;
 
 // Vertex Shader – includes UV coordinates
@@ -74,7 +74,6 @@ window.simpleVertexShader = `
     attribute vec3 instancePosition;
     attribute float instanceHeight;
     attribute vec3 instanceColor;
-    
     varying vec3 vColor;
     varying float vHeight;
     varying vec3 vWorldPosition;
@@ -82,7 +81,6 @@ window.simpleVertexShader = `
     varying vec3 vNormal;
     varying vec2 vUv;  // UV coordinates
     varying float vFaceType; // 0: side, 1: top, -1: bottom
-    
     void main() {
         vColor = instanceColor;
         vHeight = instanceHeight;
@@ -120,6 +118,9 @@ window.simpleFragmentShader = `
     uniform float enableOutline;
     uniform float outlineThickness; // Added
     uniform vec3 outlineColor; // Added uniform for outline color
+    uniform float opacity;  // Add opacity uniform
+    uniform float isFloatingFormation;  // Add new flag
+    uniform float enableVerticalEdges;
 
     varying vec3 vColor;
     varying float vHeight;
@@ -132,13 +133,12 @@ window.simpleFragmentShader = `
     // Compute minimum distance to any of the 6 hexagon edges (for top/bottom)
     float hexEdgeDistance(vec2 p, float r) {
         float minDist = 1e6;
-        float angleOffset = 3.1415926 / 6.0; // 30 degrees, matches geometry for pointy-top hex
+        float angleOffset = 3.1415926 / 6.0;
         for (int i = 0; i < 6; i++) {
             float angle1 = angleOffset + float(i) * 3.1415926 / 3.0;
             float angle2 = angleOffset + float(i + 1) * 3.1415926 / 3.0;
             vec2 v1 = vec2(r * cos(angle1), r * sin(angle1));
             vec2 v2 = vec2(r * cos(angle2), r * sin(angle2));
-            // Distance from p to edge v1-v2
             vec2 e = v2 - v1;
             vec2 w = p - v1;
             float t = clamp(dot(w, e) / dot(e, e), 0.0, 1.0);
@@ -178,16 +178,18 @@ window.simpleFragmentShader = `
                 float d = hexEdgeDistance(vLocal, hexSize - 0.025);
                 float thickness = max(outlineThickness, 1.5 * fwidth(d));
                 edgeFactor = smoothstep(0.0, thickness, d);
-            } else {
-                // Side face: outline all 6 vertical edges robustly
+            } else if (enableVerticalEdges > 0.5) {
+                // Side face: outline vertical edges only if enabled
                 float d = hexVerticalEdgeDistance(vLocal, hexSize - 0.025);
                 float thickness = max(outlineThickness, 1.5 * fwidth(d));
                 edgeFactor = smoothstep(0.0, thickness * 0.25, d);
             }
-            finalColor = mix(outlineColor, finalColor, edgeFactor); // Use outlineColor
+            finalColor = mix(outlineColor, finalColor, edgeFactor);
         }
 
-        vec4 color = vec4(finalColor, 1.0);
+        float finalOpacity = isFloatingFormation > 0.5 ? opacity : 1.0;
+        vec4 color = vec4(finalColor, finalOpacity);
+        
         float fogFactor = smoothstep(fogNear, fogFar, -gl_FragCoord.z);
         color.rgb = mix(color.rgb, fogColor, fogFactor);
         gl_FragColor = color;
@@ -240,7 +242,7 @@ window.CubeTerrainBuilder = {
             return new THREE.Group();
         }
     },
-    createCubeMaterial: function() {
+    createCubeMaterial: function(options = {}) {
         const material = new THREE.ShaderMaterial({
             vertexShader: window.simpleVertexShader,
             fragmentShader: window.simpleFragmentShader,
@@ -261,9 +263,13 @@ window.CubeTerrainBuilder = {
                     hexSize: { value: 2.54 }, // Will be updated per chunk based on geometry
                     enableOutline: { value: window.HexConfigSimple.enableOutline ? 1.0 : 0.0 },
                     outlineThickness: { value: window.HexConfigSimple.outlineThickness || 0.1 },
-                    outlineColor: { value: new THREE.Color(...window.HexConfigSimple.outlineColor) } // Set outline color
+                    outlineColor: { value: new THREE.Color(...window.HexConfigSimple.outlineColor) }, // Set outline color
+                    opacity: { value: options.opacity !== undefined ? options.opacity : 1.0 },
+                    isFloatingFormation: { value: options.isFloatingFormation ? 1.0 : 0.0 }
                 }
-            ])
+            ]),
+            transparent: options.isFloatingFormation || false,
+            depthWrite: !options.isFloatingFormation
         });
         // NOTE: polygonOffset does NOT affect fragment-shader outlines, only geometry-based outlines.
         // For fragment-shader outlines, adjust thickness and smoothstep in the shader above.

@@ -278,16 +278,24 @@ AFRAME.registerComponent('free-controls', {
       this.runButton = this.createControlButton('run: OFF', 'rgba(0, 0, 0, 0.6)', this.toggleRunning);
       this.moveButton = this.createControlButton('walk: OFF', 'rgba(0, 0, 0, 0.6)', this.toggleMovement);
       
-      // Position run button to the left
-      this.runButton.style.position = 'absolute';
-      this.runButton.style.left = '20px';
+      // Create a wrapper for better positioning
+      const buttonsWrapper = document.createElement('div');
+      buttonsWrapper.style.display = 'flex';
+      buttonsWrapper.style.gap = '20px';
+      buttonsWrapper.style.justifyContent = 'center';
+      buttonsWrapper.style.width = '100%';
+      buttonsWrapper.style.maxWidth = '300px';
+      buttonsWrapper.style.margin = '0 auto';
       
-      // Center the walk button
+      // Reset absolute positioning
+      this.runButton.style.position = 'relative';
+      this.runButton.style.left = 'auto';
       this.moveButton.style.position = 'relative';
-      this.moveButton.style.margin = '0 auto';
+      this.moveButton.style.margin = '0';
       
-      this.controlsContainer.appendChild(this.runButton);
-      this.controlsContainer.appendChild(this.moveButton);
+      buttonsWrapper.appendChild(this.runButton);
+      buttonsWrapper.appendChild(this.moveButton);
+      this.controlsContainer.appendChild(buttonsWrapper);
     } else {
       // Desktop layout: All buttons centered
       this.moveButton = this.createControlButton('walk: OFF', 'rgba(0, 0, 0, 0.6)', this.toggleMovement);

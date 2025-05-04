@@ -182,7 +182,7 @@ window.simpleFragmentShader = `
                 // Side face: outline all 6 vertical edges robustly
                 float d = hexVerticalEdgeDistance(vLocal, hexSize - 0.025);
                 float thickness = max(outlineThickness, 1.5 * fwidth(d));
-                edgeFactor = smoothstep(0.0, thickness, d);
+                edgeFactor = smoothstep(0.0, thickness * 0.25, d);
             }
             finalColor = mix(outlineColor, finalColor, edgeFactor); // Use outlineColor
         }

@@ -48,11 +48,19 @@ AFRAME.registerComponent('tree-hex-manager', {
       trunkEmissive: { type: 'number', default: 0.2 },
       foliageEmissive: { type: 'number', default: 0.4 },
       
-      // Grid cell size for tracking tree placement
-      gridCellSize: { type: 'number', default: 80 },
+      // Grid cell size for tracking tree placement. 80
+      gridCellSize: { type: 'number', default: 12 },
       
       // Debug
-      debug: { type: 'boolean', default: false }
+      debug: { type: 'boolean', default: false },
+
+      // Color settings
+      trunkColor: { type: 'color', default: '#aaaaba' }, // '#2e3c2f'
+      trunkEmissiveColor: { type: 'color', default: '#aaaaba' }, // '#1a221a'
+      foliageColor: { type: 'color', default: '#EEEEEE' }, // '#11baba'
+      foliageEmissiveColor: { type: 'color', default: '#EEEEEE' }, // '#11baba'
+      branchColor: { type: 'color', default: '#aaaabb' }, // '#2e3c2f'
+      branchEmissiveColor: { type: 'color', default: '#aaaabb' }, // '#1a221a'
     },
     
     init: function () {
@@ -504,16 +512,16 @@ AFRAME.registerComponent('tree-hex-manager', {
 
       // Use MeshStandardMaterial for base color (no custom shader, no outline mesh)
       this.trunkMaterial = new THREE.MeshStandardMaterial({
-        color: 0x2e3c2f,
-        emissive: 0x1a221a,
+        color: new THREE.Color(this.data.trunkColor),
+        emissive: new THREE.Color(this.data.trunkEmissiveColor),
         emissiveIntensity: 0.18,
         metalness: 0.0,
         roughness: 0.85
       });
 
       this.foliageMaterial = new THREE.MeshStandardMaterial({
-        color: 0x11baba,
-        emissive: 0x11baba,
+        color: new THREE.Color(this.data.foliageColor),
+        emissive: new THREE.Color(this.data.foliageEmissiveColor),
         emissiveIntensity: 0.35,
         metalness: 0.0,
         roughness: 0.5,
@@ -523,8 +531,8 @@ AFRAME.registerComponent('tree-hex-manager', {
 
       if (this.data.enableBranches) {
         this.branchMaterial = new THREE.MeshStandardMaterial({
-          color: 0x2e3c2f,
-          emissive: 0x1a221a,
+          color: new THREE.Color(this.data.branchColor),
+          emissive: new THREE.Color(this.data.branchEmissiveColor),
           emissiveIntensity: 0.18,
           metalness: 0.0,
           roughness: 0.85,

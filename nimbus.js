@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // Cloud distribution
       totalClouds: { type: 'number', default: 81 }, // Total cloud instances.
       skyRadius: { type: 'number', default: 820 }, // 720.
-      cloudBaseHeight: { type: 'number', default: 2800 }, //2100.
+      cloudBaseHeight: { type: 'number', default: 2142 }, //2100.
       heightRange: { type: 'number', default: 32 },
       // Visual properties
       cloudColor: { type: 'color', default: '#DDDDDD' },

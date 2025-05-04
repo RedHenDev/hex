@@ -73,7 +73,7 @@ AFRAME.registerComponent('portal-system', {
     const exitPortal = document.createElement('a-entity');
     exitPortal.setAttribute('id', 'exit-portal');
     //exitPortal.setAttribute('position', '-95 55 -19');
-    exitPortal.setAttribute('position', '-436 582 -248');
+    exitPortal.setAttribute('position', '9999 1800 7900');
     
     // Create animated portal ring (torus)
     const portalRing = document.createElement('a-torus');
@@ -143,7 +143,7 @@ AFRAME.registerComponent('portal-system', {
     // Create start portal entity
     const startPortal = document.createElement('a-entity');
     startPortal.setAttribute('id', 'start-portal');
-    startPortal.setAttribute('position', '-436 600 -248');
+    startPortal.setAttribute('position', '9999 1800 7900');
     
     // Create animated portal ring (torus)
     const portalRing = document.createElement('a-torus');

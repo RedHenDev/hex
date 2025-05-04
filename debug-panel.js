@@ -48,7 +48,7 @@ class DebugPanel {
                 
                 // Position panel to leave space for toggle button
                 this.panel.style.right = '60px'; // Leave space on the right
-                this.panel.style.top = '10px';   // Align top with toggle button
+                this.panel.style.top = '60px';   // Align top with toggle button
                 
                 document.body.appendChild(this.panel);
                 
@@ -93,7 +93,7 @@ class DebugPanel {
             // Style the button
             Object.assign(button.style, {
                 position: 'fixed',
-                top: '10px',
+                top: '60px',
                 right: '10px',
                 width: '40px',
                 height: '40px',

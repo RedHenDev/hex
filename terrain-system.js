@@ -424,8 +424,8 @@ class TerrainChunkManager {
             for (let dz = -chunkRadius; dz <= chunkRadius; dz++) {
                 const chunkX = (centerChunkX + dx) * chunkWorldSize;
                 const chunkZ = (centerChunkZ + dz) * chunkWorldSize;
-                const centerX = chunkX + chunkWorldSize / 2;
-                const centerZ = chunkZ + chunkWorldSize / 2;
+                const centerX = chunkX + chunkWorldSize * 0.5;
+                const centerZ = chunkZ + chunkWorldSize * 0.5;
                 const distX = centerX - viewX;
                 const distZ = centerZ - viewZ;
                 const distance = Math.sqrt(distX * distX + distZ * distZ);
@@ -441,8 +441,8 @@ class TerrainChunkManager {
         for (const [key, chunkInfo] of this.loadedChunks.entries()) {
             if (!chunksToKeep.has(key)) {
                 const [chunkX, chunkZ] = key.split(',').map(Number);
-                const centerX = chunkX + chunkWorldSize / 2;
-                const centerZ = chunkZ + chunkWorldSize / 2;
+                const centerX = chunkX + chunkWorldSize * 0.5;
+                const centerZ = chunkZ + chunkWorldSize * 0.5;
                 const distX = centerX - viewX;
                 const distZ = centerZ - viewZ;
                 const distance = Math.sqrt(distX * distX + distZ * distZ);

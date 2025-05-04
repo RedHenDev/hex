@@ -17,12 +17,22 @@ principles of dev
 
 triage
 
-1: 
+1: -b chunks involve a *0.9 spacing or something...
 
-2: -f VR menu and tilt (precision etc.) controls
+2: -f new loco - 'hover-pulse'
 
 
 to do
+
+-f VR menu and tilt (precision etc.) controls
+
+-f tree colour
+
+-f config controls over terrain colouring
+
+-b fit hexagons on z dimension
+
+-i general modularity
 
 DONE-b fix tree placement
 

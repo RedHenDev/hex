@@ -282,9 +282,10 @@ AFRAME.registerComponent('free-controls', {
       this.moveButton.style.position = 'relative';
       this.moveButton.style.margin = '0 auto';
       this.moveButton.style.bottom = '0';
+      this.moveButton.style.left = '50%';
       
       // Position run button on left
-      this.runButton.style.position = 'absolute';
+      this.runButton.style.position = 'relative';
       this.runButton.style.left = '20px';
       this.runButton.style.bottom = '0';
       

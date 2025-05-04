@@ -119,6 +119,8 @@ const ImprovedNoise = {
     }
 };
 
+window.ImprovedNoise = ImprovedNoise;
+
 // Terrain Generator
 class TerrainGenerator {
     constructor(options = {}) {

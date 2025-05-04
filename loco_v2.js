@@ -221,11 +221,11 @@ AFRAME.registerComponent('subject-locomotion', {
         const position = this.rig.position;
         const rotation = this.cam.rotation;
         
-        // Process VR head rotation controls
+        // Process VR head rotation controls.
         const pitch = rotation.x;
         const roll = rotation.z;
         
-        // Left head tilt
+        // Left head tilt.
         const minZ = 0.3;
         const maxZ = 0.5;
         if (roll > minZ && roll < maxZ) {
@@ -267,7 +267,7 @@ AFRAME.registerComponent('subject-locomotion', {
             this.moveZ = (this.keys.w || this.keys.ArrowUp ? 1 : 0) + 
                          (this.keys.s || this.keys.ArrowDown ? -1 : 0);
             
-            // Running toggle via shift
+            // Running toggle via shift.
             let sTime = Date.now();
             if (sTime - this.timeStamp > 500) {
                 if (this.keys.ShiftLeft) {
@@ -287,7 +287,7 @@ AFRAME.registerComponent('subject-locomotion', {
         // New: Collision detection using a Map of tree positions.
         // Placed before locomotive control logic, so that
         // trees feel solid.
-        const baseCollisionRadius = 38; // Base collision radius value. 38.
+        const baseCollisionRadius = 40; // 30 Base collision radius value. 38.
         const cellSize = baseCollisionRadius * 2;
         const subjectCellX = Math.floor(position.x / cellSize);
         const subjectCellZ = Math.floor(position.z / cellSize);

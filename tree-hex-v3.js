@@ -13,27 +13,27 @@ AFRAME.registerComponent('tree-hex-manager', {
       minTreeDistance: { type: 'number', default: 128 }, // Minimum distance from player
       updateInterval: { type: 'number', default: 2000 }, // Milliseconds between updates
       
-      // Noise settings
-      noiseThreshold: { type: 'number', default: 0.59 },
-      noiseScale: { type: 'number', default: 0.4 },
+      // Noise settings.
+      noiseThreshold: { type: 'number', default: 0.54 }, // 0.59
+      noiseScale: { type: 'number', default: 0.2 }, // 0.4
       noiseLacunarity: { type: 'number', default: 2.0 },
       noiseGain: { type: 'number', default: 0.5 },
       noiseOctaves: { type: 'number', default: 4 },
       
-      // Tree settings
+      // Tree settings.
       baseTreeScale: { type: 'number', default: 64 },    // Base scale for trees
       minScaleFactor: { type: 'number', default: 0.01 },  // 0.1 Minimum scale variation
       maxScaleFactor: { type: 'number', default: 1.0 },  // 3.0 Maximum scale variation
       scaleNoiseScale: { type: 'number', default: 0.1 }, // 0.1 Noise scale for tree size variation
       
-      // Trunk settings
-      trunkSegments: { type: 'number', default: 4 },
+      // Trunk settings.
+      trunkSegments: { type: 'number', default: 12 }, // 4
       trunkBaseRadius: { type: 'number', default: 0.8 },
       trunkTwistFactor: { type: 'number', default: 90 },
-      trunkTaper: { type: 'number', default: 0.15 },
+      trunkTaper: { type: 'number', default: 0.10 }, // 15
       
-      // Foliage settings
-      foliageHexCount: { type: 'number', default: 32 }, // 32.
+      // Foliage settings.
+      foliageHexCount: { type: 'number', default: 128 }, // 32.
       foliageScale: { type: 'number', default: 0.4 },
       foliageHeight: { type: 'number', default: 0.8 },
       foliageRadius: { type: 'number', default: 3.0 }, //5
@@ -49,18 +49,24 @@ AFRAME.registerComponent('tree-hex-manager', {
       foliageEmissive: { type: 'number', default: 0.4 },
       
       // Grid cell size for tracking tree placement. 80
-      gridCellSize: { type: 'number', default: 12 },
+      gridCellSize: { type: 'number', default: 80 },
       
       // Debug
       debug: { type: 'boolean', default: false },
 
-      // Color settings
+      // Color settings.
       trunkColor: { type: 'color', default: '#aaaaba' }, // '#2e3c2f'
       trunkEmissiveColor: { type: 'color', default: '#aaaaba' }, // '#1a221a'
       foliageColor: { type: 'color', default: '#EEEEEE' }, // '#11baba'
       foliageEmissiveColor: { type: 'color', default: '#EEEEEE' }, // '#11baba'
       branchColor: { type: 'color', default: '#aaaabb' }, // '#2e3c2f'
       branchEmissiveColor: { type: 'color', default: '#aaaabb' }, // '#1a221a'
+
+      // Foliage layer settings.
+      foliageLayers: { type: 'number', default: 4 },  // Number of branch/foliage layers
+      layerSpacing: { type: 'number', default: 0.25 }, // Spacing between layers (0-1)
+      layerSizeReduction: { type: 'number', default: 0.2 }, // How much to reduce size per layer
+      hexagonsPerLayer: { type: 'number', default: 128/4 }, // Hexagons per layer (32/3 rounded up)
     },
     
     init: function () {
@@ -227,7 +233,8 @@ AFRAME.registerComponent('tree-hex-manager', {
       const distMoved = Math.sqrt(distX * distX + distZ * distZ);
       
       // Only update trees if player has moved significantly
-      if (distMoved > 40) {
+      // 40
+      if (distMoved > 12) {
         this.lastSubjectX = subjectPos.x;
         this.lastSubjectZ = subjectPos.z;
         
@@ -740,14 +747,13 @@ AFRAME.registerComponent('tree-hex-manager', {
       const baseScale = this.data.baseTreeScale * scaleFactor;
       const rotationMatrix = new THREE.Matrix4();
       
-      // Calculate trunk top position (for branch connections)
+      // Calculate trunk top position
       const trunkTopY = y + (this.data.trunkSegments * baseScale) + 2;
-      const foliageLowering = 142 * scaleFactor; // Scale the foliage lowering
+      const foliageLowering = 142 * scaleFactor;
       
-      // Update trunk segments with lift and scale variation
+      // Update trunk segments
       for (let i = 0; i < this.data.trunkSegments; i++) {
         const trunkIndex = treeObj.trunkStart + i;
-        // Use deterministic noise for twist
         const twist = this.perlin2D(x * 0.1 + i * 17.53, z * 0.1 + i * 31.17) * this.data.trunkTwistFactor;
         const radius = this.data.trunkBaseRadius * (1 - (i * this.data.trunkTaper));
         
@@ -755,68 +761,68 @@ AFRAME.registerComponent('tree-hex-manager', {
         matrix.makeScale(radius * baseScale, baseScale, radius * baseScale);
         rotationMatrix.makeRotationY(twist * Math.PI / 180);
         matrix.multiply(rotationMatrix);
-        // Add 2 units to y position
         matrix.setPosition(x, y + (i * baseScale) + 2, z);
         
         this.trunkMesh.setMatrixAt(trunkIndex, matrix);
       }
       
-      // Noise-based foliage with scale variation
-      for (let i = 0; i < this.data.foliageHexCount; i++) {
-        const foliageIndex = treeObj.foliageStart + i;
+      let foliageIndex = treeObj.foliageStart;
+      let branchIndex = treeObj.branchStart;
+      
+      // Create multiple layers of foliage
+      for (let layer = 0; layer < this.data.foliageLayers; layer++) {
+        const layerRatio = layer / (this.data.foliageLayers - 1);
+        const layerScale = 1.0 - (layer * this.data.layerSizeReduction);
+        const layerHeight = trunkTopY - (layerRatio * foliageLowering);
         
-        // Use deterministic noise for angle and distance
-        const angle = this.perlin2D(x + i * 73.31, z + i * 29.17) * Math.PI * 2;
-        const dist = this.perlin2D(x - i * 41.43, z - i * 91.57) * (baseScale * this.data.foliageRadius);
+        // Calculate trunk connection point for this layer
+        const trunkSegment = this.data.trunkSegments - 2 - Math.floor(layer * (this.data.trunkSegments - 3) / this.data.foliageLayers);
+        const branchOriginY = y + trunkSegment * baseScale + 2;
         
-        // Position using noise values
-        const posX = x + Math.cos(angle) * dist;
-        const posZ = z + Math.sin(angle) * dist;
-        const heightOffset = (baseScale * this.data.foliageRadius - dist) * 0.5;
-        // Add 2 units to match trunk lift, then lower foliage
-        const posY = trunkTopY + heightOffset - foliageLowering;
-        
-        // Create tilted hexagons with deterministic twist
-        matrix.identity();
-        matrix.makeScale(
-          baseScale * this.data.foliageScale, 
-          baseScale * this.data.foliageHeight, 
-          baseScale * this.data.foliageScale
-        );
-        
-        // Tilt based on distance from trunk (deterministically)
-        const tiltAngle = (dist / (baseScale * this.data.foliageRadius)) * this.data.foliageTilt * Math.PI;
-        const tiltMatrix = new THREE.Matrix4().makeRotationX(tiltAngle);
-        matrix.multiply(tiltMatrix);
-        
-        // Use deterministic noise for twist rotation and scaling.
-        const twist = this.perlin2D(x * 0.05 + i * 59.83, z * 0.05 + i * 67.19) * Math.PI * 0.2;
-        rotationMatrix.makeRotationY(angle + twist);
-        matrix.multiply(rotationMatrix);
-        
-        matrix.setPosition(posX, posY, posZ);
-        this.foliageMesh.setMatrixAt(foliageIndex, matrix);
-        
-        // Add branch connecting trunk top to foliage center
-        if (this.data.enableBranches && this.branchMesh) {
-          const branchIndex = treeObj.branchStart + i;
-          // Determine which trunk section to use (avoiding the base section)
-          const trunkSectionIndex = 1 + (i % (this.data.trunkSegments - 1));
-          // Compute branch origin along the trunk (varying by trunkSectionIndex)
-          const branchOrigin = new THREE.Vector3(x, y + trunkSectionIndex * baseScale + 2, z);
-          // Foliage centre (target point of branch tip)
-          const foliageCenter = new THREE.Vector3(posX, posY, posZ);
-          // Compute branch direction and length.
-          const branchDir = new THREE.Vector3().subVectors(foliageCenter, branchOrigin);
-          const branchLength = branchDir.length();
-          const branchWidth = baseScale * this.data.branchWidth;
-          // Create a quaternion to rotate (0,1,0) to the branch direction.
-          const quat = new THREE.Quaternion();
-          quat.setFromUnitVectors(new THREE.Vector3(0, 1, 0), branchDir.clone().normalize());
-          // Compose the transformation: translation then rotation and scaling.
-          const branchMatrix = new THREE.Matrix4();
-          branchMatrix.compose(branchOrigin, quat, new THREE.Vector3(branchWidth, branchLength, branchWidth));
-          this.branchMesh.setMatrixAt(branchIndex, branchMatrix);
+        for (let i = 0; i < this.data.hexagonsPerLayer; i++) {
+          const angle = this.perlin2D(x + (layer * 100) + i * 73.31, z + i * 29.17) * Math.PI * 2;
+          const dist = this.perlin2D(x - (layer * 100) - i * 41.43, z - i * 91.57) 
+                      * (baseScale * this.data.foliageRadius * layerScale);
+          
+          const posX = x + Math.cos(angle) * dist;
+          const posZ = z + Math.sin(angle) * dist;
+          const heightOffset = (baseScale * this.data.foliageRadius - dist) * 0.5;
+          const posY = layerHeight + heightOffset;
+          
+          // Create foliage hexagon
+          matrix.identity();
+          matrix.makeScale(
+            baseScale * this.data.foliageScale * layerScale,
+            baseScale * this.data.foliageHeight * layerScale,
+            baseScale * this.data.foliageScale * layerScale
+          );
+          
+          const tiltAngle = (dist / (baseScale * this.data.foliageRadius)) * this.data.foliageTilt * Math.PI;
+          const tiltMatrix = new THREE.Matrix4().makeRotationX(tiltAngle);
+          matrix.multiply(tiltMatrix);
+          
+          const twist = this.perlin2D(x * 0.05 + (layer * 50) + i * 59.83, z * 0.05 + i * 67.19) * Math.PI * 0.2;
+          rotationMatrix.makeRotationY(angle + twist);
+          matrix.multiply(rotationMatrix);
+          
+          matrix.setPosition(posX, posY, posZ);
+          this.foliageMesh.setMatrixAt(foliageIndex++, matrix);
+          
+          // Create branch connecting trunk to foliage
+          if (this.data.enableBranches && this.branchMesh) {
+            const branchOrigin = new THREE.Vector3(x, branchOriginY, z);
+            const foliageCenter = new THREE.Vector3(posX, posY, posZ);
+            const branchDir = new THREE.Vector3().subVectors(foliageCenter, branchOrigin);
+            const branchLength = branchDir.length();
+            const branchWidth = baseScale * this.data.branchWidth * layerScale;
+            
+            const quat = new THREE.Quaternion();
+            quat.setFromUnitVectors(new THREE.Vector3(0, 1, 0), branchDir.clone().normalize());
+            
+            const branchMatrix = new THREE.Matrix4();
+            branchMatrix.compose(branchOrigin, quat, new THREE.Vector3(branchWidth, branchLength, branchWidth));
+            this.branchMesh.setMatrixAt(branchIndex++, branchMatrix);
+          }
         }
       }
       

@@ -26,6 +26,12 @@ triage
 
 to do
 
+-d mech suit can pick picked up and discarded
+
+-d appearance of mech suit
+
+DONE-f simple mech suit
+
 DONE-b chunks involve a *0.9 spacing or something... cf. 431
 
 DONE-b tree collisions

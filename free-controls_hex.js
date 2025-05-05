@@ -280,13 +280,13 @@ AFRAME.registerComponent('free-controls', {
       
       // Center walk button
       this.moveButton.style.position = 'relative';
-      this.moveButton.style.margin = '0 auto';
-      this.moveButton.style.bottom = '0';
+      this.moveButton.style.margin = '4px';
+      this.moveButton.style.bottom = '4px';
       this.moveButton.style.left = '40%';
       
       // Position run button on left
       this.runButton.style.position = 'relative';
-      this.runButton.style.left = '20%';
+      this.runButton.style.left = '30%';
       this.runButton.style.bottom = '0';
       
       this.controlsContainer.appendChild(this.runButton);

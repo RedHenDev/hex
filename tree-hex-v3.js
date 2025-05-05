@@ -8,8 +8,8 @@ AFRAME.registerComponent('tree-hex-manager', {
       poolSize: { type: 'number', default: 128 },
       
       // Distance settings
-      loadDistance: { type: 'number', default: 760 },   // 760 Distance to start loading trees
-      unloadDistance: { type: 'number', default: 800 }, // 800 Distance to unload trees
+      loadDistance: { type: 'number', default: 660 },   // 760 Distance to start loading trees
+      unloadDistance: { type: 'number', default: 700 }, // 800 Distance to unload trees
       minTreeDistance: { type: 'number', default: 128 }, // 128 Minimum distance from player
       updateInterval: { type: 'number', default: 2000 }, // Milliseconds between updates
       

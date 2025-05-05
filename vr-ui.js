@@ -16,7 +16,7 @@
 		overlay.style.textAlign = 'center';
 		overlay.style.display = 'none';
 		overlay.innerHTML = `
-			<h2>Terrain Settings</h2>
+			<h2>area details</h2>
 			<p>Adjust settings as needed.</p>
 			<button id="toggle-run" tabindex="0" style="padding:10px 20px; margin:5px; border:none; background:#27ae60; color:#fff; border-radius:5px; cursor:pointer;">Toggle Run Mode</button>
 			<button id="toggle-fly" tabindex="0" style="padding:10px 20px; margin:5px; border:none; background:#2980b9; color:#fff; border-radius:5px; cursor:pointer;">Toggle Fly Mode</button>

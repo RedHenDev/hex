@@ -95,11 +95,11 @@
             const imageUrl = imageFiles[i];
             const distance = startDistance + i * distanceStep;
 
-            // Calculate position
+            // Calculate position.
             const angle = (i / imageFiles.length) * Math.PI * 2; // Spread around in a circle
             const x = subjectPosition.x + Math.cos(angle) * distance;
             const z = subjectPosition.z + Math.sin(angle) * distance;
-            const y = getTerrainHeightAt(x, z)+(planeSize.width*0.5) || 800; // Use getTerrainHeightAt
+            const y = 200 + getTerrainHeightAt(x, z)+(planeSize.width*0.5) || 800; // Use getTerrainHeightAt
 
             // Load texture and create plane
             loader.load(imageUrl, texture => {

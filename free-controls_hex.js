@@ -252,7 +252,6 @@ AFRAME.registerComponent('free-controls', {
     if (this.isMobile) {
       // Mobile layout: Thrust centered
       this.moveButton = this.createControlButton('thrust: OFF', 'rgba(0, 0, 0, 0.6)');
-      // this.runButton = this.createControlButton('run: OFF', 'rgba(0, 0, 0, 0.6)', this.toggleRunning); // commented out
 
       // Center thrust button
       this.moveButton.style.position = 'relative';
@@ -260,14 +259,10 @@ AFRAME.registerComponent('free-controls', {
       this.moveButton.style.bottom = '4px';
       this.moveButton.style.left = '50%';
 
-      // Position run button on left (commented out)
-      // this.runButton.style.position = 'relative';
-      // this.runButton.style.left = '30%';
-      // this.runButton.style.bottom = '0';
-
       // Attach correct handlers for moveButton based on mode
       if (this.data.moveButtonMode === 'press') {
         // Press-and-hold mode
+        // Instead of stopping event propagation, allow touch events to bubble up
         this.moveButton.addEventListener('touchstart', this.moveButtonPressStart.bind(this));
         this.moveButton.addEventListener('touchend', this.moveButtonPressEnd.bind(this));
         this.moveButton.addEventListener('mousedown', this.moveButtonPressStart.bind(this));
@@ -278,17 +273,14 @@ AFRAME.registerComponent('free-controls', {
         this.moveButton.addEventListener('click', this.toggleMovement);
       }
 
-      // this.controlsContainer.appendChild(this.runButton); // commented out
       this.controlsContainer.appendChild(this.moveButton);
     } else {
       // Desktop layout: All buttons centered
       this.moveButton = this.createControlButton('thrust: OFF', 'rgba(0, 0, 0, 0.6)', this.toggleMovement);
-      // this.runButton = this.createControlButton('run: OFF', 'rgba(0, 0, 0, 0.6)', this.toggleRunning); // commented out
       this.flyButton = this.createControlButton('fly: OFF', 'rgba(0, 0, 0, 0.6)', this.toggleFlying);
 
       this.controlsContainer.style.gap = '15px';
       this.controlsContainer.appendChild(this.moveButton);
-      // this.controlsContainer.appendChild(this.runButton); // commented out
       this.controlsContainer.appendChild(this.flyButton);
     }
 
@@ -533,8 +525,6 @@ AFRAME.registerComponent('free-controls', {
 
   // For 'press' mode: start movement on press
   moveButtonPressStart: function(event) {
-    event.preventDefault();
-    event.stopPropagation();
     if (!this.isMoving) {
       this.setMovement(true);
     }
@@ -542,8 +532,6 @@ AFRAME.registerComponent('free-controls', {
 
   // For 'press' mode: stop movement on release
   moveButtonPressEnd: function(event) {
-    event.preventDefault();
-    event.stopPropagation();
     if (this.isMoving) {
       this.setMovement(false);
     }

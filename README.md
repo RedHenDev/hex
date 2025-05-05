@@ -30,6 +30,8 @@ to do
 
 -d appearance of mech suit
 
+-d resize mech suit when on mobile/VR
+
 DONE-f simple mech suit
 
 DONE-b chunks involve a *0.9 spacing or something... cf. 431

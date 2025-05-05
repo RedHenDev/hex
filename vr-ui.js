@@ -64,7 +64,7 @@
 		let altLabel = (loco && loco.flying) ? 'Altitude' : 'Elevation';
 		const coordDiv = document.getElementById('subject-coords');
 		if (coordDiv) {
-			coordDiv.textContent = `Coordinates: ${xLabel}, ${pos.y.toFixed(2)} ${altLabel}, ${zLabel}`;
+			coordDiv.textContent = `Coordinates: ${xLabel}, ${zLabel} , ${pos.y.toFixed(2)} ${altLabel}`;
 		}
 	}
 
@@ -72,7 +72,7 @@
 	function createSettingsButton() {
 		const btn = document.createElement('button');
 		btn.id = 'settings-btn';
-		btn.textContent = 'Settings';
+		btn.textContent = '🥚';
 		btn.style.position = 'fixed';
 		btn.style.bottom = '80px';
 		btn.style.right = '20px';

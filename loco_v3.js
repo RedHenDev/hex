@@ -279,8 +279,14 @@ AFRAME.registerComponent('subject-locomotion', {
         }
         
         // Apply vertical thrust based on pitch.
-        this.velocity.y += pitch * 1.8 * this.moveZ * this.data.thrustPower * thrustMultiplier * delta;
-        
+        if (this.flying)
+            this.velocity.y += pitch * 1.8 * this.moveZ * this.data.thrustPower * thrustMultiplier * delta;
+        // Experimental hack. Removing positive y thrust, to simulate
+        // a rough lunar buggy.
+        // So, gravity.
+        if (!this.flying)
+            this.velocity.y -= 100 * delta;
+
         // Apply friction.
         this.velocity.multiplyScalar(this.data.friction);
         
@@ -288,8 +294,6 @@ AFRAME.registerComponent('subject-locomotion', {
         position.x += this.velocity.x * delta;
         position.y += this.velocity.y * delta;
         position.z += this.velocity.z * delta;
-
-        
 
         // Get terrain height and enforce minimum height.
         const terrainY = this.getTerrainHeight(position.x, position.z);
@@ -306,15 +310,16 @@ AFRAME.registerComponent('subject-locomotion', {
                 }
             else {
                 // Bounce up if moving.
-                this.velocity.y = Math.abs(this.velocity.length()*0.8); 
+                this.velocity.y = Math.abs(this.velocity.length()*0.8);
             }
             
-            } else {
+            } else if (this.flying) {
             // I.e. if above terrain.
             // Drift to ground if slow enough.
             if (this.velocity.length() < 1.0) {
                 // this.velocity.set(0, -32.0, 0);
-                this.velocity.y = -1.1;
+                // -1.1
+                this.velocity.y = -2.0;
             }
         }
 

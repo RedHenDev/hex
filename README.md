@@ -17,7 +17,7 @@ principles of dev
 
 triage
 
-1: 
+1: -f steep gradient prevents locomotion
 
 2: -f refactor terrain for specified biomes -- areas that offer
     distinct opportunities for locomotive exploration

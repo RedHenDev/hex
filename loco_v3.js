@@ -80,6 +80,7 @@ AFRAME.registerComponent('subject-locomotion', {
                     this.jumping = true;
                     // Jump impulse.
                     this.verticalVelocity = this.running ? 64 : 42; // Adjust jump impulse based on running state.
+                    this.velocity.y += this.verticalVelocity;
                 }
                 // If you want to keep flying toggle, use another key or modifier
                 // else remove flying toggle here
@@ -304,6 +305,10 @@ AFRAME.registerComponent('subject-locomotion', {
         // Prevent going below terrain height.
         if (position.y < terrainY + this.data.heightOffset * 4) {
             position.y = terrainY + this.data.heightOffset * 4;
+            // We've hit the ground, so can
+            // jump again.
+            // Must be false to allow new jump.
+            this.jumping = false;
             // Stop downward momentum when hitting terrain.
             if (this.velocity.x === 0 &&
                 this.velocity.z === 0) {

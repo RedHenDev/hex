@@ -26,6 +26,12 @@ triage
 
 to do
 
+-d in settings, allow mobile users to choose
+    between toggle and single pulse for thrust
+    button; default is just a single pulse
+    thrust. More skill and control, and
+    therefore fun.
+
 -d mech suit can pick picked up and discarded
 
 -d appearance of mech suit

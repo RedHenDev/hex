@@ -6,7 +6,8 @@ AFRAME.registerComponent('free-controls', {
     bannerText: { default: 'Press ESC to exit mouse look, F to toggle fullscreen' },
     showFullscreenTip: { default: true },
     showMobileMovementButton: { default: true }, // Whether to show movement button on mobile
-    moveButtonPosition: { default: 'bottom-center' } // Position for move button
+    moveButtonPosition: { default: 'bottom-center' }, // Position for move button
+    moveButtonMode: { default: 'toggle' } // 'toggle' or 'press'
   },
 
   init: function() {
@@ -159,34 +160,9 @@ AFRAME.registerComponent('free-controls', {
       event.preventDefault();
       event.stopPropagation();
     }
-
-    if (!this.playerEl) {
-      console.warn("Cannot toggle movement: subject element not found");
-      return;
-    }
-
-    const terrainMovementComponent = this.playerEl.components['subject-locomotion'];
-
-    if (!terrainMovementComponent) {
-      console.warn("Cannot toggle movement: subject-locomotion component not found");
-      return;
-    }
-
-    this.isMoving = !this.isMoving;
-    terrainMovementComponent.moving = this.isMoving ? 1 : 0;
-
+    // Use setMovement for consistency
+    this.setMovement(!this.isMoving);
     console.log("Movement toggled:", this.isMoving ? "ON" : "OFF");
-
-    if (this.moveButton) {
-      this.moveButton.textContent = this.isMoving ? 'walk: ON' : 'walk: OFF';
-      if (this.isMoving) {
-        this.moveButton.style.backgroundColor = 'rgba(76, 175, 80, 0.7)';
-        this.moveButton.classList.add('active');
-      } else {
-        this.moveButton.style.backgroundColor = 'rgba(0, 0, 0, 0.6)';
-        this.moveButton.classList.remove('active');
-      }
-    }
   },
 
   // Toggle running mode
@@ -274,32 +250,45 @@ AFRAME.registerComponent('free-controls', {
     this.controlsContainer.style.zIndex = '1000';
 
     if (this.isMobile) {
-      // Mobile layout: Walk centered, Run left
-      this.moveButton = this.createControlButton('walk: OFF', 'rgba(0, 0, 0, 0.6)', this.toggleMovement);
-      this.runButton = this.createControlButton('run: OFF', 'rgba(0, 0, 0, 0.6)', this.toggleRunning);
-      
-      // Center walk button
+      // Mobile layout: Thrust centered
+      this.moveButton = this.createControlButton('thrust: OFF', 'rgba(0, 0, 0, 0.6)');
+      // this.runButton = this.createControlButton('run: OFF', 'rgba(0, 0, 0, 0.6)', this.toggleRunning); // commented out
+
+      // Center thrust button
       this.moveButton.style.position = 'relative';
       this.moveButton.style.margin = '4px';
       this.moveButton.style.bottom = '4px';
       this.moveButton.style.left = '40%';
-      
-      // Position run button on left
-      this.runButton.style.position = 'relative';
-      this.runButton.style.left = '30%';
-      this.runButton.style.bottom = '0';
-      
-      this.controlsContainer.appendChild(this.runButton);
+
+      // Position run button on left (commented out)
+      // this.runButton.style.position = 'relative';
+      // this.runButton.style.left = '30%';
+      // this.runButton.style.bottom = '0';
+
+      // Attach correct handlers for moveButton based on mode
+      if (this.data.moveButtonMode === 'press') {
+        // Press-and-hold mode
+        this.moveButton.addEventListener('touchstart', this.moveButtonPressStart.bind(this));
+        this.moveButton.addEventListener('touchend', this.moveButtonPressEnd.bind(this));
+        this.moveButton.addEventListener('mousedown', this.moveButtonPressStart.bind(this));
+        this.moveButton.addEventListener('mouseup', this.moveButtonPressEnd.bind(this));
+        this.moveButton.addEventListener('mouseleave', this.moveButtonPressEnd.bind(this));
+      } else {
+        // Toggle mode (default)
+        this.moveButton.addEventListener('click', this.toggleMovement);
+      }
+
+      // this.controlsContainer.appendChild(this.runButton); // commented out
       this.controlsContainer.appendChild(this.moveButton);
     } else {
       // Desktop layout: All buttons centered
-      this.moveButton = this.createControlButton('walk: OFF', 'rgba(0, 0, 0, 0.6)', this.toggleMovement);
-      this.runButton = this.createControlButton('run: OFF', 'rgba(0, 0, 0, 0.6)', this.toggleRunning);
+      this.moveButton = this.createControlButton('thrust: OFF', 'rgba(0, 0, 0, 0.6)', this.toggleMovement);
+      // this.runButton = this.createControlButton('run: OFF', 'rgba(0, 0, 0, 0.6)', this.toggleRunning); // commented out
       this.flyButton = this.createControlButton('fly: OFF', 'rgba(0, 0, 0, 0.6)', this.toggleFlying);
-      
+
       this.controlsContainer.style.gap = '15px';
       this.controlsContainer.appendChild(this.moveButton);
-      this.controlsContainer.appendChild(this.runButton);
+      // this.controlsContainer.appendChild(this.runButton); // commented out
       this.controlsContainer.appendChild(this.flyButton);
     }
 
@@ -337,7 +326,9 @@ AFRAME.registerComponent('free-controls', {
 
     button.addEventListener('touchstart', touchStartHandler);
     button.addEventListener('touchend', touchEndHandler);
-    button.addEventListener('click', clickHandler);
+    if (clickHandler) {
+      button.addEventListener('click', clickHandler);
+    }
 
     return button;
   },
@@ -538,6 +529,49 @@ AFRAME.registerComponent('free-controls', {
     };
 
     setTimeout(fadeOutReminder, 3000);
+  },
+
+  // For 'press' mode: start movement on press
+  moveButtonPressStart: function(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!this.isMoving) {
+      this.setMovement(true);
+    }
+  },
+
+  // For 'press' mode: stop movement on release
+  moveButtonPressEnd: function(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    if (this.isMoving) {
+      this.setMovement(false);
+    }
+  },
+
+  // Helper to set movement state and update button UI
+  setMovement: function(state) {
+    if (!this.playerEl) {
+      console.warn("Cannot set movement: subject element not found");
+      return;
+    }
+    const terrainMovementComponent = this.playerEl.components['subject-locomotion'];
+    if (!terrainMovementComponent) {
+      console.warn("Cannot set movement: subject-locomotion component not found");
+      return;
+    }
+    this.isMoving = !!state;
+    terrainMovementComponent.moving = this.isMoving ? 1 : 0;
+    if (this.moveButton) {
+      this.moveButton.textContent = this.isMoving ? 'thrust: ON' : 'thrust: OFF';
+      if (this.isMoving) {
+        this.moveButton.style.backgroundColor = 'rgba(76, 175, 80, 0.7)';
+        this.moveButton.classList.add('active');
+      } else {
+        this.moveButton.style.backgroundColor = 'rgba(0, 0, 0, 0.6)';
+        this.moveButton.classList.remove('active');
+      }
+    }
   },
 
   remove: function() {

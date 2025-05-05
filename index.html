@@ -21,8 +21,8 @@
         <p>system is growing terrain.</p>
     </div>
     
-    <a-scene terrain-manager
-        fog="type: linear; color: #00BAFF; far: 1200;">
+    <a-scene terrain-manager>
+        <!-- fog="type: linear; color: #00BAFF; far: 1200;"> -->
 
         <a-assets>
             <!-- Preload our assets. -->
@@ -33,6 +33,8 @@
             <a-asset-item id="mWibbit" src="./assets/wibbit.glb"></a-asset-item>
                 <!-- <a-asset-item id="mRocks" src="./assets/rocks.glb"></a-asset-item> -->
             <img id="player-fallback" src="./assets/RedHenIconAlpha512512.png" crossorigin="anonymous">
+            <a-asset-item id="mDucar" src="./assets/ducar.glb"></a-asset-item>
+            
         </a-assets>
         
         
@@ -93,6 +95,25 @@
         <a-entity id="terrain-container"></a-entity>
         <a-entity tree-hex-manager></a-entity>
 
+        <a-gltf-model   id="jojo"
+                    src="#mDucar" scale="3 3 3" 
+                    position="9999 1655 7977"
+                    >
+        </a-gltf-model>
+
+        <!-- Light source -->
+        <a-entity
+        id="hamlet"
+        light="type: directional;
+            color: #FFEEDD;
+            intensity: 1.0;
+            distance: 0;
+            decay: 0;
+            castShadow: true"
+        position="0 3000 0">
+    </a-entity>
+
+
     </a-scene>
     
     <script src="hex-simple.js"></script>
@@ -108,7 +129,7 @@
     <script src="image-paintings.js"></script>
     
     <script src="tree-hex-v3.js"></script>
-    <!-- <script src="vr-ui.js"></script> -->
+    <script src="vr-ui.js"></script>
     <!-- <script src="nimbus.js"></script> -->
     <script src="game.js"></script>
     <!-- Multiplayer connection status -->

@@ -39,6 +39,7 @@ AFRAME.registerComponent('subject-locomotion', {
         // locomotion toggled.
         this.moving = false;
         this.running = false;
+        this.flying = false;
         this.verticalVelocity = 0;
 
         // Setup direct access to terrain generator
@@ -87,8 +88,10 @@ AFRAME.registerComponent('subject-locomotion', {
 
         document.addEventListener('keydown', (e) => {
             if (e.code === 'KeyG') {
-                //this.flying = !this.flying;
-                window.toggleHexPulse(true);
+                // Toggle hex outline on G key
+                //window.toggleHexOutline(!window.HexConfigSimple.enableOutline);
+                this.flying = !this.flying;
+                window.toggleHexOutline(!this.flying);
             }
         });
         

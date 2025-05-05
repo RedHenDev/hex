@@ -318,4 +318,17 @@ window.toggleHexPulse = function(enable) {
     console.log("Pulse effect is now", window.HexConfigSimple.enablePulse ? "ENABLED" : "DISABLED");
 };
 
+// Add a function to toggle outlines at runtime and update all materials
+window.toggleHexOutline = function(enable) {
+    window.HexConfigSimple.enableOutline = !!enable;
+    const value = window.HexConfigSimple.enableOutline ? 1.0 : 0.0;
+    (window._hexSimpleMaterials || []).forEach(mat => {
+        if (mat.uniforms && mat.uniforms.enableOutline) {
+            mat.uniforms.enableOutline.value = value;
+            mat.needsUpdate = true;
+        }
+    });
+    console.log("Hex outline is now", window.HexConfigSimple.enableOutline ? "ENABLED" : "DISABLED");
+};
+
 console.log("Simplified hexagon shaders with basic pulse initialized");

@@ -26,6 +26,8 @@ triage
 
 to do
 
+-d thrust not toggle in VR for movement.
+
 -d in settings, allow mobile users to choose
     between toggle and single pulse for thrust
     button; default is just a single pulse

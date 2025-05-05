@@ -7,7 +7,7 @@ AFRAME.registerComponent('free-controls', {
     showFullscreenTip: { default: true },
     showMobileMovementButton: { default: true }, // Whether to show movement button on mobile
     moveButtonPosition: { default: 'bottom-center' }, // Position for move button
-    moveButtonMode: { default: 'toggle' } // 'toggle' or 'press'
+    moveButtonMode: { default: 'press' } // 'toggle' or 'press'
   },
 
   init: function() {
@@ -258,7 +258,7 @@ AFRAME.registerComponent('free-controls', {
       this.moveButton.style.position = 'relative';
       this.moveButton.style.margin = '4px';
       this.moveButton.style.bottom = '4px';
-      this.moveButton.style.left = '40%';
+      this.moveButton.style.left = '50%';
 
       // Position run button on left (commented out)
       // this.runButton.style.position = 'relative';

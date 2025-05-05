@@ -23,14 +23,14 @@ AFRAME.registerComponent('tree-hex-manager', {
       // Tree settings.
       baseTreeScale: { type: 'number', default: 64 },    // 64 Base scale for trees
       minScaleFactor: { type: 'number', default: 0.01 },  // 0.1 Minimum scale variation
-      maxScaleFactor: { type: 'number', default: 1.0 },  // 3.0 Maximum scale variation
+      maxScaleFactor: { type: 'number', default: 1.0 },  // 1.0 Maximum scale variation
       scaleNoiseScale: { type: 'number', default: 0.1 }, // 0.1 Noise scale for tree size variation
       
       // Trunk settings.
-      trunkSegments: { type: 'number', default: 12 }, // 4
+      trunkSegments: { type: 'number', default: 8 }, // 4
       trunkBaseRadius: { type: 'number', default: 0.8 },
       trunkTwistFactor: { type: 'number', default: 90 },
-      trunkTaper: { type: 'number', default: 0.10 }, // 15
+      trunkTaper: { type: 'number', default: 0.16 }, // 15
       
       // Foliage settings.
       foliageHexCount: { type: 'number', default: 128 }, // 32.
@@ -41,12 +41,12 @@ AFRAME.registerComponent('tree-hex-manager', {
       foliageOpacity: { type: 'number', default: 0.9 },
       
       // Branch settings (connecting trunk to foliage)
-      enableBranches: { type: 'boolean', default: true },
+      enableBranches: { type: 'boolean', default: false },
       branchWidth: { type: 'number', default: 0.32 },
       
       // Material settings.
-      trunkEmissive: { type: 'number', default: 10.0 },
-      foliageEmissive: { type: 'number', default: 0.4 },
+      trunkEmissive: { type: 'number', default: 1.0 },
+      foliageEmissive: { type: 'number', default: 1.0 },
       
       // Grid cell size for tracking tree placement. 80
       gridCellSize: { type: 'number', default: 80 },
@@ -753,12 +753,21 @@ AFRAME.registerComponent('tree-hex-manager', {
       const trunkTopY = y + (this.data.trunkSegments * baseScale) + 2;
       const foliageLowering = 142 * scaleFactor;
       
+      // Convert base trunk color to HSL for easier lightness adjustment
+      const baseColor = new THREE.Color(this.data.trunkColor);
+      const baseHSL = {};
+      baseColor.getHSL(baseHSL);
+      
       // Update trunk segments
       for (let i = 0; i < this.data.trunkSegments; i++) {
         const trunkIndex = treeObj.trunkStart + i;
         const twist = this.perlin2D(x * 0.1 + i * 17.53, z * 0.1 + i * 31.17) * this.data.trunkTwistFactor;
-        const radius = this.data.trunkBaseRadius * (1 - (i * this.data.trunkTaper));
-        
+        let radius = this.data.trunkBaseRadius * (1 - (i * this.data.trunkTaper));
+        if (radius < 0.1) radius = 0.1;
+
+        // Use base color directly without gradient
+        this.trunkMesh.setColorAt(trunkIndex, baseColor);
+
         matrix.identity();
         matrix.makeScale(radius * baseScale, baseScale, radius * baseScale);
         rotationMatrix.makeRotationY(twist * Math.PI / 180);
@@ -767,7 +776,7 @@ AFRAME.registerComponent('tree-hex-manager', {
         
         this.trunkMesh.setMatrixAt(trunkIndex, matrix);
       }
-      
+
       let foliageIndex = treeObj.foliageStart;
       let branchIndex = treeObj.branchStart;
       
@@ -829,6 +838,7 @@ AFRAME.registerComponent('tree-hex-manager', {
       }
       
       this.trunkMesh.instanceMatrix.needsUpdate = true;
+      this.trunkMesh.instanceColor.needsUpdate = true;  // Add this line to update colors
       this.foliageMesh.instanceMatrix.needsUpdate = true;
       if (this.data.enableBranches && this.branchMesh) {
         this.branchMesh.instanceMatrix.needsUpdate = true;

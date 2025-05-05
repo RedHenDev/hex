@@ -19,14 +19,25 @@ triage
 
 1: 
 
-2: -f if very slow or stopped, drift to ground.
+2: -f refactor terrain for specified biomes -- areas that offer
+    distinct opportunities for locomotive exploration
+
 
 
 to do
 
+DONE-b chunks involve a *0.9 spacing or something... cf. 431
+
+DONE-b tree collisions
+
+-b vr-ui -- doesn't work; might be rotation? Is it the cause of 
+    white screen when returning from VR to mobile?
+
+-f mining hexagonal numbers.
+
 DONE-f new loco - 'hover-pulse'
 
--b chunks involve a *0.9 spacing or something...
+DONE-f if very slow or stopped, drift to ground.
 
 DONE-f darken floating formations
 
@@ -35,8 +46,9 @@ DONE-f darken floating formations
 DONE-f tree colour
 
 DONE-f config controls over terrain colouring
+    -f but does this work? Can I have a terrain of just green hue?
 
--b fit hexagons on z dimension
+DONE-b fit hexagons on z dimension
 
 -i general modularity
 

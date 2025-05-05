@@ -13,12 +13,13 @@ window.TerrainConfig = {
     lacunarity: 2.0, //2.0
     gain: 0.52, //0.5
     useHexagons: true,
-    geometrySize: 4.02, // 4.4. Larger number increases spacing between prisms.
-    geometryHeight: 12,
-    heightStep: 4.4,
-    chunkSize: 81, // Make sure this is a square number.
-    loadDistance: 81*9, // 81*9 1200
-    unloadDistance: 81*9+81, // 81*9+81 1260
+    // geometry size corresponds to hex-simple geometry size :(
+    geometrySize: 4.0, // 4.02. 4.4 Larger number increases spacing between prisms.
+    geometryHeight: 16, // 16
+    heightStep: 2.2, // 4.4   2.2
+    chunkSize: 64, // Make sure this is a square number.
+    loadDistance: 64*9, // 81*9 1200
+    unloadDistance: 64*9+64, // 81*9+81 1260
     pulseThreshold: 50.0, 
     colorVariation: 36.0, //18.0
     // New section for coloration noise adjustments:
@@ -202,8 +203,13 @@ class TerrainGenerator {
                 const height = this.generateTerrainHeight(worldX, worldZ);
                 const color = this.getColor(worldX, worldZ, height);
                 // Hex positioning hack.
-                const slider = z % 2 * 2.04;
-                const wX = x * this.cubeSize * 1.04 + slider;
+                // Note the 2.18 and 1.09 values correspond (1st 2*2nd)
+                // in order to squeeze hexagons together
+                // on the x axis. Geometry might be shorter here?
+                const slider = z % 2 * 2;
+                //const slider = z % 2 * 2.18;
+                //const wX = x * this.cubeSize * 1.09 + slider;
+                const wX = x * this.cubeSize + slider;
                 const wZ = z * this.cubeSize;
                 cubes.push({
                     position: [wX, Math.floor(height / this.heightStep) * this.heightStep, wZ],
@@ -424,6 +430,7 @@ class TerrainChunkManager {
         const chunksToKeep = new Set();
         for (let dx = -chunkRadius; dx <= chunkRadius; dx++) {
             for (let dz = -chunkRadius; dz <= chunkRadius; dz++) {
+                // Stretch out to undo squeeze of tesselation hack?
                 const chunkX = (centerChunkX + dx) * chunkWorldSize;
                 const chunkZ = (centerChunkZ + dz) * chunkWorldSize;
                 const centerX = chunkX + chunkWorldSize * 0.5;

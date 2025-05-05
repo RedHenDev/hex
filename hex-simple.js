@@ -2,6 +2,7 @@
 
 // Global configuration
 window.HexConfigSimple = {
+    size: 2.4,                 // 2.54
     enablePulse: false,       // Toggle pulse effect
     pulseSpeed: 4.0,          // 4.0 Speed of the pulse
     pulseIntensity: 0.3,      // 0.3 Intensity of the pulse
@@ -9,8 +10,8 @@ window.HexConfigSimple = {
     enableOutline: true,     // Toggle cartoon outlines for terrain
     enableFloatingOutline: true, // Toggle cartoon outlines for floating formations
     enableVerticalEdges: false, // Toggle vertical edge outlines
-    outlineThickness: 0.4,    // 0.1 Thickness of the outline
-    outlineColor: [0.5, 0.0, 0.5], // Default outline color as RGB array
+    outlineThickness: 0.4,    // 0.4 Thickness of the outline
+    outlineColor: [0.0, 0.4, 0.0], // Default outline color as RGB array
     applyToGenerator: function(generator) {
         if (generator) {
             // ...existing assignments...
@@ -35,7 +36,8 @@ if (typeof THREE !== 'undefined') {
 
 // Define a custom HexagonGeometry class for THREE.js
 THREE.HexagonGeometry = class HexagonGeometry extends THREE.BufferGeometry {
-    constructor(size = 2.54, height = 1, flatTop = false) {
+    // This size (2.54) corresponds to terrain-system geo size :(
+    constructor(size = window.HexConfigSimple.size, height = 1, flatTop = false) {
         super();
         this.type = 'HexagonGeometry';
         this.parameters = {
@@ -212,7 +214,7 @@ window.CubeTerrainBuilder = {
         }
         try {
             // Use the size from the hex data or fall back to default
-            const hexSize = cubes[0].size || 2.54;
+            const hexSize = cubes[0].size || window.HexConfigSimple.size;
             const geometry = new THREE.HexagonGeometry(hexSize, 1.0, false);
             
             // Update material's hexSize uniform to match geometry
@@ -274,7 +276,7 @@ window.CubeTerrainBuilder = {
                     pulseIntensity: { value: window.HexConfigSimple.pulseIntensity || 0.5 },
                     pulseSpacing: { value: window.HexConfigSimple.pulseSpacing || 1.0 },
                     pulseEnabled: { value: window.HexConfigSimple.enablePulse ? 1.0 : 0.0 },
-                    hexSize: { value: 2.54 }, // Will be updated per chunk based on geometry
+                    hexSize: { value: window.HexConfigSimple.size }, // Will be updated per chunk based on geometry
                     enableOutline: { value: outlineEnabled ? 1.0 : 0.0 },
                     outlineThickness: { value: outlineThickness },
                     outlineColor: { value: new THREE.Color(...window.HexConfigSimple.outlineColor) }, // Set outline color

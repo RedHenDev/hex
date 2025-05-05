@@ -356,7 +356,7 @@ AFRAME.registerComponent('subject-locomotion', {
                         // Note that we have calculated the height of tree to 232 by trial and error.
                         if (d < effectiveCollisionRadius && position.y < 
                                 this.getTerrainHeight(tree.worldPos.x, 
-                                    tree.worldPos.z) + 232 * tree.scaleFactor) {
+                                    tree.worldPos.z) + (8 * 64) * tree.scaleFactor) {
                             // Compute overlap and rebound the subject.
                             const overlap = effectiveCollisionRadius - d;
                             const normX = diffX / (d || 1);

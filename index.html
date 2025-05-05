@@ -45,6 +45,8 @@
 
         <!-- Player with terrain locomotion system -->
         <a-entity id="subject" position="9999 255 7977" subject-locomotion="heightOffset: 5.25">
+            
+
             <a-camera id="cam" free-controls="enabled: true; sensitivity: 4.0;" 
                       wasd-controls="enabled: false">
                 <!-- Reticle for interaction -->
@@ -60,6 +62,22 @@
                     animation__fusing="property:scale;from:1 1 1;to:0 0 0;dur:720;startEvents:fusing;"
                     animation__reset="property:scale;from:0 0 0;to: 1 1 1;dur:333;startEvents:mouseleave;">
                 </a-entity>
+
+                <!-- Mech Cockpit Frame -->
+            <a-entity id="cockpit" position="0 0 0">
+                <!-- Front frame -->
+                <a-box position="0 -0.5 -0.8" width="1.2" height="0.1" depth="0.05" color="#444444"></a-box>
+                <a-box position="0.6 -0.5 -0.4" width="0.05" height="0.1" depth="0.8" color="#444444"></a-box>
+                <a-box position="-0.6 -0.5 -0.4" width="0.05" height="0.1" depth="0.8" color="#444444"></a-box>
+                
+                <!-- Top frame -->
+                <a-box position="0 0.4 -0.4" width="1.2" height="0.05" depth="0.8" color="#444444" opacity="0.7"></a-box>
+                
+                <!-- Side panels -->
+                <a-box position="0.6 0 -0.4" width="0.1" height="0.8" depth="0.05" color="#444444" opacity="0.5"></a-box>
+                <a-box position="-0.6 0 -0.4" width="0.1" height="0.8" depth="0.05" color="#444444" opacity="0.5"></a-box>
+            </a-entity>
+
             </a-camera>
             <!-- Lights and sky etc. can go in here -->
             <!-- Sky background -->
@@ -78,10 +96,10 @@
     </a-scene>
     
     <script src="hex-simple.js"></script>
-    <script src="debug-panel.js"></script>
+    <!-- <script src="debug-panel.js"></script> -->
     <script src="terrain-system.js"></script>
-    <script src="floating-formations.js"></script>
-    <script src="portal.js"></script>
+    <!-- <script src="floating-formations.js"></script> -->
+    <!-- <script src="portal.js"></script> -->
 
     <!-- Movement system -->
     <script src="loco_v3.js"></script>
@@ -90,7 +108,7 @@
     <script src="image-paintings.js"></script>
     
     <script src="tree-hex-v3.js"></script>
-    <script src="vr-ui.js"></script>
+    <!-- <script src="vr-ui.js"></script> -->
     <!-- <script src="nimbus.js"></script> -->
     <script src="game.js"></script>
     <!-- Multiplayer connection status -->

@@ -262,12 +262,12 @@ AFRAME.registerComponent('free-controls', {
       // Attach correct handlers for moveButton based on mode
       if (this.data.moveButtonMode === 'press') {
         // Press-and-hold mode
-        // Use pointer events to allow simultaneous thrust and steering
-        this.moveButton.addEventListener('pointerdown', this.moveButtonPointerDown.bind(this));
-        this.moveButton.addEventListener('pointerup', this.moveButtonPointerUp.bind(this));
-        this.moveButton.addEventListener('pointerleave', this.moveButtonPointerUp.bind(this));
-        // Prevent default to avoid text selection, but do not stop propagation
-        // (pointer events allow multi-touch and do not block canvas events)
+        // Use touch events for mobile, to avoid text selection and interruptions
+        this.moveButton.addEventListener('touchstart', this.moveButtonPressStart.bind(this));
+        this.moveButton.addEventListener('touchend', this.moveButtonPressEnd.bind(this));
+        this.moveButton.addEventListener('mousedown', this.moveButtonPressStart.bind(this));
+        this.moveButton.addEventListener('mouseup', this.moveButtonPressEnd.bind(this));
+        this.moveButton.addEventListener('mouseleave', this.moveButtonPressEnd.bind(this));
       } else {
         // Toggle mode (default)
         this.moveButton.addEventListener('click', this.toggleMovement);

@@ -26,6 +26,10 @@ triage
 
 to do
 
+-f lerp multiplayer positions.
+
+-r how many socket signals sent. Investigate more performant options.
+
 -d thrust not toggle in VR for movement.
 
 -d in settings, allow mobile users to choose

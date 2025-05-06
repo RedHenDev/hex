@@ -262,12 +262,12 @@ AFRAME.registerComponent('free-controls', {
       // Attach correct handlers for moveButton based on mode
       if (this.data.moveButtonMode === 'press') {
         // Press-and-hold mode
-        // Restore preventDefault and stopPropagation, but also trigger thrust on canvas touch
-        this.moveButton.addEventListener('touchstart', this.moveButtonPressStart.bind(this));
-        this.moveButton.addEventListener('touchend', this.moveButtonPressEnd.bind(this));
-        this.moveButton.addEventListener('mousedown', this.moveButtonPressStart.bind(this));
-        this.moveButton.addEventListener('mouseup', this.moveButtonPressEnd.bind(this));
-        this.moveButton.addEventListener('mouseleave', this.moveButtonPressEnd.bind(this));
+        // Use pointer events to allow simultaneous thrust and steering
+        this.moveButton.addEventListener('pointerdown', this.moveButtonPointerDown.bind(this));
+        this.moveButton.addEventListener('pointerup', this.moveButtonPointerUp.bind(this));
+        this.moveButton.addEventListener('pointerleave', this.moveButtonPointerUp.bind(this));
+        // Prevent default to avoid text selection, but do not stop propagation
+        // (pointer events allow multi-touch and do not block canvas events)
       } else {
         // Toggle mode (default)
         this.moveButton.addEventListener('click', this.toggleMovement);
@@ -521,6 +521,22 @@ AFRAME.registerComponent('free-controls', {
     };
 
     setTimeout(fadeOutReminder, 3000);
+  },
+
+  // For 'press' mode: start movement on pointer down
+  moveButtonPointerDown: function(event) {
+    event.preventDefault();
+    if (!this.isMoving) {
+      this.setMovement(true);
+    }
+  },
+
+  // For 'press' mode: stop movement on pointer up/leave
+  moveButtonPointerUp: function(event) {
+    event.preventDefault();
+    if (this.isMoving) {
+      this.setMovement(false);
+    }
   },
 
   // For 'press' mode: start movement on press

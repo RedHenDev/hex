@@ -213,6 +213,7 @@ class TerrainGenerator {
                 const wZ = z * this.cubeSize;
                 cubes.push({
                     position: [wX, Math.floor(height / this.heightStep) * this.heightStep, wZ],
+                    // Added random height change.
                     height: this.geometryHeight,
                     color: color
                 });

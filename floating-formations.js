@@ -5,7 +5,7 @@ window.FloatingFormationsConfig = {
     hexHeight: 36.0,               // 6.0 Base height of hexagons
     heightVariation: 0.0,        // 16.0 Amount hexagons can vary in height
     opacity: 0.7,               // NEW: Opacity of hexagons
-    enableVerticalEdges: true,  // Enable vertical edges for floating formations
+    enableVerticalEdges: false,  // Enable vertical edges for floating formations
     
     // Formation settings.
     formationDensity: 0.3,        // 0.3 Threshold for formation placement (0-1)

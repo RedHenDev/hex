@@ -4,13 +4,13 @@
 window.TerrainConfig = {
     seed: 99,
     heightScale: 2048.0, // 3256.0 1256.0
-    noiseScale: 0.00048, // 0.0003 0.0002 0.0008
+    noiseScale: 0.00038, // 0.0003 0.0002 0.0008
     baseHeight: 0, // -22.0
     useRidges: true,
     ridgeFactor: 0.56, // 0.28 0.14
     octaves: 8,
     ridgeOctaves: 4, // 4
-    lacunarity: 2.58, // 2.52 2.0
+    lacunarity: 2.54, // 2.52 2.0
     gain: 0.5, // 0.52
     useHexagons: true,
     // geometry size corresponds to hex-simple geometry size :(
@@ -23,9 +23,9 @@ window.TerrainConfig = {
     pulseThreshold: 50.0, 
     colorVariation: 36.0, // 36.0 18.0
     // New section for coloration noise adjustments:
-    colorNoiseScale: 0.01,  // 0.01 spatial frequency for hue noise variation
+    colorNoiseScale: 0.02,  // 0.01 spatial frequency for hue noise variation
     colorNoiseRange: 2.4,    // 4.0 2.0 maximum deviation in degrees
-    colorHue: -1,            // -1 for default, or 0..1 for a specific hue (0=red, 0.33=green, 0.16=yellow, etc.)
+    colorHue: 0,            // -1 for default, or 0..1 for a specific hue (0=red, 0.33=green, 0.16=yellow, etc.)
     applyToGenerator: function(generator) {
         if (generator) {
             generator.heightScale = this.heightScale;

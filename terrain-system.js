@@ -3,28 +3,28 @@
 // ========== TERRAIN CONFIGURATION ==========
 window.TerrainConfig = {
     seed: 99,
-    heightScale: 3256.0, // 1256.0
-    noiseScale: 0.0003, // 0.0002 0.0008
-    baseHeight: -22.0,
+    heightScale: 2048.0, // 3256.0 1256.0
+    noiseScale: 0.0006, // 0.0003 0.0002 0.0008
+    baseHeight: 0, // -22.0
     useRidges: true,
-    ridgeFactor: 0.28, //0.14
+    ridgeFactor: 0.28, // 0.14
     octaves: 8,
-    ridgeOctaves: 4, //4
-    lacunarity: 2.0, //2.0
-    gain: 0.52, //0.5
+    ridgeOctaves: 4, // 4
+    lacunarity: 2.52, // 2.52 2.0
+    gain: 0.5, // 0.52
     useHexagons: true,
     // geometry size corresponds to hex-simple geometry size :(
     geometrySize: 4.0, // 4.02. 4.4 Larger number increases spacing between prisms.
     geometryHeight: 16, // 16
-    heightStep: 2.2, // 4.4   2.2
-    chunkSize: 64, // Make sure this is a square number.
+    heightStep: 3.0, // 4.0 2.2 4.4
+    chunkSize: 144, // Make sure this is a square number.
     loadDistance: 64*9, // 81*9 1200
     unloadDistance: 64*9+64, // 81*9+81 1260
     pulseThreshold: 50.0, 
     colorVariation: 36.0, //18.0
     // New section for coloration noise adjustments:
     colorNoiseScale: 0.01,  // 0.01 spatial frequency for hue noise variation
-    colorNoiseRange: 2.0,    // 2.0 maximum deviation in degrees
+    colorNoiseRange: 4.0,    // 2.0 maximum deviation in degrees
     applyToGenerator: function(generator) {
         if (generator) {
             generator.heightScale = this.heightScale;

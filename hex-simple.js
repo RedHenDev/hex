@@ -2,7 +2,7 @@
 
 // Global configuration
 window.HexConfigSimple = {
-    size: 2.4,                 // 2.54
+    size: 2.4,                 // 2.4 2.54
     enablePulse: false,       // Toggle pulse effect
     pulseSpeed: 4.0,          // 4.0 Speed of the pulse
     pulseIntensity: 0.3,      // 0.3 Intensity of the pulse
@@ -10,8 +10,8 @@ window.HexConfigSimple = {
     enableOutline: true,     // Toggle cartoon outlines for terrain
     enableFloatingOutline: true, // Toggle cartoon outlines for floating formations
     enableVerticalEdges: false, // Toggle vertical edge outlines
-    outlineThickness: 0.4,    // 0.4 Thickness of the outline
-    outlineColor: [0.0, 0.4, 0.0], // Default outline color as RGB array
+    outlineThickness: 4.0,    // 0.4 Thickness of the outline
+    outlineColor: [0.0, 0.0, 0.0], // Default outline color as RGB array
     applyToGenerator: function(generator) {
         if (generator) {
             // ...existing assignments...
@@ -182,12 +182,12 @@ window.simpleFragmentShader = `
                 // Top or bottom face: outline all 6 edges robustly
                 float d = hexEdgeDistance(vLocal, hexSize - 0.025 * edgeScale);
                 float thickness = max(outlineThickness * edgeScale, 1.5 * fwidth(d));
-                edgeFactor = smoothstep(0.0, thickness, d);
+                edgeFactor = smoothstep(0.0, thickness * 0.1, d);
             } else if (enableVerticalEdges > 0.5) {
                 // Side face: outline vertical edges
                 float d = hexVerticalEdgeDistance(vLocal, hexSize - 0.025 * edgeScale);
                 float thickness = max(outlineThickness * edgeScale, 1.5 * fwidth(d));
-                edgeFactor = smoothstep(0.0, thickness * 0.5, d);  // Increased from 0.25 to 0.5
+                edgeFactor = smoothstep(0.0, thickness * 0.1, d);  // Increased from 0.25 to 0.5
             }
             finalColor = mix(outlineColor, finalColor, edgeFactor);
         }

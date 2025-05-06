@@ -30,6 +30,12 @@ to do
 
 -r how many socket signals sent. Investigate more performant options.
 
+-f waterfall and volcano symbiotic feature
+
+-f Quake teleport sound for portals
+
+-f portals to interesting areas -- such as gallery etc
+
 -d thrust not toggle in VR for movement.
 
 -d in settings, allow mobile users to choose
@@ -42,7 +48,7 @@ to do
 
 -d appearance of mech suit
 
--d resize mech suit when on mobile/VR
+DONE-d resize mech suit when on mobile/VR
 
 DONE-f simple mech suit
 

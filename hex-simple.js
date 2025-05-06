@@ -10,7 +10,7 @@ window.HexConfigSimple = {
     enableOutline: true,     // Toggle cartoon outlines for terrain
     enableFloatingOutline: true, // Toggle cartoon outlines for floating formations
     enableVerticalEdges: false, // Toggle vertical edge outlines
-    outlineThickness: 4.0,    // 0.4 Thickness of the outline
+    outlineThickness: 3.6,    // 0.4 Thickness of the outline
     outlineColor: [0.0, 0.0, 0.0], // Default outline color as RGB array
     applyToGenerator: function(generator) {
         if (generator) {

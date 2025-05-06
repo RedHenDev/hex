@@ -4,13 +4,13 @@
 window.TerrainConfig = {
     seed: 99,
     heightScale: 2048.0, // 3256.0 1256.0
-    noiseScale: 0.0006, // 0.0003 0.0002 0.0008
+    noiseScale: 0.00048, // 0.0003 0.0002 0.0008
     baseHeight: 0, // -22.0
     useRidges: true,
-    ridgeFactor: 0.28, // 0.14
+    ridgeFactor: 0.56, // 0.28 0.14
     octaves: 8,
     ridgeOctaves: 4, // 4
-    lacunarity: 2.52, // 2.52 2.0
+    lacunarity: 2.58, // 2.52 2.0
     gain: 0.5, // 0.52
     useHexagons: true,
     // geometry size corresponds to hex-simple geometry size :(
@@ -18,13 +18,14 @@ window.TerrainConfig = {
     geometryHeight: 16, // 16
     heightStep: 3.0, // 4.0 2.2 4.4
     chunkSize: 144, // Make sure this is a square number.
-    loadDistance: 64*9, // 81*9 1200
-    unloadDistance: 64*9+64, // 81*9+81 1260
+    loadDistance: 81*9, // 81*9 1200
+    unloadDistance: 81*9+81, // 81*9+81 1260
     pulseThreshold: 50.0, 
-    colorVariation: 36.0, //18.0
+    colorVariation: 36.0, // 36.0 18.0
     // New section for coloration noise adjustments:
     colorNoiseScale: 0.01,  // 0.01 spatial frequency for hue noise variation
-    colorNoiseRange: 4.0,    // 2.0 maximum deviation in degrees
+    colorNoiseRange: 2.4,    // 4.0 2.0 maximum deviation in degrees
+    colorHue: -1,            // -1 for default, or 0..1 for a specific hue (0=red, 0.33=green, 0.16=yellow, etc.)
     applyToGenerator: function(generator) {
         if (generator) {
             generator.heightScale = this.heightScale;
@@ -159,7 +160,7 @@ class TerrainGenerator {
         return baseHeight;
     }
     
-    // New helper: convert HSV to RGB
+    // New helper: convert HSV to RGB.
     static hsvToRgb(h, s, v) {
         // h: 0-360, s: 0-1, v: 0-1
         let c = v * s;
@@ -176,22 +177,60 @@ class TerrainGenerator {
     }
     
     getColor(x, z, height) {
-        const normalizedHeight = Math.min(1, Math.max(0, (height - this.baseHeight) / this.heightScale));
-        const baseHue = normalizedHeight * 360; // Base hue from height
-        
-        // Amplify hue noise variation significantly.
-        const hueNoise = ImprovedNoise.perlin2(x * TerrainConfig.colorNoiseScale, z * TerrainConfig.colorNoiseScale)
-            * (TerrainConfig.colorNoiseRange * 50); // amplified variation
-        const hue = (baseHue + hueNoise + 360) % 360;
-        
-        // Increase saturation and brightness variations.
-        const satNoise = ImprovedNoise.perlin2((x + 100) * TerrainConfig.colorNoiseScale, (z + 100) * TerrainConfig.colorNoiseScale);
-        const valNoise = ImprovedNoise.perlin2((x - 100) * TerrainConfig.colorNoiseScale, (z - 100) * TerrainConfig.colorNoiseScale);
-        const baseSaturation = 0.85, baseValue = 0.97;//0.8 0.9
-        const saturation = baseSaturation + satNoise * 0.001; // increased variation
-        const value = baseValue + valNoise * 0.001; // increased variation
-        
-        return TerrainGenerator.hsvToRgb(hue, saturation, value);
+        const colorHue = (typeof TerrainConfig.colorHue === "number") ? TerrainConfig.colorHue : -1;
+        if (colorHue === -1) {
+            // Default: full spectrum based on height
+            const normalizedHeight = Math.min(1, Math.max(0, (height - this.baseHeight) / this.heightScale));
+            const baseHue = normalizedHeight * 360; // Base hue from height
+            
+            // Amplify hue noise variation significantly.
+            const hueNoise = ImprovedNoise.perlin2(x * TerrainConfig.colorNoiseScale, z * TerrainConfig.colorNoiseScale)
+                * (TerrainConfig.colorNoiseRange * 50); // amplified variation
+            const hue = (baseHue + hueNoise + 360) % 360;
+            
+            // Increase saturation and brightness variations.
+            const satNoise = ImprovedNoise.perlin2((x + 100) * TerrainConfig.colorNoiseScale, (z + 100) * TerrainConfig.colorNoiseScale);
+            const valNoise = ImprovedNoise.perlin2((x - 100) * TerrainConfig.colorNoiseScale, (z - 100) * TerrainConfig.colorNoiseScale);
+            const baseSaturation = 0.85, baseValue = 0.97;//0.8 0.9
+            const saturation = baseSaturation + satNoise * 0.001; // increased variation
+            const value = baseValue + valNoise * 0.001; // increased variation
+            
+            return TerrainGenerator.hsvToRgb(hue, saturation, value);
+        } else {
+            // Single hue mode, but allow some variation for natural look
+            // colorHue is 0..1, map to 0..360
+            const baseHue = colorHue * 360;
+            // Allow ±25 degrees of hue variation for green/yellow/brown range
+            const hueNoise = ImprovedNoise.perlin2(x * TerrainConfig.colorNoiseScale, z * TerrainConfig.colorNoiseScale);
+            // Map noise -1..1 to -25..+25
+            const hueVar = hueNoise * 25;
+            // Optionally, bias hueVar by height to allow brownish at low, yellowish at high
+            const normalizedHeight = Math.min(1, Math.max(0, (height - this.baseHeight) / this.heightScale));
+            let hue = baseHue + hueVar;
+            // For green (120), allow brown (30) at low, yellow (60) at high
+            if (baseHue >= 100 && baseHue <= 140) {
+                // Interpolate from brownish (30) at low to yellowish (60) at high
+                const lowHue = 30, highHue = 60;
+                hue = lowHue * (1 - normalizedHeight) + highHue * normalizedHeight + hueVar * 0.5;
+                // Blend toward green in the middle
+                if (normalizedHeight > 0.3 && normalizedHeight < 0.7) {
+                    const greenBlend = (normalizedHeight - 0.3) / 0.4;
+                    hue = hue * (1 - greenBlend) + baseHue * greenBlend;
+                }
+            }
+            // Clamp hue to 0..360
+            hue = (hue + 360) % 360;
+
+            // Stronger variation in saturation/value for richer shades
+            const satNoise = ImprovedNoise.perlin2((x + 100) * TerrainConfig.colorNoiseScale, (z + 100) * TerrainConfig.colorNoiseScale);
+            const valNoise = ImprovedNoise.perlin2((x - 100) * TerrainConfig.colorNoiseScale, (z - 100) * TerrainConfig.colorNoiseScale);
+            // Lower saturation for brown, higher for green/yellow
+            let baseSaturation = 0.7 + 0.2 * normalizedHeight;
+            let baseValue = 0.7 + 0.25 * normalizedHeight;
+            const saturation = Math.max(0, Math.min(1, baseSaturation + satNoise * 0.15));
+            const value = Math.max(0, Math.min(1, baseValue + valNoise * 0.15));
+            return TerrainGenerator.hsvToRgb(hue, saturation, value);
+        }
     }
     
     generateChunk(chunkX, chunkZ, chunkSize) {

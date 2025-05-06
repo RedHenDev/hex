@@ -2,18 +2,18 @@
 window.FloatingFormationsConfig = {
     // Hexagon settings
     hexSize: 18.0,                // 2.54 Size of individual hexagons
-    hexHeight: 9.0,               // 6.0 Base height of hexagons
+    hexHeight: 36.0,               // 6.0 Base height of hexagons
     heightVariation: 0.0,        // 16.0 Amount hexagons can vary in height
-    opacity: 1.0,               // NEW: Opacity of hexagons
+    opacity: 0.7,               // NEW: Opacity of hexagons
     enableVerticalEdges: true,  // Enable vertical edges for floating formations
     
     // Formation settings.
-    formationDensity: 0.1,        // 0.3 Threshold for formation placement (0-1)
-    maxHexagonsPerFormation: 9,  // 32 Maximum hexagons in a single formation
-    formationSpread: 60.0,        // 30.0 How spread out hexagons are within formation
+    formationDensity: 0.3,        // 0.3 Threshold for formation placement (0-1)
+    maxHexagonsPerFormation: 16,  // 32 Maximum hexagons in a single formation
+    formationSpread: 42.0,        // 30.0 How spread out hexagons are within formation
     
     // Height settings
-    heightOffset: 24,            // 84 Base height above terrain
+    heightOffset: 9,            // 84 Base height above terrain
     heightNoiseScale: 1.0,        // 0.1 Scale of height variation noise
     heightNoiseAmount: 100.0,      // 10.0 Amount of height variation
     
@@ -23,10 +23,10 @@ window.FloatingFormationsConfig = {
     unloadDistance: 760,          // 360 Distance to unload formations
 
     // Color settings.
-    baseColor: '#333333',          // Dark cyan base color
-    topColor: '#AAAAAA',          // Dark magenta top color
-    colorIntensity: 1.0,          // Overall color intensity
-    colorContrast: 1.0,          // Contrast between base and top colors
+    baseColor: '#AA00AA',          // Dark cyan base color
+    topColor: '#00AAAA',          // Dark magenta top color
+    colorIntensity: 6.0,          // Overall color intensity
+    colorContrast: 4.0,          // Contrast between base and top colors
     heightColorScale: 100.0,      // How quickly colors change with height
 };
 

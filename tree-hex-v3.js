@@ -33,7 +33,7 @@ AFRAME.registerComponent('tree-hex-manager', {
       trunkTaper: { type: 'number', default: 0.16 }, // 15
       
       // Foliage settings.
-      foliageHexCount: { type: 'number', default: 128 }, // 32.
+      foliageHexCount: { type: 'number', default: 32 }, // 128 32.
       foliageScale: { type: 'number', default: 0.4 },
       foliageHeight: { type: 'number', default: 0.8 },
       foliageRadius: { type: 'number', default: 7.0 }, //5
@@ -42,7 +42,7 @@ AFRAME.registerComponent('tree-hex-manager', {
       
       // Branch settings (connecting trunk to foliage)
       enableBranches: { type: 'boolean', default: false },
-      branchWidth: { type: 'number', default: 0.32 },
+      branchWidth: { type: 'number', default: 0.32 }, // 0.32
       
       // Material settings.
       trunkEmissive: { type: 'number', default: 1.0 },
@@ -55,18 +55,18 @@ AFRAME.registerComponent('tree-hex-manager', {
       debug: { type: 'boolean', default: false },
 
       // Color settings.
-      trunkColor: { type: 'color', default: '#888888' }, // '#2e3c2f'
-      trunkEmissiveColor: { type: 'color', default: '#888888' }, // '#1a221a'
-      foliageColor: { type: 'color', default: '#EEEEEE' }, // '#11baba'
-      foliageEmissiveColor: { type: 'color', default: '#EEEEEE' }, // '#11baba'
-      branchColor: { type: 'color', default: '#888888' }, // '#2e3c2f'
-      branchEmissiveColor: { type: 'color', default: '#888888' }, // '#1a221a'
+      trunkColor: { type: 'color', default: '#00CCCC' }, // '#2e3c2f'
+      trunkEmissiveColor: { type: 'color', default: '#00CCCC' }, // '#1a221a'
+      foliageColor: { type: 'color', default: '#CC00CC' }, // '#11baba'
+      foliageEmissiveColor: { type: 'color', default: '#CC00CC' }, // '#11baba'
+      branchColor: { type: 'color', default: '#CC00CC' }, // '#2e3c2f'
+      branchEmissiveColor: { type: 'color', default: '#CC00CC' }, // '#1a221a'
 
       // Foliage layer settings.
       foliageLayers: { type: 'number', default: 4 },  // Number of branch/foliage layers
       layerSpacing: { type: 'number', default: 1.0 }, // Spacing between layers (0-1)
       layerSizeReduction: { type: 'number', default: 0.8 }, // How much to reduce size per layer
-      hexagonsPerLayer: { type: 'number', default: 128/4 }, // Hexagons per layer (32/3 rounded up)
+      hexagonsPerLayer: { type: 'number', default: 32/4 }, // Hexagons per layer (32/3 rounded up)
     },
     
     init: function () {

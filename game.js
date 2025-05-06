@@ -2,7 +2,7 @@
 const config = {
     websocketUrl: 'wss://hex-server.glitch.me/',
     playerColors: ['white', 'black'],
-    playerModels: ['#mWibbit', '#mShelby'] // Available models for player avatars
+    playerModels: ['#mDucar', '#mShelby'] // Available models for player avatars
 };
 
 // Create a billboard component that makes entities always face the camera

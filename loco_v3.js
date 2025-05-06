@@ -319,7 +319,8 @@ AFRAME.registerComponent('subject-locomotion', {
                 }
             else {
                 // Bounce up if moving.
-                this.velocity.y = Math.abs(this.velocity.length()*0.8);
+                //this.velocity.y = Math.abs(this.velocity.length()*0.8);
+                this.velocity.y = Math.abs(this.velocity.y*0.28);
             }
             
             } else if (this.flying) {

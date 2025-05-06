@@ -262,7 +262,7 @@ AFRAME.registerComponent('free-controls', {
       // Attach correct handlers for moveButton based on mode
       if (this.data.moveButtonMode === 'press') {
         // Press-and-hold mode
-        // Instead of stopping event propagation, allow touch events to bubble up
+        // Restore preventDefault and stopPropagation, but also trigger thrust on canvas touch
         this.moveButton.addEventListener('touchstart', this.moveButtonPressStart.bind(this));
         this.moveButton.addEventListener('touchend', this.moveButtonPressEnd.bind(this));
         this.moveButton.addEventListener('mousedown', this.moveButtonPressStart.bind(this));
@@ -525,15 +525,48 @@ AFRAME.registerComponent('free-controls', {
 
   // For 'press' mode: start movement on press
   moveButtonPressStart: function(event) {
+    event.preventDefault();
+    event.stopPropagation();
     if (!this.isMoving) {
       this.setMovement(true);
+    }
+    // Also trigger a synthetic touchstart on the canvas to enable steering
+    if (event.type === 'touchstart' && this.canvasEl) {
+      // Forward the event to the canvas for steering
+      const touch = event.changedTouches ? event.changedTouches[0] : null;
+      if (touch) {
+        const simulated = new TouchEvent('touchstart', {
+          touches: [touch],
+          targetTouches: [touch],
+          changedTouches: [touch],
+          bubbles: true,
+          cancelable: true
+        });
+        this.canvasEl.dispatchEvent(simulated);
+      }
     }
   },
 
   // For 'press' mode: stop movement on release
   moveButtonPressEnd: function(event) {
+    event.preventDefault();
+    event.stopPropagation();
     if (this.isMoving) {
       this.setMovement(false);
+    }
+    // Also trigger a synthetic touchend on the canvas to end steering
+    if (event.type === 'touchend' && this.canvasEl) {
+      const touch = event.changedTouches ? event.changedTouches[0] : null;
+      if (touch) {
+        const simulated = new TouchEvent('touchend', {
+          touches: [],
+          targetTouches: [],
+          changedTouches: [touch],
+          bubbles: true,
+          cancelable: true
+        });
+        this.canvasEl.dispatchEvent(simulated);
+      }
     }
   },
 

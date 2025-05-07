@@ -320,7 +320,7 @@ AFRAME.registerComponent('subject-locomotion', {
                 // Scale down velocity based on how much we exceed the max gradient
                 const reduction = 1.0 - ((gradient - this.data.maxGradient) / this.data.maxGradient);
                 this.velocity.multiplyScalar(Math.max(0, reduction));
-                if (this.data.debug) console.log('Gradient limiting:', gradient.toFixed(2));
+                //if (this.data.debug) console.log('Gradient limiting:', gradient.toFixed(2));
             }
         }
 

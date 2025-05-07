@@ -11,7 +11,7 @@ window.HexConfigSimple = {
     enableFloatingOutline: true, // Toggle cartoon outlines for floating formations
     enableVerticalEdges: false, // Toggle vertical edge outlines
     outlineThickness: 3.2,    // 0.4 Thickness of the outline
-    outlineColor: [0.0, 0.0, 0.0], // Default outline color as RGB array
+    outlineColor: [0.76, 0.6, 0.0], // Default outline color as RGB array
     applyToGenerator: function(generator) {
         if (generator) {
             // ...existing assignments...

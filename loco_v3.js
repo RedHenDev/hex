@@ -6,7 +6,9 @@ AFRAME.registerComponent('subject-locomotion', {
         heightOffset: {type: 'number', default: 5.25}, // Height above ground.
         debug: {type: 'boolean', default: true},       // Enable debug logging
         thrustPower: {type: 'number', default: 41},    // 164 82 Power of thrust
-        friction: {type: 'number', default: 0.96}     // 0.96 Air friction (1 = no friction)
+        friction: {type: 'number', default: 0.96},     // 0.96 Air friction (1 = no friction)
+        maxGradient: {type: 'number', default: 0.8},   // Maximum slope gradient (0.8 = ~38 degrees)
+        sampleDistance: {type: 'number', default: 2.0} // Distance ahead to check slope
     },
 
     init: function() {
@@ -213,6 +215,24 @@ AFRAME.registerComponent('subject-locomotion', {
         }
     },
 
+    calculateGradient: function(position, velocity) {
+        if (!velocity.length()) return 0;
+        
+        // Get normalized direction
+        const direction = velocity.clone().normalize();
+        
+        // Sample points
+        const currentHeight = this.getTerrainHeight(position.x, position.z);
+        const aheadPos = {
+            x: position.x + direction.x * this.data.sampleDistance,
+            z: position.z + direction.z * this.data.sampleDistance
+        };
+        const aheadHeight = this.getTerrainHeight(aheadPos.x, aheadPos.z);
+        
+        // Calculate gradient
+        return (aheadHeight - currentHeight) / this.data.sampleDistance;
+    },
+
     tick: function(time, delta) {
         if (!delta) return;
         delta = delta * 0.001; // Convert to seconds
@@ -291,6 +311,18 @@ AFRAME.registerComponent('subject-locomotion', {
         // So, gravity.
         if (!this.flying)
             this.velocity.y -= 100 * delta;
+
+        // After calculating new velocity but before applying it, check gradient
+        if (!this.flying && this.velocity.length() > 0) {
+            const gradient = this.calculateGradient(position, this.velocity);
+            
+            if (gradient > this.data.maxGradient) {
+                // Scale down velocity based on how much we exceed the max gradient
+                const reduction = 1.0 - ((gradient - this.data.maxGradient) / this.data.maxGradient);
+                this.velocity.multiplyScalar(Math.max(0, reduction));
+                if (this.data.debug) console.log('Gradient limiting:', gradient.toFixed(2));
+            }
+        }
 
         // Apply friction.
         this.velocity.multiplyScalar(this.data.friction);

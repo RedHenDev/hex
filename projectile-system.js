@@ -69,8 +69,6 @@ AFRAME.registerComponent('projectile-system', {
         const isMobile = AFRAME.utils.device.isMobile();
         const isVR = AFRAME.utils.device.checkHeadsetConnected();
         
-        console.log('Setting up projectile controls for:', isVR ? 'VR' : (isMobile ? 'Mobile' : 'Desktop'));
-        
         if (isVR) {
             // VR head tilt detection - bind to the camera's parent entity to ensure proper context
             this.lastTiltTime = 0;
@@ -89,28 +87,11 @@ AFRAME.registerComponent('projectile-system', {
             console.log('VR projectile controls initialized');
             
         } else if (isMobile) {
-            // Mobile touch control - use scene element for touch events
-            const scene = document.querySelector('a-scene');
-            if (!scene) {
-                console.error('Projectile system: Cannot find scene for mobile controls');
-                return;
-            }
-            
-            // Bind shoot function and add touch handler
-            const handleTouch = (e) => {
-                // Prevent if touching UI elements
-                if (e.target.closest('.mobile-controls-container') || 
-                    e.target.closest('#connection-status')) {
-                    return;
-                }
-                e.preventDefault();
+            // Listen for custom shoot event from free-controls
+            document.addEventListener('shootProjectile', () => {
+                console.log('Received shoot event from free-controls');
                 this.shoot();
-                console.log('Mobile touch detected, shooting');
-            };
-            
-            scene.addEventListener('touchend', handleTouch);
-            console.log('Mobile projectile controls initialized');
-            
+            });
         } else {
             // Desktop mouse control remains unchanged
             document.addEventListener('mousedown', (e) => {

@@ -418,6 +418,9 @@ AFRAME.registerComponent('free-controls', {
 
   onTouchEnd: function(event) {
     this.touchActive = false;
+    // Dispatch custom event for projectile system
+    const shootEvent = new CustomEvent('shootProjectile');
+    document.dispatchEvent(shootEvent);
   },
 
   onPointerLockChange: function() {

@@ -1,6 +1,6 @@
 AFRAME.registerComponent('projectile-system', {
     schema: {
-        speed: {type: 'number', default: 150},
+        speed: {type: 'number', default: 99},
         lifetime: {type: 'number', default: 3000},
         bounceEnergy: {type: 'number', default: 0.6}, // Increased from 0.7 to 0.9
         playerImpactForce: {type: 'number', default: 800},
@@ -70,32 +70,44 @@ AFRAME.registerComponent('projectile-system', {
         const isVR = AFRAME.utils.device.checkHeadsetConnected();
         
         if (isVR) {
-            // VR head tilt detection
+            // VR head tilt detection - more reliable setup
             this.lastTiltTime = 0;
-            this.tiltThreshold = 0.3;
-            this.tiltDelay = 1000;
+            this.tiltThreshold = 0.5; // Increased threshold for more reliable detection
+            this.tiltDelay = 500; // Reduced delay for better response
             
-            this.el.sceneEl.addEventListener('tick', () => {
-                const rotation = document.querySelector('#cam').object3D.rotation;
-                if (Math.abs(rotation.z) > this.tiltThreshold) {
-                    const now = Date.now();
-                    if (now - this.lastTiltTime > this.tiltDelay) {
-                        this.shoot();
-                        this.lastTiltTime = now;
-                    }
-                }
-            });
-        } else if (isMobile) {
-            // Mobile touch control - use more specific touch target
-            const scene = document.querySelector('a-scene');
-            scene.addEventListener('touchend', (e) => {
-                // Check if touch is not on any UI elements
-                if (!e.target.closest('.mobile-controls-container')) {
+            // Use sceneEl directly and ensure event listener is properly bound
+            const tick = () => {
+                const camera = document.querySelector('#cam');
+                if (!camera) return;
+                
+                const rotation = camera.object3D.rotation;
+                const now = Date.now();
+                
+                // Right tilt to shoot (negative Z rotation)
+                if (rotation.z < -this.tiltThreshold && now - this.lastTiltTime > this.tiltDelay) {
                     this.shoot();
+                    this.lastTiltTime = now;
+                    console.log('VR head tilt detected, shooting');
                 }
+            };
+            
+            // Bind tick to scene
+            this.el.sceneEl.addEventListener('tick', tick);
+            
+        } else if (isMobile) {
+            // Mobile touch control - use screen tap anywhere except UI
+            document.addEventListener('touchend', (e) => {
+                // Prevent if touching UI elements
+                if (e.target.closest('.mobile-controls-container') || 
+                    e.target.closest('#connection-status')) {
+                    return;
+                }
+                this.shoot();
+                console.log('Mobile touch detected, shooting');
             });
+            
         } else {
-            // Desktop mouse control
+            // Desktop mouse control remains unchanged
             document.addEventListener('mousedown', (e) => {
                 if (e.button === 0) this.shoot();
             });
@@ -161,15 +173,22 @@ AFRAME.registerComponent('projectile-system', {
                 const targetY = terrainY + TerrainConfig.geometryHeight;
                 
                 if (time % 1000 < 20) {
-                    console.log(`Projectile at Y: ${pos.y}, Terrain target Y: ${targetY}`);
+                    // console.log(`Projectile at Y: ${pos.y}, Terrain target Y: ${targetY}`);
                 }
 
                 if (pos.y < targetY) {
-                    console.log(`Bounce at ${pos.y} -> ${targetY}`);
-                    pos.y = targetY;
+                    // console.log(`Bounce at ${pos.y} -> ${targetY}`);
+                    if (pos.y < targetY - 2){
+                        proj.velocity.x *= -1;
+                        proj.velocity.z *= -1;
+                    }
+                    pos.y = targetY + 0.1;
                     proj.velocity.y = Math.abs(proj.velocity.y) * this.data.bounceEnergy;
                     proj.bounceCount++;
-                }
+                    // Change direction if likely to
+                    // be striking a side of prism.
+                    
+                } 
             }
 
             // Check player collisions
@@ -203,9 +222,9 @@ AFRAME.registerComponent('projectile-system', {
             // Update projectile position
             proj.element.setAttribute('position', pos);
 
-            // Log removal
+            // Max bounces 5.
             if (time - proj.birth > this.data.lifetime || proj.bounceCount > 5) {
-                console.log(`Removing projectile ${i} - Age:`, time - proj.birth, 'Bounces:', proj.bounceCount);
+                //console.log(`Removing projectile ${i} - Age:`, time - proj.birth, 'Bounces:', proj.bounceCount);
                 this.removeProjectile(i);
             }
         }

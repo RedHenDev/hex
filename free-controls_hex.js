@@ -372,8 +372,10 @@ AFRAME.registerComponent('free-controls', {
 
   onTouchStart: function(event) {
     if (!this.data.enabled) return;
-
-    event.preventDefault();
+    // Only prevent default if touch is on the canvas specifically
+    if (event.target === this.canvasEl) {
+      event.preventDefault();
+    }
 
     if (event.touches.length === 1) {
       this.touchActive = true;
@@ -385,8 +387,10 @@ AFRAME.registerComponent('free-controls', {
 
   onTouchMove: function(event) {
     if (!this.touchActive || !this.data.enabled) return;
-
-    event.preventDefault();
+    // Only prevent default if touch is on the canvas specifically
+    if (event.target === this.canvasEl) {
+      event.preventDefault();
+    }
 
     if (event.touches.length === 1) {
       const touchX = event.touches[0].clientX;

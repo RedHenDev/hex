@@ -86,8 +86,14 @@ AFRAME.registerComponent('projectile-system', {
                 }
             });
         } else if (isMobile) {
-            // Mobile touch control
-            document.addEventListener('touchstart', () => this.shoot());
+            // Mobile touch control - use more specific touch target
+            const scene = document.querySelector('a-scene');
+            scene.addEventListener('touchend', (e) => {
+                // Check if touch is not on any UI elements
+                if (!e.target.closest('.mobile-controls-container')) {
+                    this.shoot();
+                }
+            });
         } else {
             // Desktop mouse control
             document.addEventListener('mousedown', (e) => {

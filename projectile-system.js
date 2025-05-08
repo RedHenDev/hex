@@ -69,48 +69,69 @@ AFRAME.registerComponent('projectile-system', {
         const isMobile = AFRAME.utils.device.isMobile();
         const isVR = AFRAME.utils.device.checkHeadsetConnected();
         
+        console.log('Setting up projectile controls for:', isVR ? 'VR' : (isMobile ? 'Mobile' : 'Desktop'));
+        
         if (isVR) {
-            // VR head tilt detection - more reliable setup
+            // VR head tilt detection - bind to the camera's parent entity to ensure proper context
             this.lastTiltTime = 0;
-            this.tiltThreshold = 0.5; // Increased threshold for more reliable detection
-            this.tiltDelay = 500; // Reduced delay for better response
+            this.tiltThreshold = 0.5;
+            this.tiltDelay = 500;
             
-            // Use sceneEl directly and ensure event listener is properly bound
-            const tick = () => {
-                const camera = document.querySelector('#cam');
-                if (!camera) return;
-                
-                const rotation = camera.object3D.rotation;
-                const now = Date.now();
-                
-                // Right tilt to shoot (negative Z rotation)
-                if (rotation.z < -this.tiltThreshold && now - this.lastTiltTime > this.tiltDelay) {
-                    this.shoot();
-                    this.lastTiltTime = now;
-                    console.log('VR head tilt detected, shooting');
-                }
-            };
+            const subject = document.querySelector('#subject');
+            if (!subject) {
+                console.error('Projectile system: Cannot find subject entity for VR controls');
+                return;
+            }
             
-            // Bind tick to scene
-            this.el.sceneEl.addEventListener('tick', tick);
+            // Bind tick function to this component's context
+            this.vrTick = this.vrTick.bind(this);
+            subject.addEventListener('tick', this.vrTick);
+            console.log('VR projectile controls initialized');
             
         } else if (isMobile) {
-            // Mobile touch control - use screen tap anywhere except UI
-            document.addEventListener('touchend', (e) => {
+            // Mobile touch control - use scene element for touch events
+            const scene = document.querySelector('a-scene');
+            if (!scene) {
+                console.error('Projectile system: Cannot find scene for mobile controls');
+                return;
+            }
+            
+            // Bind shoot function and add touch handler
+            const handleTouch = (e) => {
                 // Prevent if touching UI elements
                 if (e.target.closest('.mobile-controls-container') || 
                     e.target.closest('#connection-status')) {
                     return;
                 }
+                e.preventDefault();
                 this.shoot();
                 console.log('Mobile touch detected, shooting');
-            });
+            };
+            
+            scene.addEventListener('touchend', handleTouch);
+            console.log('Mobile projectile controls initialized');
             
         } else {
             // Desktop mouse control remains unchanged
             document.addEventListener('mousedown', (e) => {
                 if (e.button === 0) this.shoot();
             });
+        }
+    },
+
+    // Separate VR tick function for better control
+    vrTick: function() {
+        const camera = document.querySelector('#cam');
+        if (!camera) return;
+        
+        const rotation = camera.object3D.rotation;
+        const now = Date.now();
+        
+        // Right tilt to shoot (negative Z rotation)
+        if (rotation.z < -this.tiltThreshold && now - this.lastTiltTime > this.tiltDelay) {
+            this.shoot();
+            this.lastTiltTime = now;
+            console.log('VR head tilt detected, shooting');
         }
     },
 

@@ -47,6 +47,12 @@ AFRAME.registerComponent('projectile-system', {
                 console.error('Projectile system: No terrain generator available after init');
             }
         }, 3000);
+
+        // Add global listener for shoot events
+        document.addEventListener('shootProjectile', () => {
+            console.log('Shoot event received in projectile system');
+            this.shoot();
+        });
     },
 
     setupTerrainAccess: function() {

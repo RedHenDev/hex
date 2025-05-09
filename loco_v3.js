@@ -81,6 +81,11 @@ AFRAME.registerComponent('subject-locomotion', {
             if (e.code === 'Space') {
                 if (!this.flying && !this.jumping) {
                     this.jumping = true;
+                    // Event shoot test.
+                    console.log('Dispatching shootProjectile event from loco_v3');
+                    const shootEvent = new CustomEvent('shootProjectile');
+                    document.dispatchEvent(shootEvent);
+                    console.log('Event dispatched');
                     // Jump impulse.
                     this.verticalVelocity = this.running ? 64 : 42; // Adjust jump impulse based on running state.
                     this.velocity.y += this.verticalVelocity;
@@ -272,6 +277,8 @@ AFRAME.registerComponent('subject-locomotion', {
             let cTime = Date.now();
             if (cTime - this.timeStamp > 2000) {
                 this.timeStamp = Date.now();
+                const shootEvent = new CustomEvent('shootProjectile');
+                document.dispatchEvent(shootEvent);
                 //this.flying = !this.flying;
                 //window.toggleHexPulse(this.flying);
                 //this.running = !this.running;

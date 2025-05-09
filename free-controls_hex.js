@@ -416,11 +416,15 @@ AFRAME.registerComponent('free-controls', {
     }
   },
 
-  onTouchEnd: function(event) {
-    this.touchActive = false;
+  dispatchShoot(){
     // Dispatch custom event for projectile system
     const shootEvent = new CustomEvent('shootProjectile');
     document.dispatchEvent(shootEvent);
+  },
+
+  onTouchEnd: function(event) {
+    this.touchActive = false;
+    dispatchShoot();
   },
 
   onPointerLockChange: function() {
@@ -541,6 +545,7 @@ AFRAME.registerComponent('free-controls', {
   // For 'press' mode: stop movement on pointer up/leave
   moveButtonPointerUp: function(event) {
     event.preventDefault();
+    dispatchShoot();
     if (this.isMoving) {
       this.setMovement(false);
     }

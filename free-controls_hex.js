@@ -409,10 +409,10 @@ AFRAME.registerComponent('free-controls', {
       // Better shoot hack.
       // Distinguishes between drag and
       // tap to shoot.
-      if (Math.abs(movementX)+
-          Math.abs(movementY) < 0.1){
-            this.dispatchShoot();
-          }
+      // if (Math.abs(movementX)+
+      //     Math.abs(movementY) < 0.1){
+      //       this.dispatchShoot();
+      //     }
 
       if (this.touchDebugCount === undefined) {
         this.touchDebugCount = 0;
@@ -439,7 +439,7 @@ AFRAME.registerComponent('free-controls', {
 
   onTouchEnd: function(event) {
     this.touchActive = false;
-    //this.dispatchShoot();
+    this.dispatchShoot();
   },
 
   onPointerLockChange: function() {

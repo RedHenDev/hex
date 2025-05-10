@@ -76,23 +76,24 @@ AFRAME.registerComponent('projectile-system', {
 
     setupProjectileControls: function() {
         document.addEventListener('shootProjectile', () => {
-        //console.log('Received shoot event from free-controls');
-        this.shoot();
+            console.log('Received shoot event');
+            this.shoot();
         });
-        // Allow click shoot after 4s.
-        
-            document.addEventListener('mousedown', (e) => {
-                if (e.button === 0) this.shoot();
-            });
-        
-        //const isMobile = AFRAME.utils.device.isMobile();
-        //const isVR = AFRAME.utils.device.checkHeadsetConnected();
-        /*
-        if (isVR) {
-            // VR head tilt detection - bind to the camera's parent entity to ensure proper context
+
+        // Handle desktop mouse clicks after initial delay
+        setTimeout(() => {
+            if (!AFRAME.utils.device.checkHeadsetConnected()) {
+                document.addEventListener('mousedown', (e) => {
+                    if (e.button === 0) this.shoot();
+                });
+            }
+        }, 4000);
+
+        // Setup VR head tilt detection
+        if (AFRAME.utils.device.checkHeadsetConnected()) {
             this.lastTiltTime = 0;
-            this.tiltThreshold = 0.5;
-            this.tiltDelay = 500;
+            this.tiltThreshold = 0.3;  // Match the tilt threshold from loco_v3
+            this.tiltDelay = 2000;     // Match the delay from loco_v3
             
             const subject = document.querySelector('#subject');
             if (!subject) {
@@ -100,40 +101,24 @@ AFRAME.registerComponent('projectile-system', {
                 return;
             }
             
-            // Bind tick function to this component's context
-            this.vrTick = this.vrTick.bind(this);
+            this.vrTick = function() {
+                const camera = document.querySelector('#cam');
+                if (!camera) return;
+                
+                const rotation = camera.object3D.rotation;
+                const now = Date.now();
+                
+                // Right tilt to shoot (negative Z rotation)
+                if (rotation.z < -0.3 && rotation.z > -0.5 && 
+                    now - this.lastTiltTime > this.tiltDelay) {
+                    this.lastTiltTime = now;
+                    this.shoot();
+                }
+            }.bind(this);
+
             subject.addEventListener('tick', this.vrTick);
             console.log('VR projectile controls initialized');
-            
-        } else if (isMobile) {
-            // Listen for custom shoot event from free-controls
-            document.addEventListener('shootProjectile', () => {
-                console.log('Received shoot event from free-controls');
-                this.shoot();
-            });
-        } else {
-            // Desktop mouse control remains unchanged
-            document.addEventListener('mousedown', (e) => {
-                if (e.button === 0) this.shoot();
-            });
         }
-    },
-
-    // Separate VR tick function for better control
-    vrTick: function() {
-        const camera = document.querySelector('#cam');
-        if (!camera) return;
-        
-        const rotation = camera.object3D.rotation;
-        const now = Date.now();
-        
-        // Right tilt to shoot (negative Z rotation)
-        if (rotation.z < -this.tiltThreshold && now - this.lastTiltTime > this.tiltDelay) {
-            this.shoot();
-            this.lastTiltTime = now;
-            console.log('VR head tilt detected, shooting');
-        }
-            */
     },
 
     shoot: function() {

@@ -4,7 +4,7 @@
 window.TerrainConfig = {
     seed: 99,
     heightScale: 2048.0, // 3256.0 1256.0
-    noiseScale: 0.00038, // 0.0003 0.0002 0.0008
+    noiseScale: 0.0002, // 0.00038 0.0003 0.0002 0.0008
     baseHeight: 0, // -22.0
     useRidges: true,
     ridgeFactor: 0.56, // 0.28 0.14

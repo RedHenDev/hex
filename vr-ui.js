@@ -99,8 +99,28 @@
 	
 	// Only create button if scene is not in VR mode at start.
 	const sceneEl = document.querySelector('a-scene');
+	let settingsBtn = null;
 	if (sceneEl && !sceneEl.is('vr-mode')) {
 		createSettingsButton();
+		settingsBtn = document.getElementById('settings-btn');
+	}
+
+	// --- VR event handlers to ensure overlay/button visibility ---
+	function handleEnterVR() {
+		// Show overlay and settings button if they exist
+		if (overlay) overlay.style.display = 'none'; // Only show on tilt or button
+		if (settingsBtn) settingsBtn.style.display = 'block';
+	}
+	function handleExitVR() {
+		// Restore settings button if it exists
+		if (settingsBtn) settingsBtn.style.display = 'block';
+		// Hide overlay if it was left open
+		if (overlay) overlay.style.display = 'none';
+	}
+
+	if (sceneEl) {
+		sceneEl.addEventListener('enter-vr', handleEnterVR);
+		sceneEl.addEventListener('exit-vr', handleExitVR);
 	}
 
 	AFRAME.registerComponent('vr-ui', {
@@ -118,6 +138,8 @@
 				if (roll < ROLL_THRESHOLD && Date.now() - lastTriggerTime > COOLDOWN) {
 					overlay.style.display = 'block';
 					lastTriggerTime = Date.now();
+					// Ensure overlay and button are not hidden by A-Frame VR UI
+					if (settingsBtn) settingsBtn.style.display = 'block';
 				}
 			}
 			// Always update the coordinate display whenever the overlay is visible

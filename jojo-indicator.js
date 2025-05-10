@@ -2,10 +2,29 @@
 
 (function() {
     const indicator = document.getElementById('jojo-indicator');
+    // --- Fullscreen/VR event handlers to keep indicator visible ---
+    function showIndicator() {
+        if (indicator) indicator.style.display = '';
+    }
+    function hideIndicator() {
+        if (indicator) indicator.style.display = 'none';
+    }
+    // Listen for fullscreen and VR mode changes
+    document.addEventListener('fullscreenchange', showIndicator);
+    document.addEventListener('webkitfullscreenchange', showIndicator);
+    document.addEventListener('mozfullscreenchange', showIndicator);
+    document.addEventListener('MSFullscreenChange', showIndicator);
+
+    const sceneEl = document.querySelector('a-scene');
+    if (sceneEl) {
+        sceneEl.addEventListener('enter-vr', showIndicator);
+        sceneEl.addEventListener('exit-vr', showIndicator);
+    }
+
     function updateIndicator() {
         const subject = document.querySelector('#subject');
         const cam = document.querySelector('#cam');
-        const jojo = document.querySelector('#jojo');
+        const jojo = document.querySelector('#bumpy');
         if (!subject || !cam || !jojo) {
             indicator.style.display = 'none';
             requestAnimationFrame(updateIndicator);

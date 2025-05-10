@@ -5,10 +5,10 @@ AFRAME.registerComponent('subject-locomotion', {
     schema: {
         heightOffset: {type: 'number', default: 5.25}, // Height above ground.
         debug: {type: 'boolean', default: true},       // Enable debug logging
-        thrustPower: {type: 'number', default: 164},    // 164 82 41 Power of thrust
-        friction: {type: 'number', default: 0.96},     // 0.96 Air friction (1 = no friction)
-        maxGradient: {type: 'number', default: 0.8},   // Maximum slope gradient (0.8 = ~38 degrees)
-        sampleDistance: {type: 'number', default: 2.0} // Distance ahead to check slope
+        thrustPower: {type: 'number', default: 82},    // 164 82 41 Power of thrust
+        friction: {type: 'number', default: 0.90},     // 0.96 Air friction (1 = no friction)
+        maxGradient: {type: 'number', default: 0.8},   // 0.8 Maximum slope gradient (0.8 = ~38 degrees)
+        sampleDistance: {type: 'number', default: 2.0} // 2.0 Distance ahead to check slope
     },
 
     init: function() {

@@ -155,7 +155,13 @@ AFRAME.registerComponent('projectile-system', {
         const direction = new THREE.Vector3(0, 0, -1);
         direction.applyQuaternion(camera.quaternion);
         direction.multiplyScalar(this.data.speed);
-        // console.log('Projectile direction and speed:', direction);
+
+        // Add subject's velocity to projectile's velocity
+        const subject = document.querySelector('#subject');
+        if (subject && subject.components['subject-locomotion']) {
+            const subjVel = subject.components['subject-locomotion'].velocity;
+            direction.add(subjVel);
+        }
 
         const projectileData = {
             element: projectile,

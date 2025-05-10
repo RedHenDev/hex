@@ -26,6 +26,8 @@ triage
 
 to do
 
+-d friction higher when in precision mode.
+
 -f lerp multiplayer positions.
 
 -r how many socket signals sent. Investigate more performant options.

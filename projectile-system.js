@@ -43,16 +43,17 @@ AFRAME.registerComponent('projectile-system', {
                     adjusted: adjustedHeight,
                     config: window.TerrainConfig
                 });
+                // Add global listener for shoot events.
+            document.addEventListener('shootProjectile', () => {
+            // console.log('Shoot event received in projectile system');
+            this.shoot();
+        });
             } else {
                 console.error('Projectile system: No terrain generator available after init');
             }
         }, 3000);
 
-        // Add global listener for shoot events
-        document.addEventListener('shootProjectile', () => {
-            console.log('Shoot event received in projectile system');
-            this.shoot();
-        });
+        
     },
 
     setupTerrainAccess: function() {
@@ -130,18 +131,18 @@ AFRAME.registerComponent('projectile-system', {
         const camera = document.querySelector('#cam').object3D;
         const position = new THREE.Vector3();
         camera.getWorldPosition(position);
-        console.log('Shooting from position:', position);
+        // console.log('Shooting from position:', position);
 
         const projectile = document.createElement('a-sphere');
         projectile.setAttribute('radius', '0.5');
         projectile.setAttribute('material', 'color: #00FF00; shader: standard; metalness: 0.3; roughness: 0.6');
         projectile.setAttribute('position', position);
-        console.log('Created projectile with initial position:', position);
+        // console.log('Created projectile with initial position:', position);
         
         const direction = new THREE.Vector3(0, 0, -1);
         direction.applyQuaternion(camera.quaternion);
         direction.multiplyScalar(this.data.speed);
-        console.log('Projectile direction and speed:', direction);
+        // console.log('Projectile direction and speed:', direction);
 
         const projectileData = {
             element: projectile,
@@ -152,7 +153,7 @@ AFRAME.registerComponent('projectile-system', {
 
         this.projectiles.push(projectileData);
         document.querySelector('a-scene').appendChild(projectile);
-        console.log('Added projectile to scene, total projectiles:', this.projectiles.length);
+        // console.log('Added projectile to scene, total projectiles:', this.projectiles.length);
     },
 
     tick: function(time, delta) {
@@ -164,25 +165,21 @@ AFRAME.registerComponent('projectile-system', {
             const pos = new THREE.Vector3().copy(proj.element.object3D.position);
 
             // Log position every second (to avoid console spam)
-            if (time % 1000 < 20) {
-                console.log(`Projectile ${i} position:`, pos, 'velocity:', proj.velocity);
-            }
+            // if (time % 1000 < 20) {
+            //     console.log(`Projectile ${i} position:`, pos, 'velocity:', proj.velocity);
+            // }
 
-            // Apply gravity
+            // Apply gravity.
             proj.velocity.y -= 98 * dt;
 
-            // Update position
+            // Update position.
             pos.addScaledVector(proj.velocity, dt);
             
-            // Check terrain collision
+            // Check terrain collision.
             if (this.terrainGenerator) {
                 const terrainY = this.terrainGenerator.generateTerrainHeight(pos.x, pos.z);
                 // Access geometryHeight directly from TerrainConfig
                 const targetY = terrainY + TerrainConfig.geometryHeight;
-                
-                if (time % 1000 < 20) {
-                    // console.log(`Projectile at Y: ${pos.y}, Terrain target Y: ${targetY}`);
-                }
 
                 if (pos.y < targetY) {
                     // console.log(`Bounce at ${pos.y} -> ${targetY}`);

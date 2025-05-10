@@ -281,7 +281,7 @@ AFRAME.registerComponent('subject-locomotion', {
                 this.timeStamp = Date.now();
                 const shootEvent = new CustomEvent('shootProjectile');
                 document.dispatchEvent(shootEvent);
-                //this.flying = !this.flying;
+                this.flying = !this.flying;
                 //window.toggleHexPulse(this.flying);
                 //this.running = !this.running;
                 //if (this.data.debug) console.log('Locomotion: Head tilt right - flying:', this.flying);

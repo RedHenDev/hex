@@ -47,13 +47,13 @@ AFRAME.registerComponent('npc-walk', {
 
     tick: function(time, deltaTime) {
         // Convert deltaTime to seconds
-        const dt = deltaTime / 1000;
+        const dt = deltaTime * 0.001;
         const currentPos = this.el.object3D.position;
         const direction = new THREE.Vector3();
         
-        // Calculate direction to target
+        // Calculate direction to target.
         direction.subVectors(this.targetPos, currentPos);
-        direction.y = 0; // Keep y movement separate
+        direction.y = 0; // Keep y movement separate.
 
         // Check if we need a new target
         if (direction.length() < 0.5) {
@@ -61,19 +61,22 @@ AFRAME.registerComponent('npc-walk', {
             return;
         }
 
-        // Normalize and apply speed
+        // Normalize and apply speed.
         direction.normalize();
         direction.multiplyScalar(this.data.speed * dt);
 
-        // Update position
-        currentPos.x += direction.x;
-        currentPos.z += direction.z;
+        // Lerp position for smooth movement
+        const targetX = currentPos.x + direction.x;
+        const targetZ = currentPos.z + direction.z;
+        const lerpAlpha = 0.33; // 0.15 Smoothing factor (0 = no move, 1 = instant)
+        currentPos.x += (targetX - currentPos.x) * lerpAlpha;
+        currentPos.z += (targetZ - currentPos.z) * lerpAlpha;
 
         // Get terrain height.
         if (this.terrainGenerator !== null){
-        const rawHeight = this.terrainGenerator.generateTerrainHeight(currentPos.x, currentPos.z);
-        const adjustedHeight = rawHeight + (window.TerrainConfig.geometryHeight * 0.5);
-        currentPos.y = adjustedHeight + this.data.heightOffset;       
+            const rawHeight = this.terrainGenerator.generateTerrainHeight(currentPos.x, currentPos.z);
+            const adjustedHeight = rawHeight + (window.TerrainConfig.geometryHeight * 0.5);
+            currentPos.y = adjustedHeight + this.data.heightOffset;       
         }
         /*
         
@@ -88,9 +91,16 @@ AFRAME.registerComponent('npc-walk', {
         }
         */
 
-        // Optional: Make entity face movement direction
+        // Optional: Make entity face movement direction with lerp.
         if (direction.length() > 0) {
-            this.el.object3D.rotation.y = 170+Math.atan2(-direction.x, -direction.z);
+            const targetRotY = Math.PI + Math.atan2(-direction.x, -direction.z);
+            const currentRotY = this.el.object3D.rotation.y;
+            // Lerp rotation
+            const rotLerpAlpha = 0.33;
+            let deltaRot = targetRotY - currentRotY;
+            // Keep in -PI to PI range
+            deltaRot = ((deltaRot + Math.PI) % (2 * Math.PI)) - Math.PI;
+            this.el.object3D.rotation.y += deltaRot * rotLerpAlpha;
         }
     }
 });

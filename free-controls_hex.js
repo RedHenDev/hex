@@ -424,7 +424,7 @@ AFRAME.registerComponent('free-controls', {
 
   onTouchEnd: function(event) {
     this.touchActive = false;
-    dispatchShoot();
+    this.dispatchShoot();
   },
 
   onPointerLockChange: function() {

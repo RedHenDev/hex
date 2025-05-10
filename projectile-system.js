@@ -10,14 +10,14 @@ AFRAME.registerComponent('projectile-system', {
     init: function() {
         this.projectiles = [];
         this.terrainGenerator = null;
-        this.setupProjectileControls();
+        //this.setupProjectileControls();
         this.setupTerrainAccess();
 
         // Throttle shooting to prevent spam
         this.lastShot = 0;
         this.shootDelay = 25;
 
-        // Listen for terrain ready event
+        // Listen for terrain ready event.
         document.addEventListener('terrainReady', () => {
             console.log('Projectile system: Terrain ready event received');
             this.setupTerrainAccess();
@@ -43,11 +43,13 @@ AFRAME.registerComponent('projectile-system', {
                     adjusted: adjustedHeight,
                     config: window.TerrainConfig
                 });
+            // We have terrain and ready to set up controls etc.
+            this.setupProjectileControls();
                 // Add global listener for shoot events.
             document.addEventListener('shootProjectile', () => {
-            // console.log('Shoot event received in projectile system');
-            this.shoot();
-        });
+                // console.log('Shoot event received in projectile system');
+                this.shoot();
+            });
             } else {
                 console.error('Projectile system: No terrain generator available after init');
             }

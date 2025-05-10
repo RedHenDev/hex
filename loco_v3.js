@@ -255,6 +255,8 @@ AFRAME.registerComponent('subject-locomotion', {
         if (roll > minZ && roll < maxZ) {
             let cTime = Date.now();
             if (cTime - this.timeStamp > 2000) {
+                const shootEvent = new CustomEvent('shootProjectile');
+                document.dispatchEvent(shootEvent);
                 this.timeStamp = Date.now();
                 this.moving = !this.moving;
                 //this.moveZ = this.moveZ === 1 ? 0 : 1;

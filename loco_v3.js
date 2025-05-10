@@ -278,13 +278,17 @@ AFRAME.registerComponent('subject-locomotion', {
         if (roll < RminZ && roll > RmaxZ) {
             let cTime = Date.now();
             if (cTime - this.timeStamp > 2000) {
-                this.timeStamp = Date.now();
-                const shootEvent = new CustomEvent('shootProjectile');
+                if (this.data.debug) console.log('Locomotion: Right head tilt detected');
+                const shootEvent = new CustomEvent('shootProjectile', {
+                    bubbles: true,
+                    detail: { source: 'headTilt' }
+                });
+                if (this.data.debug) console.log('Locomotion: Dispatching shootProjectile event');
                 document.dispatchEvent(shootEvent);
+                if (this.data.debug) console.log('Locomotion: Event dispatched');
+                
+                this.timeStamp = Date.now();
                 this.flying = !this.flying;
-                //window.toggleHexPulse(this.flying);
-                //this.running = !this.running;
-                //if (this.data.debug) console.log('Locomotion: Head tilt right - flying:', this.flying);
             }
         }
         

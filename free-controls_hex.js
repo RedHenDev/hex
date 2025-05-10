@@ -410,7 +410,7 @@ AFRAME.registerComponent('free-controls', {
       // Distinguishes between drag and
       // tap to shoot.
       if (Math.abs(movementX)+
-          Math.abs(movementY) < 1){
+          Math.abs(movementY) < 0.1){
             this.dispatchShoot();
           }
 

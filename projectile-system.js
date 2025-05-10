@@ -148,7 +148,7 @@ AFRAME.registerComponent('projectile-system', {
 
         const projectile = document.createElement('a-sphere');
         projectile.setAttribute('radius', '0.5');
-        projectile.setAttribute('material', 'color: #00FF00; shader: standard; metalness: 0.3; roughness: 0.6');
+        projectile.setAttribute('material', 'color:rgb(253, 51, 189); shader: standard; metalness: 1.0; roughness: 0.6');
         projectile.setAttribute('position', position);
         // console.log('Created projectile with initial position:', position);
         

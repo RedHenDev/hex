@@ -46,6 +46,8 @@ AFRAME.registerComponent('free-controls', {
 
     // Bind methods
     this.onMouseDown = this.onMouseDown.bind(this);
+    this.onMouseUp = this.onMouseUp.bind(this);
+    
     this.onPointerLockChange = this.onPointerLockChange.bind(this);
     this.onPointerLockError = this.onPointerLockError.bind(this);
     this.onMouseMove = this.onMouseMove.bind(this);
@@ -359,7 +361,8 @@ AFRAME.registerComponent('free-controls', {
     if (event.target.closest('.a-enter-vr') ||
         event.target.closest('.a-orientation-modal') ||
         event.target.closest('.look-toggle-btn')) {
-      return;
+      
+          return;
     }
 
     if (!this.pointerLocked) {
@@ -368,6 +371,10 @@ AFRAME.registerComponent('free-controls', {
                                          this.canvasEl.webkitRequestPointerLock;
       this.canvasEl.requestPointerLock();
     }
+  },
+
+  onMouseUp: function (event){
+    //this.dispatchShoot();
   },
 
   onTouchStart: function(event) {
@@ -399,6 +406,14 @@ AFRAME.registerComponent('free-controls', {
       const movementX = touchX - this.lastTouchX;
       const movementY = touchY - this.lastTouchY;
 
+      // Better shoot hack.
+      // Distinguishes between drag and
+      // tap to shoot.
+      if (Math.abs(movementX)+
+          Math.abs(movementY) < 1){
+            this.dispatchShoot();
+          }
+
       if (this.touchDebugCount === undefined) {
         this.touchDebugCount = 0;
       }
@@ -424,7 +439,7 @@ AFRAME.registerComponent('free-controls', {
 
   onTouchEnd: function(event) {
     this.touchActive = false;
-    this.dispatchShoot();
+    //this.dispatchShoot();
   },
 
   onPointerLockChange: function() {
@@ -545,7 +560,7 @@ AFRAME.registerComponent('free-controls', {
   // For 'press' mode: stop movement on pointer up/leave
   moveButtonPointerUp: function(event) {
     event.preventDefault();
-    dispatchShoot();
+    //this.dispatchShoot();
     if (this.isMoving) {
       this.setMovement(false);
     }
@@ -577,6 +592,7 @@ AFRAME.registerComponent('free-controls', {
 
   // For 'press' mode: stop movement on release
   moveButtonPressEnd: function(event) {
+    //this.dispatchShoot();
     event.preventDefault();
     event.stopPropagation();
     if (this.isMoving) {

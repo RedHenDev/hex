@@ -83,9 +83,9 @@ AFRAME.registerComponent('subject-locomotion', {
                     this.jumping = true;
                     // Event shoot test.
                     // console.log('Dispatching shootProjectile event from loco_v3');
-                    // const shootEvent = new CustomEvent('shootProjectile');
-                    // document.dispatchEvent(shootEvent);
-                    // console.log('Event dispatched');
+                    //const shootEvent = new CustomEvent('shootProjectile');
+                    //document.dispatchEvent(shootEvent);
+                    //console.log('Event dispatched');
                     // Jump impulse.
                     this.verticalVelocity = this.running ? 64 : 42; // Adjust jump impulse based on running state.
                     this.velocity.y += this.verticalVelocity;
@@ -100,7 +100,7 @@ AFRAME.registerComponent('subject-locomotion', {
                 // Toggle hex outline on G key
                 //window.toggleHexOutline(!window.HexConfigSimple.enableOutline);
                 this.flying = !this.flying;
-                window.toggleHexOutline(!this.flying);
+                // window.toggleHexOutline(!this.flying);
             }
         });
         

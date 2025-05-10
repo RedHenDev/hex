@@ -46,10 +46,10 @@ AFRAME.registerComponent('projectile-system', {
             // We have terrain and ready to set up controls etc.
             this.setupProjectileControls();
                 // Add global listener for shoot events.
-            document.addEventListener('shootProjectile', () => {
+            //document.addEventListener('shootProjectile', () => {
                 // console.log('Shoot event received in projectile system');
-                this.shoot();
-            });
+               // this.shoot();
+            //});
             } else {
                 console.error('Projectile system: No terrain generator available after init');
             }
@@ -75,9 +75,19 @@ AFRAME.registerComponent('projectile-system', {
     },
 
     setupProjectileControls: function() {
-        const isMobile = AFRAME.utils.device.isMobile();
-        const isVR = AFRAME.utils.device.checkHeadsetConnected();
+        document.addEventListener('shootProjectile', () => {
+        //console.log('Received shoot event from free-controls');
+        this.shoot();
+        });
+        // Allow click shoot after 4s.
         
+            document.addEventListener('mousedown', (e) => {
+                if (e.button === 0) this.shoot();
+            });
+        
+        //const isMobile = AFRAME.utils.device.isMobile();
+        //const isVR = AFRAME.utils.device.checkHeadsetConnected();
+        /*
         if (isVR) {
             // VR head tilt detection - bind to the camera's parent entity to ensure proper context
             this.lastTiltTime = 0;
@@ -123,6 +133,7 @@ AFRAME.registerComponent('projectile-system', {
             this.lastTiltTime = now;
             console.log('VR head tilt detected, shooting');
         }
+            */
     },
 
     shoot: function() {

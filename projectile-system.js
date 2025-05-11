@@ -59,7 +59,8 @@ AFRAME.registerComponent('projectile-system', {
         if (window.socket) {
             window.socket.addEventListener('message', (event) => {
                 const data = JSON.parse(event.data);
-                if (data.type === 'projectile') {
+                if (data.type === 'projectile' && data.senderId !== window.clientId) {
+                    console.log('Received remote projectile:', data);
                     this.createRemoteProjectile(data);
                 }
             });
@@ -182,10 +183,12 @@ AFRAME.registerComponent('projectile-system', {
         if (window.socket) {
             window.socket.send(JSON.stringify({
                 type: 'projectile',
+                senderId: window.clientId,
                 position: {x: position.x, y: position.y, z: position.z},
                 velocity: {x: direction.x, y: direction.y, z: direction.z},
                 timestamp: Date.now()
             }));
+            console.log('Broadcasting projectile:', position, direction);
         }
 
         this.projectiles.push(projectileData);
@@ -193,11 +196,16 @@ AFRAME.registerComponent('projectile-system', {
     },
 
     createRemoteProjectile: function(data) {
+        console.log('Creating remote projectile:', data);
         const projectile = document.createElement('a-sphere');
         projectile.setAttribute('radius', '0.5');
         projectile.setAttribute('material', 'color:rgb(253, 51, 189); shader: standard; metalness: 1.0; roughness: 0.6');
-        projectile.setAttribute('position', data.position);
         
+        // Ensure position is properly set
+        const position = new THREE.Vector3(data.position.x, data.position.y, data.position.z);
+        projectile.setAttribute('position', position);
+        
+        // Ensure velocity is properly set
         const velocity = new THREE.Vector3(data.velocity.x, data.velocity.y, data.velocity.z);
         
         const projectileData = {
@@ -210,6 +218,7 @@ AFRAME.registerComponent('projectile-system', {
 
         this.projectiles.push(projectileData);
         document.querySelector('a-scene').appendChild(projectile);
+        console.log('Remote projectile created:', projectileData);
     },
 
     tick: function(time, delta) {

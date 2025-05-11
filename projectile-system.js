@@ -10,7 +10,6 @@ AFRAME.registerComponent('projectile-system', {
     init: function() {
         this.projectiles = [];
         this.terrainGenerator = null;
-        //this.setupProjectileControls();
         this.setupTerrainAccess();
 
         // Throttle shooting to prevent spam
@@ -78,14 +77,18 @@ AFRAME.registerComponent('projectile-system', {
     },
 
     setupSocketHandlers: function() {
+        if (!window.socket) return;
+        
         window.socket.addEventListener('message', (event) => {
             try {
                 const data = JSON.parse(event.data);
                 if (data.type === 'projectile' && data.senderId !== window.clientId) {
-                    console.log('Received remote projectile data:', data);
-                    if (this.validateProjectileData(data)) {
-                        this.createRemoteProjectile(data);
-                    }
+                    console.log('Remote projectile received:', {
+                        sender: data.senderId,
+                        pos: data.position,
+                        vel: data.velocity
+                    });
+                    this.createRemoteProjectile(data);
                 }
             } catch (error) {
                 console.error('Error handling projectile message:', error);
@@ -218,22 +221,23 @@ AFRAME.registerComponent('projectile-system', {
 
         // Broadcast projectile creation to other clients
         if (window.socket) {
-            window.socket.send(JSON.stringify({
+            const broadcastData = {
                 type: 'projectile',
                 senderId: window.clientId,
                 position: {
-                    x: position.x.toFixed(3),
-                    y: position.y.toFixed(3),
-                    z: position.z.toFixed(3)
+                    x: Number(position.x),
+                    y: Number(position.y),
+                    z: Number(position.z)
                 },
                 velocity: {
-                    x: direction.x.toFixed(3),
-                    y: direction.y.toFixed(3),
-                    z: direction.z.toFixed(3)
+                    x: Number(direction.x),
+                    y: Number(direction.y),
+                    z: Number(direction.z)
                 },
                 timestamp: Date.now()
-            }));
-            console.log('Broadcasting projectile with position:', position);
+            };
+            window.socket.send(JSON.stringify(broadcastData));
+            console.log('Broadcasting projectile:', broadcastData);
         }
 
         this.projectiles.push(projectileData);
@@ -241,23 +245,24 @@ AFRAME.registerComponent('projectile-system', {
     },
 
     createRemoteProjectile: function(data) {
+        console.log('Creating remote projectile from data:', data);
+        
         const projectile = document.createElement('a-sphere');
         projectile.setAttribute('radius', '0.5');
         projectile.setAttribute('material', 'color:rgb(253, 51, 189); shader: standard; metalness: 1.0; roughness: 0.6');
         
-        // Convert position data to Vector3
-        const position = new THREE.Vector3(
-            parseFloat(data.position.x),
-            parseFloat(data.position.y),
-            parseFloat(data.position.z)
-        );
-        projectile.setAttribute('position', {x: position.x, y: position.y, z: position.z});
+        const pos = {
+            x: Number(data.position.x),
+            y: Number(data.position.y),
+            z: Number(data.position.z)
+        };
         
-        // Convert velocity data to Vector3
+        projectile.setAttribute('position', pos);
+        
         const velocity = new THREE.Vector3(
-            parseFloat(data.velocity.x),
-            parseFloat(data.velocity.y),
-            parseFloat(data.velocity.z)
+            Number(data.velocity.x),
+            Number(data.velocity.y),
+            Number(data.velocity.z)
         );
         
         const projectileData = {
@@ -268,21 +273,9 @@ AFRAME.registerComponent('projectile-system', {
             remote: true
         };
 
-        // Log the creation
-        console.log('Creating remote projectile:', {
-            position: position,
-            velocity: velocity
-        });
-
         this.projectiles.push(projectileData);
-        const scene = document.querySelector('a-scene');
-        if (scene.hasLoaded) {
-            scene.appendChild(projectile);
-        } else {
-            scene.addEventListener('loaded', () => {
-                scene.appendChild(projectile);
-            });
-        }
+        document.querySelector('a-scene').appendChild(projectile);
+        console.log('Remote projectile created at position:', pos);
     },
 
     tick: function(time, delta) {

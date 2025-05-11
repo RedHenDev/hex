@@ -25,7 +25,7 @@ window.TerrainConfig = {
     // New section for coloration noise adjustments:
     colorNoiseScale: 0.02,  // 0.01 spatial frequency for hue noise variation
     colorNoiseRange: 2.4,    // 4.0 2.0 maximum deviation in degrees
-    colorHue: 0.3,            // -1 for default, or 0..1 for a specific hue (0=red, 0.33=green, 0.16=yellow, etc.)
+    colorHue: 0.16,            // -1 for default, or 0..1 for a specific hue (0=red, 0.33=green, 0.16=yellow, etc.)
     applyToGenerator: function(generator) {
         if (generator) {
             generator.heightScale = this.heightScale;

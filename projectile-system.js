@@ -65,6 +65,43 @@ AFRAME.registerComponent('projectile-system', {
                 }
             });
         }
+
+        // Wait for socket connection
+        if (!window.socket) {
+            document.addEventListener('socketConnected', () => {
+                console.log('Projectile system: Socket connected');
+                this.setupSocketHandlers();
+            });
+        } else {
+            this.setupSocketHandlers();
+        }
+    },
+
+    setupSocketHandlers: function() {
+        window.socket.addEventListener('message', (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                if (data.type === 'projectile' && data.senderId !== window.clientId) {
+                    console.log('Received remote projectile data:', data);
+                    if (this.validateProjectileData(data)) {
+                        this.createRemoteProjectile(data);
+                    }
+                }
+            } catch (error) {
+                console.error('Error handling projectile message:', error);
+            }
+        });
+    },
+
+    validateProjectileData: function(data) {
+        return data.position && 
+               typeof data.position.x === 'number' &&
+               typeof data.position.y === 'number' &&
+               typeof data.position.z === 'number' &&
+               data.velocity &&
+               typeof data.velocity.x === 'number' &&
+               typeof data.velocity.y === 'number' &&
+               typeof data.velocity.z === 'number';
     },
 
     setupTerrainAccess: function() {

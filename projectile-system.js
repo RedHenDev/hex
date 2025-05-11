@@ -58,7 +58,7 @@ AFRAME.registerComponent('projectile-system', {
         if (window.socket) {
             window.socket.addEventListener('message', (event) => {
                 const data = JSON.parse(event.data);
-                if (data.type === 'projectile' && data.senderId !== window.clientId) {
+                if (data.type === 'projectile' && data.senderId !== window.playerId) {
                     console.log('Received remote projectile data:', data);
                     this.createRemoteProjectile(data);
                 }
@@ -88,7 +88,7 @@ AFRAME.registerComponent('projectile-system', {
         this._projectileMsgHandler = (event) => {
             try {
                 const data = JSON.parse(event.data);
-                if (data.type === 'projectile' && data.senderId !== window.clientId) {
+                if (data.type === 'projectile' && data.senderId !== window.playerId) {
                     console.log('[projectile-system] Received projectile message:', data);
                     // Only create projectile if valid
                     if (this.validateProjectileData(data)) {
@@ -231,7 +231,7 @@ AFRAME.registerComponent('projectile-system', {
         if (window.socket && window.socket.readyState === WebSocket.OPEN) {
             const broadcastData = {
                 type: 'projectile',
-                senderId: window.clientId,
+                senderId: window.playerId, // <-- FIXED HERE
                 position: {
                     x: Number(position.x),
                     y: Number(position.y),

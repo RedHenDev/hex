@@ -55,16 +55,6 @@ AFRAME.registerComponent('projectile-system', {
         }, 3000);
 
         // Add handlers for remote projectile events
-        if (window.socket) {
-            window.socket.addEventListener('message', (event) => {
-                const data = JSON.parse(event.data);
-                if (data.type === 'projectile' && data.senderId !== window.playerId) {
-                    console.log('Received remote projectile data:', data);
-                    this.createRemoteProjectile(data);
-                }
-            });
-        }
-
         // Wait for socket connection
         if (!window.socket) {
             document.addEventListener('socketConnected', () => {

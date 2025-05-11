@@ -448,13 +448,17 @@ AFRAME.registerComponent('free-controls', {
 
   onTouchEnd: function(event) {
     this.touchActive = false;
+    if (event.touches.length===1){
+    const touchY = event.touches[0].clientY;
+    
     //this.dispatchShoot();
     // Better shoot hack.
       // Distinguishes between drag and
       // tap to shoot.
-      if (touchY < 3333 ){
+      if (touchY < 300 ){
           this.dispatchShoot();
         }
+      }
   },
 
   onPointerLockChange: function() {

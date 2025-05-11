@@ -78,22 +78,34 @@ AFRAME.registerComponent('projectile-system', {
 
     setupSocketHandlers: function() {
         if (!window.socket) return;
-        
-        window.socket.addEventListener('message', (event) => {
+
+        // Prevent duplicate listeners by removing any existing one first
+        if (this._projectileMsgHandler) {
+            window.socket.removeEventListener('message', this._projectileMsgHandler);
+        }
+
+        // Store handler reference for removal later
+        this._projectileMsgHandler = (event) => {
             try {
                 const data = JSON.parse(event.data);
                 if (data.type === 'projectile' && data.senderId !== window.clientId) {
-                    console.log('Remote projectile received:', {
-                        sender: data.senderId,
-                        pos: data.position,
-                        vel: data.velocity
-                    });
-                    this.createRemoteProjectile(data);
+                    // Only create projectile if valid
+                    if (this.validateProjectileData(data)) {
+                        console.log('Remote projectile received:', {
+                            sender: data.senderId,
+                            pos: data.position,
+                            vel: data.velocity
+                        });
+                        this.createRemoteProjectile(data);
+                    } else {
+                        console.warn('Invalid projectile data received:', data);
+                    }
                 }
             } catch (error) {
-                console.error('Error handling projectile message:', error);
+                // Ignore non-JSON or unrelated messages
             }
-        });
+        };
+        window.socket.addEventListener('message', this._projectileMsgHandler);
     },
 
     validateProjectileData: function(data) {

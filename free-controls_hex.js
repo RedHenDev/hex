@@ -44,21 +44,9 @@ AFRAME.registerComponent('free-controls', {
     this.isRunning = false;
     this.isFlying = false;
 
-    // VR mode state
-    this.isInVR = false;
-
-    // VR event handlers
-    this.onEnterVR = this.onEnterVR.bind(this);
-    this.onExitVR = this.onExitVR.bind(this);
-
-    // Fullscreen event handlers
-    this.onEnterFullscreen = this.onEnterFullscreen.bind(this);
-    this.onExitFullscreen = this.onExitFullscreen.bind(this);
-
     // Bind methods
     this.onMouseDown = this.onMouseDown.bind(this);
     this.onMouseUp = this.onMouseUp.bind(this);
-    
     this.onPointerLockChange = this.onPointerLockChange.bind(this);
     this.onPointerLockError = this.onPointerLockError.bind(this);
     this.onMouseMove = this.onMouseMove.bind(this);
@@ -78,66 +66,15 @@ AFRAME.registerComponent('free-controls', {
       this.setupMouseControls();
     }
 
-    // Track fullscreen state
-    this.isFullscreen = !!(document.fullscreenElement ||
-                          document.webkitFullscreenElement ||
-                          document.mozFullScreenElement ||
-                          document.msFullscreenElement);
-
+    // Listen for pointer lock and fullscreen changes
     document.addEventListener('fullscreenchange', this.onFullscreenChange);
     document.addEventListener('webkitfullscreenchange', this.onFullscreenChange);
     document.addEventListener('mozfullscreenchange', this.onFullscreenChange);
     document.addEventListener('MSFullscreenChange', this.onFullscreenChange);
 
-    // Listen for VR mode changes
-    this.el.sceneEl.addEventListener('enter-vr', this.onEnterVR);
-    this.el.sceneEl.addEventListener('exit-vr', this.onExitVR);
-
-    // Listen for fullscreen changes (for overlay/UI hiding)
-    document.addEventListener('fullscreenchange', () => {
-      this.isFullscreen = !!(document.fullscreenElement ||
-                            document.webkitFullscreenElement ||
-                            document.mozFullScreenElement ||
-                            document.msFullscreenElement);
-      if (this.isFullscreen) {
-        this.onEnterFullscreen();
-      } else {
-        this.onExitFullscreen();
-      }
-    });
-    document.addEventListener('webkitfullscreenchange', () => {
-      this.isFullscreen = !!(document.fullscreenElement ||
-                            document.webkitFullscreenElement ||
-                            document.mozFullScreenElement ||
-                            document.msFullscreenElement);
-      if (this.isFullscreen) {
-        this.onEnterFullscreen();
-      } else {
-        this.onExitFullscreen();
-      }
-    });
-    document.addEventListener('mozfullscreenchange', () => {
-      this.isFullscreen = !!(document.fullscreenElement ||
-                            document.webkitFullscreenElement ||
-                            document.mozFullScreenElement ||
-                            document.msFullscreenElement);
-      if (this.isFullscreen) {
-        this.onEnterFullscreen();
-      } else {
-        this.onExitFullscreen();
-      }
-    });
-    document.addEventListener('MSFullscreenChange', () => {
-      this.isFullscreen = !!(document.fullscreenElement ||
-                            document.webkitFullscreenElement ||
-                            document.mozFullScreenElement ||
-                            document.msFullscreenElement);
-      if (this.isFullscreen) {
-        this.onEnterFullscreen();
-      } else {
-        this.onExitFullscreen();
-      }
-    });
+    // Listen for VR mode changes if you need to adjust controls (not overlays)
+    this.el.sceneEl.addEventListener('enter-vr', () => { /* Optionally adjust controls */ });
+    this.el.sceneEl.addEventListener('exit-vr', () => { /* Optionally adjust controls */ });
 
     console.log("Free controls initialized for", this.isMobile ? "mobile" : "desktop");
   },
@@ -480,11 +417,11 @@ AFRAME.registerComponent('free-controls', {
       // Better shoot hack.
       // Distinguishes between drag and
       // tap to shoot.
-      if (touchY < 500 &&
-          Math.abs(movementX)+
-          Math.abs(movementY) < 0.01){
-            this.dispatchShoot();
-          }
+      // if (touchY < 300 &&
+      //     Math.abs(movementX)+
+      //     Math.abs(movementY) < 0.01){
+      //       this.dispatchShoot();
+      //     }
 
       if (this.touchDebugCount === undefined) {
         this.touchDebugCount = 0;
@@ -512,6 +449,12 @@ AFRAME.registerComponent('free-controls', {
   onTouchEnd: function(event) {
     this.touchActive = false;
     //this.dispatchShoot();
+    // Better shoot hack.
+      // Distinguishes between drag and
+      // tap to shoot.
+      if (touchY < 300 ){
+          this.dispatchShoot();
+        }
   },
 
   onPointerLockChange: function() {
@@ -711,78 +654,6 @@ AFRAME.registerComponent('free-controls', {
     }
   },
 
-  // --- VR event handlers ---
-
-  onEnterVR: function() {
-    this.isInVR = true;
-    // Hide overlays/UI in VR
-    if (this.controlsContainer) this.controlsContainer.style.display = 'none';
-    if (this.touchIndicator) this.touchIndicator.style.display = 'none';
-
-    // Hide jojo-indicator and menus if present
-    var jojo = document.getElementById('jojo-indicator');
-    if (jojo) jojo.style.display = 'none';
-    var menu = document.getElementById('main-menu');
-    if (menu) menu.style.display = 'none';
-
-    // Hide any white overlay/panel/canvas
-    var whitePanels = document.querySelectorAll('.white-overlay, .white-panel');
-    whitePanels.forEach(function(panel) {
-      panel.style.display = 'none';
-    });
-  },
-
-  onExitVR: function() {
-    this.isInVR = false;
-    // Restore overlays/UI after VR
-    if (this.controlsContainer) this.controlsContainer.style.display = '';
-    if (this.touchIndicator) this.touchIndicator.style.display = '';
-
-    // Restore jojo-indicator and menus if they should be visible
-    var jojo = document.getElementById('jojo-indicator');
-    if (jojo) jojo.style.display = '';
-    var menu = document.getElementById('main-menu');
-    if (menu) menu.style.display = '';
-
-    // Remove any white overlay/panel/canvas
-    var whitePanels = document.querySelectorAll('.white-overlay, .white-panel');
-    whitePanels.forEach(function(panel) {
-      panel.style.display = 'none';
-    });
-  },
-
-  // --- Fullscreen event handlers ---
-
-  onEnterFullscreen: function() {
-    // If already in VR, let VR handler manage overlays
-    if (this.isInVR) return;
-    if (this.controlsContainer) this.controlsContainer.style.display = 'none';
-    if (this.touchIndicator) this.touchIndicator.style.display = 'none';
-    var jojo = document.getElementById('jojo-indicator');
-    if (jojo) jojo.style.display = 'none';
-    var menu = document.getElementById('main-menu');
-    if (menu) menu.style.display = 'none';
-    var whitePanels = document.querySelectorAll('.white-overlay, .white-panel');
-    whitePanels.forEach(function(panel) {
-      panel.style.display = 'none';
-    });
-  },
-
-  onExitFullscreen: function() {
-    // If in VR, let VR handler manage overlays
-    if (this.isInVR) return;
-    if (this.controlsContainer) this.controlsContainer.style.display = '';
-    if (this.touchIndicator) this.touchIndicator.style.display = '';
-    var jojo = document.getElementById('jojo-indicator');
-    if (jojo) jojo.style.display = '';
-    var menu = document.getElementById('main-menu');
-    if (menu) menu.style.display = '';
-    var whitePanels = document.querySelectorAll('.white-overlay, .white-panel');
-    whitePanels.forEach(function(panel) {
-      panel.style.display = 'none';
-    });
-  },
-
   remove: function() {
     this.canvasEl.removeEventListener('click', this.onMouseDown);
 
@@ -811,7 +682,10 @@ AFRAME.registerComponent('free-controls', {
     this.el.sceneEl.removeEventListener('exit-vr', this.onExitVR);
 
     // Remove fullscreen event listeners
-    // (If you want to be thorough, store the bound handlers and remove them here.)
+    document.removeEventListener('fullscreenchange', this._fullscreenHandler);
+    document.removeEventListener('webkitfullscreenchange', this._fullscreenHandler);
+    document.removeEventListener('mozfullscreenchange', this._fullscreenHandler);
+    document.removeEventListener('MSFullscreenChange', this._fullscreenHandler);
 
     if (this.touchIndicator && this.touchIndicator.parentNode) {
       this.touchIndicator.parentNode.removeChild(this.touchIndicator);

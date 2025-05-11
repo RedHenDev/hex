@@ -1,6 +1,6 @@
 AFRAME.registerComponent('projectile-system', {
     schema: {
-        speed: {type: 'number', default: 99},
+        speed: {type: 'number', default: 199},
         lifetime: {type: 'number', default: 3000},
         bounceEnergy: {type: 'number', default: 0.6}, // Increased from 0.7 to 0.9
         playerImpactForce: {type: 'number', default: 800},

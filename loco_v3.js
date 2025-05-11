@@ -118,6 +118,16 @@ AFRAME.registerComponent('subject-locomotion', {
             }
         }, 2000);
         
+        // Add websocket message handler for impacts
+        if (window.socket) {
+            window.socket.addEventListener('message', (event) => {
+                const data = JSON.parse(event.data);
+                if (data.type === 'impact' && data.targetId === window.clientId) {
+                    this.handleImpact(data.force);
+                }
+            });
+        }
+
         if (this.data.debug) console.log('Locomotion: Component initialized');
     },
 
@@ -217,6 +227,20 @@ AFRAME.registerComponent('subject-locomotion', {
                 if (this.data.debug) console.warn('Locomotion: Error using direct terrain generator:', err);
                 // Fall through to other methods. Nope. Deleted :)
             }
+        }
+    },
+
+    handleImpact: function(forceData) {
+        // Convert force data to Vector3
+        const impactForce = new THREE.Vector3(forceData.x, forceData.y, forceData.z);
+        
+        // Add to current velocity
+        this.velocity.add(impactForce);
+        
+        // Optional: Add some visual feedback
+        const subject = document.querySelector('#subject');
+        if (subject) {
+            subject.emit('impact', {force: impactForce.length()});
         }
     },
 

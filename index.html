@@ -9,6 +9,7 @@
     
     <!-- Load A-Frame -->
     <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v6.1.1/dist/aframe-extras.min.js"></script>
     
     <script src="free-controls_hex.js"></script>
 
@@ -35,7 +36,7 @@
                 <!-- <a-asset-item id="mRocks" src="./assets/rocks.glb"></a-asset-item> -->
             <img id="player-fallback" src="./assets/RedHenIconAlpha512512.png" crossorigin="anonymous">
             <a-asset-item id="mDucar" src="./assets/ducar.glb"></a-asset-item>
-            <a-asset-item id="mIndom" src="./assets/darcy_low.glb"></a-asset-item>
+            <a-asset-item id="mIndom" src="./assets/ani_indom.glb"></a-asset-item>
             <a-asset-item id="mTrex" src="./assets/trex.glb"></a-asset-item>
             <a-asset-item id="mBumpy" src="./assets/bumpy.glb"></a-asset-item>
             
@@ -104,6 +105,7 @@
         <a-gltf-model   id="jojo"
                     src="#mIndom" scale="14 14 14" 
                     position="10000 1230 8600"
+                    animation-mixer="clip: Walk; loop: repeat; crossFadeDuration: 0.3"
                     npc-walk="speed: 30; wanderRadius: 512; heightOffset: 7">
         </a-gltf-model>
         <a-gltf-model   id="sue"

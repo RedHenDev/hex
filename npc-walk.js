@@ -1,8 +1,8 @@
 AFRAME.registerComponent('npc-walk', {
     schema: {
         speed: { type: 'number', default: 2 },
-        wanderRadius: { type: 'number', default: 50 },
-        heightOffset: { type: 'number', default: 0 }
+        wanderRadius: { type: 'number', default: 100 },
+        heightOffset: { type: 'number', default: 2 }
     },
 
     init: function() {
@@ -18,6 +18,39 @@ AFRAME.registerComponent('npc-walk', {
             this.setupTerrainAccess();
         });
 
+        // Animation states
+        this.currentAnim = 'Walk';
+        this.animationTime = 0;
+        this.walkDuration = 8000; // 8 seconds of walking
+        this.idleDuration = 4000; // 4 seconds of idle
+        this.animationsLoaded = false;
+        
+        if (this.el.id === 'jojo') {
+            // Wait for model to load before setting up animations
+            this.el.addEventListener('model-loaded', () => {
+                const mesh = this.el.getObject3D('mesh');
+                if (mesh) {
+                    console.log('Available animations:', mesh.animations.map(a => a.name));
+                    this.animationsLoaded = true;
+                    
+                    // Initialize with walk animation after a short delay
+                    setTimeout(() => {
+                        try {
+                            this.el.setAttribute('animation-mixer', {
+                                clip: 'Walk',
+                                loop: 'repeat',
+                                crossFadeDuration: 0.3
+                            });
+                            console.log('Initial walk animation set');
+                        } catch (error) {
+                            console.error('Failed to set initial animation:', error);
+                        }
+                    }, 1000);
+                }
+            });
+        } else {
+            console.log('not jojo, so no anim on this model.')
+        }
 
         console.log('npc-walk init correct.');
     },
@@ -43,6 +76,25 @@ AFRAME.registerComponent('npc-walk', {
         const radius = Math.random() * this.data.wanderRadius;
         this.targetPos.x = this.originalPos.x + Math.cos(angle) * radius;
         this.targetPos.z = this.originalPos.z + Math.sin(angle) * radius;
+    },
+
+    switchAnimation: function() {
+        if (!this.el.id === 'jojo' || !this.animationsLoaded) return;
+        
+        try {
+            const newAnim = this.currentAnim === 'Walk' ? 'Idle' : 'Walk';
+            console.log('Switching animation to:', newAnim);
+            
+            this.el.setAttribute('animation-mixer', {
+                clip: newAnim,
+                loop: 'repeat',
+                crossFadeDuration: 0.3
+            });
+            this.currentAnim = newAnim;
+            this.animationTime = 0;
+        } catch (error) {
+            console.error('Failed to switch animation:', error);
+        }
     },
 
     tick: function(time, deltaTime) {
@@ -101,6 +153,16 @@ AFRAME.registerComponent('npc-walk', {
             // Keep in -PI to PI range
             deltaRot = ((deltaRot + Math.PI) % (2 * Math.PI)) - Math.PI;
             this.el.object3D.rotation.y += deltaRot * rotLerpAlpha;
+        }
+
+        // Handle animation switching for jojo
+        if (this.el.id === 'jojo') {
+            this.animationTime += deltaTime;
+            const duration = this.currentAnim === 'walk' ? this.walkDuration : this.idleDuration;
+            
+            if (this.animationTime >= duration) {
+                this.switchAnimation();
+            }
         }
     }
 });

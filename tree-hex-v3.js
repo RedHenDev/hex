@@ -38,7 +38,7 @@ AFRAME.registerComponent('tree-hex-manager', {
       foliageHeight: { type: 'number', default: 0.8 },
       foliageRadius: { type: 'number', default: 7.0 }, //5
       foliageTilt: { type: 'number', default: 0.05 }, // 0.25
-      foliageOpacity: { type: 'number', default: 0.9 },
+      foliageOpacity: { type: 'number', default: 1.0 }, //0.9
       
       // Branch settings (connecting trunk to foliage)
       enableBranches: { type: 'boolean', default: false },

@@ -89,16 +89,12 @@ AFRAME.registerComponent('projectile-system', {
             try {
                 const data = JSON.parse(event.data);
                 if (data.type === 'projectile' && data.senderId !== window.clientId) {
+                    console.log('[projectile-system] Received projectile message:', data);
                     // Only create projectile if valid
                     if (this.validateProjectileData(data)) {
-                        console.log('Remote projectile received:', {
-                            sender: data.senderId,
-                            pos: data.position,
-                            vel: data.velocity
-                        });
                         this.createRemoteProjectile(data);
                     } else {
-                        console.warn('Invalid projectile data received:', data);
+                        console.warn('[projectile-system] Invalid projectile data received:', data);
                     }
                 }
             } catch (error) {
@@ -259,7 +255,7 @@ AFRAME.registerComponent('projectile-system', {
     },
 
     createRemoteProjectile: function(data) {
-        console.log('Creating remote projectile from data:', data);
+        console.log('[projectile-system] Creating remote projectile from data:', data);
         
         const projectile = document.createElement('a-sphere');
         projectile.setAttribute('radius', '0.5');
@@ -288,8 +284,15 @@ AFRAME.registerComponent('projectile-system', {
         };
 
         this.projectiles.push(projectileData);
-        document.querySelector('a-scene').appendChild(projectile);
-        console.log('Remote projectile created at position:', pos);
+
+        // Try to append to the scene, log errors if any
+        const scene = document.querySelector('a-scene');
+        if (scene) {
+            scene.appendChild(projectile);
+            console.log('[projectile-system] Remote projectile appended to scene at position:', pos);
+        } else {
+            console.error('[projectile-system] Could not find <a-scene> to append remote projectile');
+        }
     },
 
     tick: function(time, delta) {

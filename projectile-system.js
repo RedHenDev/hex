@@ -232,7 +232,7 @@ AFRAME.registerComponent('projectile-system', {
         };
 
         // Broadcast projectile creation to other clients
-        if (window.socket) {
+        if (window.socket && window.socket.readyState === WebSocket.OPEN) {
             const broadcastData = {
                 type: 'projectile',
                 senderId: window.clientId,
@@ -250,6 +250,8 @@ AFRAME.registerComponent('projectile-system', {
             };
             window.socket.send(JSON.stringify(broadcastData));
             console.log('Broadcasting projectile:', broadcastData);
+        } else if (window.socket && window.socket.readyState !== WebSocket.OPEN) {
+            console.warn('Socket not open, projectile not broadcasted');
         }
 
         this.projectiles.push(projectileData);

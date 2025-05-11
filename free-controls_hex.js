@@ -452,7 +452,7 @@ AFRAME.registerComponent('free-controls', {
     // Better shoot hack.
       // Distinguishes between drag and
       // tap to shoot.
-      if (touchY < 300 ){
+      if (touchY < 400 ){
           this.dispatchShoot();
         }
   },

@@ -5,7 +5,7 @@ AFRAME.registerComponent('flight-suit-scaler', {
         
         if (isMobile) {
             // Scale down for mobile.
-            this.el.setAttribute('scale', '0.28 0.7 0.7');
+            this.el.setAttribute('scale', '0.31 0.7 0.7');
         } else {
             // Default scale for desktop.
             this.el.setAttribute('scale', '1 1 1');

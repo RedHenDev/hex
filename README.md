@@ -26,6 +26,9 @@ triage
 
 to do
 
+night-burn sessions max 3hrs
+-b multiplayer projectiles not visible nor physically 'hitting' other
+
 -d friction higher when in precision mode.
 
 -f lerp multiplayer positions.

@@ -14,7 +14,7 @@ AFRAME.registerComponent('npc-walk', {
 
         // Listen for terrain ready event.
         document.addEventListener('terrainReady', () => {
-            console.log('Projectile system: Terrain ready event received');
+            console.log('NPC walk: Terrain ready event received');
             this.setupTerrainAccess();
         });
 
@@ -52,7 +52,7 @@ AFRAME.registerComponent('npc-walk', {
             console.log('not jojo, so no anim on this model.')
         }
 
-        console.log('npc-walk init correct.');
+        //console.log('npc-walk init correct.');
     },
 
     setupTerrainAccess: function() {
@@ -83,7 +83,7 @@ AFRAME.registerComponent('npc-walk', {
         
         try {
             const newAnim = this.currentAnim === 'Walk' ? 'Idle' : 'Walk';
-            console.log('Switching animation to:', newAnim);
+            //console.log('Switching animation to:', newAnim);
             
             this.el.setAttribute('animation-mixer', {
                 clip: newAnim,
@@ -107,7 +107,7 @@ AFRAME.registerComponent('npc-walk', {
         direction.subVectors(this.targetPos, currentPos);
         direction.y = 0; // Keep y movement separate.
 
-        // Check if we need a new target
+        // Check if we need a new target.
         if (direction.length() < 0.5) {
             this.setNewTarget();
             return;
@@ -117,7 +117,7 @@ AFRAME.registerComponent('npc-walk', {
         direction.normalize();
         direction.multiplyScalar(this.data.speed * dt);
 
-        // Lerp position for smooth movement
+        // Lerp position for smooth movement.
         const targetX = currentPos.x + direction.x;
         const targetZ = currentPos.z + direction.z;
         const lerpAlpha = 0.33; // 0.15 Smoothing factor (0 = no move, 1 = instant)
@@ -155,7 +155,7 @@ AFRAME.registerComponent('npc-walk', {
             this.el.object3D.rotation.y += deltaRot * rotLerpAlpha;
         }
 
-        // Handle animation switching for jojo
+        // Handle animation switching for jojo.
         if (this.el.id === 'jojo') {
             this.animationTime += deltaTime;
             const duration = this.currentAnim === 'walk' ? this.walkDuration : this.idleDuration;

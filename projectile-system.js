@@ -55,7 +55,15 @@ AFRAME.registerComponent('projectile-system', {
             }
         }, 3000);
 
-        
+        // Add handlers for remote projectile events
+        if (window.socket) {
+            window.socket.addEventListener('message', (event) => {
+                const data = JSON.parse(event.data);
+                if (data.type === 'projectile') {
+                    this.createRemoteProjectile(data);
+                }
+            });
+        }
     },
 
     setupTerrainAccess: function() {
@@ -170,9 +178,38 @@ AFRAME.registerComponent('projectile-system', {
             bounceCount: 0
         };
 
+        // Broadcast projectile creation to other clients
+        if (window.socket) {
+            window.socket.send(JSON.stringify({
+                type: 'projectile',
+                position: {x: position.x, y: position.y, z: position.z},
+                velocity: {x: direction.x, y: direction.y, z: direction.z},
+                timestamp: Date.now()
+            }));
+        }
+
         this.projectiles.push(projectileData);
         document.querySelector('a-scene').appendChild(projectile);
-        // console.log('Added projectile to scene, total projectiles:', this.projectiles.length);
+    },
+
+    createRemoteProjectile: function(data) {
+        const projectile = document.createElement('a-sphere');
+        projectile.setAttribute('radius', '0.5');
+        projectile.setAttribute('material', 'color:rgb(253, 51, 189); shader: standard; metalness: 1.0; roughness: 0.6');
+        projectile.setAttribute('position', data.position);
+        
+        const velocity = new THREE.Vector3(data.velocity.x, data.velocity.y, data.velocity.z);
+        
+        const projectileData = {
+            element: projectile,
+            velocity: velocity,
+            birth: Date.now(),
+            bounceCount: 0,
+            remote: true
+        };
+
+        this.projectiles.push(projectileData);
+        document.querySelector('a-scene').appendChild(projectile);
     },
 
     tick: function(time, delta) {
@@ -215,26 +252,27 @@ AFRAME.registerComponent('projectile-system', {
                 } 
             }
 
-            // Check player collisions
+            // Check player collision.
             const players = document.querySelectorAll('[subject-locomotion], #players > a-entity');
             players.forEach(playerEl => {
                 if (playerEl.id !== 'subject') {
                     const playerPos = playerEl.object3D.position;
                     const dist = pos.distanceTo(playerPos);
-                    if (dist < 8) { // Collision radius
+                    if (dist < 8) { // Collision radius.
                         // Apply force to player
                         const force = proj.velocity.clone().normalize().multiplyScalar(this.data.playerImpactForce);
-                        // If it's a remote player, send impact via websocket
+                        // If it's a remote player, send impact via websocket.
                         if (window.socket && playerEl.id.startsWith('player-')) {
                             window.socket.send(JSON.stringify({
                                 type: 'impact',
                                 targetId: playerEl.id.replace('player-', ''),
-                                force: {x: force.x, y: force.y, z: force.z}
+                                force: {x: force.x, y: force.y, z: force.z},
+                                position: {x: pos.x, y: pos.y, z: pos.z}
                             }));
                         }
-                        // If it's the local player, apply force directly
+                        // Apply force immediately on both ends
                         if (playerEl.components['subject-locomotion']) {
-                            playerEl.components['subject-locomotion'].velocity.add(force);
+                            playerEl.components['subject-locomotion'].applyImpactForce(force);
                         }
                         // Remove projectile after hit
                         this.removeProjectile(i);

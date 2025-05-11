@@ -60,7 +60,7 @@ AFRAME.registerComponent('projectile-system', {
             window.socket.addEventListener('message', (event) => {
                 const data = JSON.parse(event.data);
                 if (data.type === 'projectile' && data.senderId !== window.clientId) {
-                    console.log('Received remote projectile:', data);
+                    console.log('Received remote projectile data:', data);
                     this.createRemoteProjectile(data);
                 }
             });
@@ -184,11 +184,19 @@ AFRAME.registerComponent('projectile-system', {
             window.socket.send(JSON.stringify({
                 type: 'projectile',
                 senderId: window.clientId,
-                position: {x: position.x, y: position.y, z: position.z},
-                velocity: {x: direction.x, y: direction.y, z: direction.z},
+                position: {
+                    x: position.x.toFixed(3),
+                    y: position.y.toFixed(3),
+                    z: position.z.toFixed(3)
+                },
+                velocity: {
+                    x: direction.x.toFixed(3),
+                    y: direction.y.toFixed(3),
+                    z: direction.z.toFixed(3)
+                },
                 timestamp: Date.now()
             }));
-            console.log('Broadcasting projectile:', position, direction);
+            console.log('Broadcasting projectile with position:', position);
         }
 
         this.projectiles.push(projectileData);
@@ -196,17 +204,24 @@ AFRAME.registerComponent('projectile-system', {
     },
 
     createRemoteProjectile: function(data) {
-        console.log('Creating remote projectile:', data);
         const projectile = document.createElement('a-sphere');
         projectile.setAttribute('radius', '0.5');
         projectile.setAttribute('material', 'color:rgb(253, 51, 189); shader: standard; metalness: 1.0; roughness: 0.6');
         
-        // Ensure position is properly set
-        const position = new THREE.Vector3(data.position.x, data.position.y, data.position.z);
-        projectile.setAttribute('position', position);
+        // Convert position data to Vector3
+        const position = new THREE.Vector3(
+            parseFloat(data.position.x),
+            parseFloat(data.position.y),
+            parseFloat(data.position.z)
+        );
+        projectile.setAttribute('position', {x: position.x, y: position.y, z: position.z});
         
-        // Ensure velocity is properly set
-        const velocity = new THREE.Vector3(data.velocity.x, data.velocity.y, data.velocity.z);
+        // Convert velocity data to Vector3
+        const velocity = new THREE.Vector3(
+            parseFloat(data.velocity.x),
+            parseFloat(data.velocity.y),
+            parseFloat(data.velocity.z)
+        );
         
         const projectileData = {
             element: projectile,
@@ -216,9 +231,21 @@ AFRAME.registerComponent('projectile-system', {
             remote: true
         };
 
+        // Log the creation
+        console.log('Creating remote projectile:', {
+            position: position,
+            velocity: velocity
+        });
+
         this.projectiles.push(projectileData);
-        document.querySelector('a-scene').appendChild(projectile);
-        console.log('Remote projectile created:', projectileData);
+        const scene = document.querySelector('a-scene');
+        if (scene.hasLoaded) {
+            scene.appendChild(projectile);
+        } else {
+            scene.addEventListener('loaded', () => {
+                scene.appendChild(projectile);
+            });
+        }
     },
 
     tick: function(time, delta) {

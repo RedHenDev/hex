@@ -42,13 +42,6 @@ AFRAME.registerComponent('projectile-system', {
                     adjusted: adjustedHeight,
                     config: window.TerrainConfig
                 });
-            // We have terrain and ready to set up controls etc.
-            this.setupProjectileControls();
-                // Add global listener for shoot events.
-            //document.addEventListener('shootProjectile', () => {
-                // console.log('Shoot event received in projectile system');
-               // this.shoot();
-            //});
             } else {
                 console.error('Projectile system: No terrain generator available after init');
             }
@@ -60,9 +53,11 @@ AFRAME.registerComponent('projectile-system', {
             document.addEventListener('socketConnected', () => {
                 console.log('Projectile system: Socket connected');
                 this.setupSocketHandlers();
+                this.setupProjectileControls(); // <-- Only enable controls after socket is open
             });
         } else {
             this.setupSocketHandlers();
+            this.setupProjectileControls(); // <-- Only enable controls after socket is open
         }
     },
 

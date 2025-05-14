@@ -111,7 +111,7 @@ function connectToServer() {
         
         window.socket.onmessage = (event) => {
             // Add this log:
-            console.log('[game.js] Received websocket message:', event.data);
+            // console.log('[game.js] Received websocket message:', event.data);
 
             const message = JSON.parse(event.data);
             

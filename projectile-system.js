@@ -72,7 +72,7 @@ AFRAME.registerComponent('projectile-system', {
         // Store handler reference for removal later
         this._projectileMsgHandler = (event) => {
             // Log all messages received by this handler
-            console.log('[projectile-system] Raw websocket message:', event.data);
+            // console.log('[projectile-system] Raw websocket message:', event.data);
             try {
                 const data = JSON.parse(event.data);
                 if (data.type === 'projectile' && data.senderId !== window.playerId) {

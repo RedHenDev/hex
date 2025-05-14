@@ -83,7 +83,9 @@ wss.on('connection', (ws) => {
     ws.on('message', (message) => {
         try {
             const data = JSON.parse(message);
-            
+            // Add this log to see all incoming messages
+            console.log('[server] Received message:', data);
+
             switch (data.type) {
                 case 'join':
                     // Assign a unique name (either requested or generated)
@@ -169,15 +171,9 @@ wss.on('connection', (ws) => {
                     break;
                 
                 case 'projectile':
-                    // Relay projectile to all other clients
-                    wss.clients.forEach((client) => {
-                        if (
-                            client !== ws &&
-                            client.readyState === WebSocket.OPEN
-                        ) {
-                            client.send(JSON.stringify(data));
-                        }
-                    });
+                    // Log when a projectile is received and relayed
+                    console.log(`[server] Relaying projectile from ${playerId}:`, data);
+                    broadcastToAll(data);
                     break;
             }
         } catch (error) {

@@ -167,6 +167,18 @@ wss.on('connection', (ws) => {
                         });
                     }
                     break;
+                
+                case 'projectile':
+                    // Relay projectile to all other clients
+                    wss.clients.forEach((client) => {
+                        if (
+                            client !== ws &&
+                            client.readyState === WebSocket.OPEN
+                        ) {
+                            client.send(JSON.stringify(data));
+                        }
+                    });
+                    break;
             }
         } catch (error) {
             console.error('Error processing message:', error);

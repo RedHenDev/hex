@@ -263,6 +263,10 @@ function updatePlayers(playerData) {
                 playerModel.setAttribute('gltf-model', data.model || config.playerModels[0]);
                 playerModel.setAttribute('scale', '8 8 8');
                 playerModel.setAttribute('position', '0 0 0');
+                // Animation.
+                if (data.model==='#mIndom'){
+                    playerModel.setAttribute('animation-mixer', 'clip: Walk; loop: repeat; crossFadeDuration: 0.3');
+                }
                 // Add color to model if specified
                 if (data.color) {
                     playerModel.setAttribute('material', `color: ${data.color}`);
@@ -316,7 +320,7 @@ function updatePlayers(playerData) {
         // Update player position
         const playerEntity = document.getElementById(`player-${id}`);
         if (playerEntity) {
-            playerEntity.setAttribute('position', `${data.position.x} ${data.position.y} ${data.position.z}`);
+            playerEntity.setAttribute('position', `${data.position.x} ${data.position.y}-16 ${data.position.z}`);
             
             // Update player rotation if available
             if (data.rotation) {

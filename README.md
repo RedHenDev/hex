@@ -129,7 +129,7 @@ DONE-b fix tree placement
 
 -f rippling bioluminescence across terrain
 
--f perhaps ask trees to be generate where dark voxels are
+-f perhaps ask trees to be generated where dark voxels are
 
 -b forests not generating at new chunks
 

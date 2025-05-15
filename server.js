@@ -79,6 +79,8 @@ wss.on('connection', (ws) => {
     
     console.log(`New player connected: ${playerId}`);
     
+    ws.playerId = playerId; // <-- Add this line
+
     // Handle messages from clients
     ws.on('message', (message) => {
         try {
@@ -174,6 +176,25 @@ wss.on('connection', (ws) => {
                     // Log when a projectile is received and relayed
                     console.log(`[server] Relaying projectile from ${playerId}:`, data);
                     broadcastToAll(data);
+                    break;
+
+                case 'impact':
+                    // Relay impact only to the target client
+                    wss.clients.forEach((client) => {
+                        if (
+                            client !== ws &&
+                            client.readyState === WebSocket.OPEN &&
+                            data.targetId &&
+                            players
+                        ) {
+                            // Find the playerId for this client
+                            // We assume each ws connection is a player, so we need to map ws to playerId
+                            // We'll use a closure variable for playerId (already set at connection)
+                            if (players[data.targetId] && client.playerId === data.targetId) {
+                                client.send(JSON.stringify(data));
+                            }
+                        }
+                    });
                     break;
             }
         } catch (error) {

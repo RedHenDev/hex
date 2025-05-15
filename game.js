@@ -147,6 +147,21 @@ function connectToServer() {
                     document.getElementById('connection-status').textContent = 
                         `Connected as: ${window.playerName} (${message.count} player${message.count !== 1 ? 's' : ''} online)`;
                     break;
+
+                case 'impact':
+                    // Only apply if this client is the target
+                    if (window.playerId && message.targetId === window.playerId) {
+                        const subject = document.querySelector('#subject');
+                        if (subject && subject.components['subject-locomotion']) {
+                            const force = new THREE.Vector3(
+                                message.force.x,
+                                message.force.y,
+                                message.force.z
+                            );
+                            subject.components['subject-locomotion'].applyImpactForce(force);
+                        }
+                    }
+                    break;
             }
         };
         
@@ -265,15 +280,15 @@ function updatePlayers(playerData) {
             // --- End fallback logic ---
 
             // Create name tag background panel
-            const nameBg = document.createElement('a-plane');
-            nameBg.setAttribute('width', '18');
-            nameBg.setAttribute('height', '4');
-            nameBg.setAttribute('position', '0 12.01 0'); // Slightly behind the text
-            if (data.color === 'white') nameBg.setAttribute('color', '#222'); // Contrasting dark background
-            else nameBg.setAttribute('color', '#fff'); // Default white background.
-            nameBg.setAttribute('opacity', '0.75');
-            nameBg.setAttribute('side', 'double');
-            nameBg.setAttribute('billboard', '');
+            // const nameBg = document.createElement('a-plane');
+            // nameBg.setAttribute('width', '18');
+            // nameBg.setAttribute('height', '4');
+            // nameBg.setAttribute('position', '0 12.01 0'); // Slightly behind the text
+            // if (data.color === 'white') nameBg.setAttribute('color', '#222'); // Contrasting dark background
+            // else nameBg.setAttribute('color', '#fff'); // Default white background.
+            // nameBg.setAttribute('opacity', '0.75');
+            // nameBg.setAttribute('side', 'double');
+            // nameBg.setAttribute('billboard', '');
 
             // Create name tag (floating text above player)
             const nameTag = document.createElement('a-text');
@@ -286,7 +301,7 @@ function updatePlayers(playerData) {
 
             // Add model, background, and name tag to player entity
             playerEntity.appendChild(playerModel);
-            playerEntity.appendChild(nameBg);
+            // playerEntity.appendChild(nameBg);
             playerEntity.appendChild(nameTag);
             
             // Add player entity to the scene

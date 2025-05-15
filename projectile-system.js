@@ -330,6 +330,7 @@ AFRAME.registerComponent('projectile-system', {
                     const dist = pos.distanceTo(playerPos);
                     if (dist < 8) { // Collision radius.
                         // Apply force to player
+                        console.log('Boom. Other subject hit.');
                         const force = proj.velocity.clone().normalize().multiplyScalar(this.data.playerImpactForce);
                         // If it's a remote player, send impact via websocket.
                         if (window.socket && playerEl.id.startsWith('player-')) {
@@ -346,7 +347,7 @@ AFRAME.registerComponent('projectile-system', {
                         }
                         // Remove projectile after hit
                         this.removeProjectile(i);
-                        return;
+                        //return;
                     }
                 }
             });

@@ -243,25 +243,28 @@ AFRAME.registerComponent('projectile-system', {
 
     createRemoteProjectile: function(data) {
         console.log('[projectile-system] Creating remote projectile from data:', data);
-        
+
+        if (typeof THREE === 'undefined') {
+            console.error('[projectile-system] THREE.js is not available!');
+            return;
+        }
+        if (!data.position || !data.velocity) {
+            console.error('[projectile-system] Invalid projectile data (missing position or velocity):', data);
+            return;
+        }
+
         const projectile = document.createElement('a-sphere');
         projectile.setAttribute('radius', '0.5');
         projectile.setAttribute('material', 'color:rgb(253, 51, 189); shader: standard; metalness: 1.0; roughness: 0.6');
-        
-        const pos = {
-            x: Number(data.position.x),
-            y: Number(data.position.y),
-            z: Number(data.position.z)
-        };
-        
-        projectile.setAttribute('position', pos);
-        
+        const posStr = `${Number(data.position.x)} ${Number(data.position.y)} ${Number(data.position.z)}`;
+        projectile.setAttribute('position', posStr);
+
         const velocity = new THREE.Vector3(
             Number(data.velocity.x),
             Number(data.velocity.y),
             Number(data.velocity.z)
         );
-        
+
         const projectileData = {
             element: projectile,
             velocity: velocity,
@@ -272,13 +275,10 @@ AFRAME.registerComponent('projectile-system', {
 
         this.projectiles.push(projectileData);
 
-        // Try to append to the scene, log errors if any
-        const scene = document.querySelector('a-scene');
-        if (scene) {
-            scene.appendChild(projectile);
-            console.log('[projectile-system] Remote projectile appended to scene at position:', pos);
-        } else {
-            console.error('[projectile-system] Could not find <a-scene> to append remote projectile');
+        let container = document.getElementById('projectiles');
+        if (!container) container = document.querySelector('a-scene');
+        if (container && container.hasLoaded !== false) {
+            container.appendChild(projectile);
         }
     },
 

@@ -25,7 +25,7 @@ AFRAME.registerComponent('npc-walk', {
         this.idleDuration = 4000; // 4 seconds of idle
         this.animationsLoaded = false;
         
-        if (this.el.id === 'jojo') {
+        if (this.el.id !== 'bumpy') {
             // Wait for model to load before setting up animations
             this.el.addEventListener('model-loaded', () => {
                 const mesh = this.el.getObject3D('mesh');
@@ -39,7 +39,7 @@ AFRAME.registerComponent('npc-walk', {
                             this.el.setAttribute('animation-mixer', {
                                 clip: 'Walk',
                                 loop: 'repeat',
-                                crossFadeDuration: 0.3
+                                crossFadeDuration: 0.8
                             });
                             console.log('Initial walk animation set');
                         } catch (error) {
@@ -49,7 +49,7 @@ AFRAME.registerComponent('npc-walk', {
                 }
             });
         } else {
-            console.log('not jojo, so no anim on this model.')
+            //console.log('not jojo, so no anim on this model.')
         }
 
         //console.log('npc-walk init correct.');
@@ -79,7 +79,7 @@ AFRAME.registerComponent('npc-walk', {
     },
 
     switchAnimation: function() {
-        if (!this.el.id === 'jojo' || !this.animationsLoaded) return;
+        if (!this.animationsLoaded) return;
         
         try {
             const newAnim = this.currentAnim === 'Walk' ? 'Idle' : 'Walk';
@@ -88,7 +88,7 @@ AFRAME.registerComponent('npc-walk', {
             this.el.setAttribute('animation-mixer', {
                 clip: newAnim,
                 loop: 'repeat',
-                crossFadeDuration: 0.3
+                crossFadeDuration: 0.8
             });
             this.currentAnim = newAnim;
             this.animationTime = 0;

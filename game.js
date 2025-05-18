@@ -158,7 +158,10 @@ function connectToServer() {
                                 message.force.y,
                                 message.force.z
                             );
+                            console.log('[impact] Applying impact force to subject:', force);
                             subject.components['subject-locomotion'].applyImpactForce(force);
+                        } else {
+                            console.warn('[impact] subject-locomotion not found on #subject');
                         }
                     }
                     break;

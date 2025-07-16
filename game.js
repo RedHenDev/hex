@@ -1,6 +1,6 @@
 // Game configuration.
 const config = {
-    websocketUrl: 'hex-production.up.railway.app',
+    websocketUrl: 'wss://hex-production.up.railway.app/',
     playerColors: ['white', 'black'],
     playerModels: ['#mIndom']//, '#mShelby', '#mTrex', '#mBumpy'] // Available models for player avatars
 };

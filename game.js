@@ -1,9 +1,11 @@
 // Game configuration.
 const config = {
-    websocketUrl: 'wss://hex-server.glitch.me/',
+    websocketUrl: 'hex-production.up.railway.app',
     playerColors: ['white', 'black'],
     playerModels: ['#mIndom']//, '#mShelby', '#mTrex', '#mBumpy'] // Available models for player avatars
 };
+// Before the dissolution of our beloved Glitch, RIP 8th July 2025.
+// websocketUrl: 'wss://hex-server.glitch.me/',
 
 // Create a billboard component that makes entities always face the camera
 AFRAME.registerComponent('billboard', {
